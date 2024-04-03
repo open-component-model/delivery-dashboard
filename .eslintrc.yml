@@ -1,0 +1,33 @@
+settings:
+  react:
+    version: 18.2.0
+env:
+  browser: true
+  es2021: true
+extends:
+  - 'eslint:recommended'
+  - 'plugin:react/recommended'
+  - 'plugin:react-hooks/recommended'
+  - 'plugin:import/recommended'
+  - 'plugin:jsx-a11y/recommended'
+parserOptions:
+  ecmaFeatures:
+    jsx: true
+  ecmaVersion: 13
+  sourceType: module
+plugins:  ['react', 'react-hooks']
+rules:
+  indent: ['error', 2, {'SwitchCase': 1 }]
+  linebreak-style: ['warn', 'unix']
+  quotes: ['error', 'single']
+  no-extra-semi: ['error']
+  semi: ['error', 'never']
+  react/prop-types: ['warn']
+  no-unused-vars: ['warn']
+  no-unreachable: [warn]
+  eol-last: ['warn']
+  import/no-unresolved: ['off'] # would require to install npm modules on ci
+  jsx-a11y/no-autofocus: ['off'] # autofocos is useful for component search
+globals:
+  Atomics: 'readonly'
+  SharedArrayBuffer: 'readonly'

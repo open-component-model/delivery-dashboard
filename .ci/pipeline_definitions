@@ -1,0 +1,57 @@
+delivery-dashboard:
+  inherit:
+    check-steps: &check-steps
+      steps:
+        lint:
+          registry: gcr-readonly
+          image: europe-docker.pkg.dev/gardener-project/releases/delivery-gear/delivery-dashboard-linter:latest
+          execute: lint
+
+  base_definition:
+    traits:
+      version: ~
+      component_descriptor:
+        component_name: ocm.software/delivery-gear/delivery-dashboard
+        ocm_repository: europe-docker.pkg.dev/gardener-project/releases
+      options:
+        public_build_logs: true
+
+  jobs:
+    manual-release:
+      <<: *check-steps
+      traits:
+        version:
+          preprocess: finalize
+          inject_effective_version: True
+        publish:
+          dockerimages:
+            delivery-dashboard-image:
+              registry: gcr-readwrite
+              image: europe-docker.pkg.dev/gardener-project/releases/delivery-gear/delivery-dashboard
+              dockerfile: Dockerfile
+              tag_as_latest: True
+        release:
+          nextversion: bump_minor
+          release_notes_policy: disabled
+          release_commit_publishing_policy: tag_and_merge_back
+        notifications:
+          default:
+            on_error:
+              triggering_policy: only_first
+
+    head-update:
+      <<: *check-steps
+      traits:
+        notifications:
+          default:
+            on_error:
+              triggering_policy: only_first
+        component_descriptor:
+          ocm_repository: europe-docker.pkg.dev/gardener-project/snapshots
+
+    pull-request:
+      <<: *check-steps
+      traits:
+        pull-request: ~
+        component_descriptor:
+          ocm_repository: europe-docker.pkg.dev/gardener-project/snapshots

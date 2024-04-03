@@ -1,0 +1,59 @@
+{
+  "name": "delivery-dashboard",
+  "version": "0.1.0",
+  "homepage": "./",
+  "private": true,
+  "dependencies": {
+    "@emotion/react": "^11.10.4",
+    "@emotion/styled": "^11.10.4",
+    "@mui/icons-material": "^5.10.9",
+    "@mui/lab": "^5.0.0-alpha.49",
+    "@mui/material": "^5.10.9",
+    "@mui/x-charts": "^7.0.0",
+    "@mui/x-data-grid": "^7.0.0",
+    "@uiw/codemirror-extensions-langs": "^4.12.4",
+    "@uiw/codemirror-theme-bbedit": "^4.21.3",
+    "@uiw/codemirror-theme-vscode": "^4.21.3",
+    "@uiw/react-codemirror": "^4.12.4",
+    "js-yaml": "^4.1.0",
+    "notistack": "^3.0.0",
+    "react": "^18.2.0",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.0.0",
+    "react-scripts": "5.0.1",
+    "semver": "^7.3.8",
+    "url-join": "^5.0.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.0.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-jsx-a11y": "^6.6.1",
+    "eslint-plugin-react": "^7.31.10",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.0.0"
+  }
+}

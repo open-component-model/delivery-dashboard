@@ -1,0 +1,17 @@
+#!/bin/bash -e
+set -e
+
+src_dir="${1:-"$(readlink -f "$(dirname "${0}")/..")"}"
+
+echo 'Running eslint for all javascript modules..'
+echo ''
+
+if eslint --resolve-plugins-relative-to $(npm root -g) . \
+    --max-warnings 0 \
+    ${src_dir}; then
+    echo 'eslint succeeded'
+    exit 0
+else
+    echo 'eslint found errors (see above)'
+    exit 1
+fi
