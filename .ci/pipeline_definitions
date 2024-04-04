@@ -3,7 +3,7 @@ delivery-dashboard:
     check-steps: &check-steps
       steps:
         lint:
-          registry: gcr-readonly
+          registry: ocm-ci-opensource
           image: europe-docker.pkg.dev/gardener-project/releases/delivery-gear/delivery-dashboard-linter:latest
           execute: lint
 
@@ -26,7 +26,7 @@ delivery-dashboard:
         publish:
           dockerimages:
             delivery-dashboard-image:
-              registry: gcr-readwrite
+              registry: ocm-ci-opensource
               image: europe-docker.pkg.dev/gardener-project/releases/delivery-gear/delivery-dashboard
               dockerfile: Dockerfile
               tag_as_latest: True
