@@ -388,9 +388,9 @@ const ResponsiblesHeading = ({
             the corresponding resource entry in Component Descriptor,
             exemplarily done{' '}
             <a
-             href='https://github.com/gardener/cc-utils/blob/master/.ci/pipeline_definitions#L24-L28'
-             rel='noreferrer'
-             target='_blank'
+              href='https://github.com/gardener/cc-utils/blob/master/.ci/pipeline_definitions#L24-L28'
+              rel='noreferrer'
+              target='_blank'
             >
               here
             </a>
