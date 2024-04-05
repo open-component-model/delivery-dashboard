@@ -405,48 +405,58 @@ const RescoringRowLoading = () => {
 RescoringRowLoading.displayName = 'RescoringRowLoading'
 
 
-const LicenseFilesystemPaths = ({
+const FilesystemPathsInfo = ({
   filesystemPaths,
 }) => {
-  return <Tooltip
-    title={
-      <Stack>
-        <Typography
-          variant='inherit'
-          sx={{
-            fontWeight: 'bold',
-          }}
-          marginBottom='0.5rem'
-        >
-          Filesystem Paths
-        </Typography>
+  return <>
+    <Typography
+      variant='inherit'
+      sx={{
+        fontWeight: 'bold',
+      }}
+      marginBottom='0.5rem'
+    >
+      Filesystem Paths
+    </Typography>
+    {
+      filesystemPaths.map((filesystemPath, idx) => <React.Fragment key={filesystemPath.digest}>
         {
-          filesystemPaths.map((filesystemPath, idx) => <React.Fragment key={filesystemPath.digest}>
-            {
-              idx !== 0 && <Divider sx={{ marginY: '0.5rem' }}/>
-            }
-            <Typography variant='inherit' whiteSpace='pre-line'>
-              {
-                `Path: ${filesystemPath.path}
-                Digest: ${filesystemPath.digest}`
-              }
-            </Typography>
-          </React.Fragment>)
+          idx !== 0 && <Divider sx={{ marginY: '0.5rem' }}/>
         }
-      </Stack>
+        <Typography variant='inherit' whiteSpace='pre-line'>
+          {
+            `Path: ${filesystemPath.path}
+            Digest: ${filesystemPath.digest}`
+          }
+        </Typography>
+      </React.Fragment>)
     }
-  >
-    <InfoOutlinedIcon sx={{ height: '1rem' }}/>
-  </Tooltip>
+  </>
 }
-LicenseFilesystemPaths.displayName = 'LicenseFilesystemPaths'
-LicenseFilesystemPaths.propTypes = {
+FilesystemPathsInfo.displayName = 'FilesystemPathsInfo'
+FilesystemPathsInfo.propTypes = {
   filesystemPaths: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
-const VulnerabilityRescoringVector = ({
+const LicenseExtraInfo = ({
+  filesystemPaths,
+}) => {
+  return filesystemPaths.length > 0 && <Tooltip
+    title={<FilesystemPathsInfo filesystemPaths={filesystemPaths}/>}
+  >
+    <InfoOutlinedIcon sx={{ height: '1rem' }}/>
+  </Tooltip>
+}
+LicenseExtraInfo.displayName = 'LicenseExtraInfo'
+LicenseExtraInfo.propTypes = {
+  filesystemPaths: PropTypes.arrayOf(PropTypes.object).isRequired,
+}
+
+
+const VulnerabilityExtraInfo = ({
   vector,
+  filesystemPaths,
 }) => {
   // example: AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L
   // see https://www.first.org/cvss/ for more context
@@ -521,6 +531,21 @@ const VulnerabilityRescoringVector = ({
     title={
       <Stack onClick={(e) => e.stopPropagation()}>
         {
+          filesystemPaths.length > 0 && <>
+            <FilesystemPathsInfo filesystemPaths={filesystemPaths}/>
+            <Divider sx={{ marginTop: '0.5rem', marginBottom: '1rem' }}/>
+          </>
+        }
+        <Typography
+          variant='inherit'
+          sx={{
+            fontWeight: 'bold',
+          }}
+          marginBottom='0.5rem'
+        >
+          CVSS Attack Vector
+        </Typography>
+        {
           vector.split('/').map((e) => {
             const [name, value] = e.split(':')
             return <Typography key={name} variant='inherit'>
@@ -536,9 +561,10 @@ const VulnerabilityRescoringVector = ({
     <InfoOutlinedIcon sx={{ height: '1rem' }}/>
   </Tooltip>
 }
-VulnerabilityRescoringVector.displayName = 'VulnerabilityRescoringVector'
-VulnerabilityRescoringVector.propTypes = {
+VulnerabilityExtraInfo.displayName = 'VulnerabilityExtraInfo'
+VulnerabilityExtraInfo.propTypes = {
   vector: PropTypes.string.isRequired,
+  filesystemPaths: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -905,7 +931,7 @@ const RescoringRow = ({
                   finding.license.name
                 }
               </Typography>
-              <LicenseFilesystemPaths filesystemPaths={finding.filesystem_paths}/>
+              <LicenseExtraInfo filesystemPaths={finding.filesystem_paths}/>
             </div>
             <div style={{ display: 'flex' }}>
               <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
@@ -929,7 +955,7 @@ const RescoringRow = ({
                   finding.cve
                 }
               </Link>
-              <VulnerabilityRescoringVector vector={finding.cvss}/>
+              <VulnerabilityExtraInfo vector={finding.cvss} filesystemPaths={finding.filesystem_paths}/>
             </div>
             <div style={{ display: 'flex' }}>
               <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
