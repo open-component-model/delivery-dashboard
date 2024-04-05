@@ -1,5 +1,7 @@
 # Delivery Dashboard
 
+[![REUSE status](https://api.reuse.software/badge/github.com/open-component-model/delivery-dashboard)](https://api.reuse.software/info/github.com/open-component-model/delivery-dashboard)
+
 This repository os used for developing the `Delivery Dashboard`, which is part of the OCM
 (Delivery) Gear. It is run against the `Delivery Service` as backing API and displays delivery
 metadata for OCM-based deliveries.
