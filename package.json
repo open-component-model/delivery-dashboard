@@ -1,7 +1,7 @@
 {
   "name": "delivery-dashboard",
   "version": "0.1.0",
-  "homepage": "https://github.com/open-component-model/delivery-dashboard",
+  "homepage": "./",
   "private": false,
   "dependencies": {
     "@emotion/react": "^11.10.4",
