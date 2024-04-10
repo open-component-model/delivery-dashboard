@@ -355,7 +355,6 @@ const FetchComponentRefsTab = React.memo(({
       const _complianceSummary = await components.complianceSummary({
         componentName: component.name,
         componentVersion: component.version,
-        ocmRepo: ocmRepo,
         enableCache: enableCache,
       })
 
@@ -372,7 +371,7 @@ const FetchComponentRefsTab = React.memo(({
         onRetry: () => fetchComplianceSummary(enableCache),
       })
     }
-  }, [component, ocmRepo, enqueueSnackbar])
+  }, [component, enqueueSnackbar])
 
   React.useEffect(() => {
     fetchComplianceSummary(false)
