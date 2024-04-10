@@ -13,8 +13,6 @@ delivery-dashboard:
       component_descriptor:
         component_name: ocm.software/delivery-gear/delivery-dashboard
         ocm_repository: europe-docker.pkg.dev/gardener-project/releases
-      options:
-        public_build_logs: true
 
   jobs:
     manual-release:
