@@ -153,6 +153,7 @@ export const VERSION_FILTER = {
 // these services work with backlog items
 export const COMPLIANCE_TOOLS = {
   BDBA: 'bdba',
+  CLAMAV: 'clamav',
   ISSUE_REPLICATOR: 'issueReplicator',
 }
 
