@@ -667,14 +667,14 @@ const ComplianceToolPopover = ({
 
   React.useEffect(() => {
     if (isLoading || isError || servicesIsLoading || servicesIsError) return
-    
+
     const components = dependencies.componentDependencies
     if (!(components.length > 0 && service)) return
 
     setOcmNodes(components.reduce((nodes, component) => {
       return [
         ...nodes,
-        ...([COMPLIANCE_TOOLS.BDBA, COMPLIANCE_TOOLS.ISSUE_REPLICATOR].includes(service) ? component.resources.map((resource) => {
+        ...([COMPLIANCE_TOOLS.BDBA, COMPLIANCE_TOOLS.ISSUE_REPLICATOR, COMPLIANCE_TOOLS.CLAMAV].includes(service) ? component.resources.map((resource) => {
           return new OcmNode(
             [component],
             resource,
@@ -698,6 +698,16 @@ const ComplianceToolPopover = ({
             : scanConfig.config.defaults.artefact_types
 
           return !artefactTypes || artefactTypes.some((type) => type === node.artefact.type)
+
+        } else if (service === COMPLIANCE_TOOLS.CLAMAV) {
+          const artefactTypes = scanConfig.config.clamav.artefact_types
+            ? scanConfig.config.clamav.artefact_types
+            : scanConfig.config.defaults.artefact_types
+
+          console.log(artefactTypes)
+
+          return !artefactTypes || artefactTypes.some((type) => type === node.artefact.type)
+
         } else if (service === COMPLIANCE_TOOLS.ISSUE_REPLICATOR) {
           const artefactTypes = scanConfig.config.issueReplicator.artefact_types
             ? scanConfig.config.issueReplicator.artefact_types

@@ -11,6 +11,7 @@ import { useSnackbar } from 'notistack'
 import PublishedWithChangesIcon from '@mui/icons-material/PublishedWithChanges'
 
 import {
+  COMPLIANCE_TOOLS,
   TOKEN_KEY,
   copyNotificationCfg,
   errorSnackbarProps,
@@ -109,10 +110,10 @@ export const triggerComplianceTool = ({
     // so a backlog item for one version is enough
     // -> use the node with the first occurrence/idx
     return nodes.findIndex((node) => {
-      if (service === 'bdba') {
+      if ([COMPLIANCE_TOOLS.BDBA, COMPLIANCE_TOOLS.CLAMAV].includes(service)) {
         return JSON.stringify(normaliseObject(ocmNode)) === JSON.stringify(normaliseObject(node))
       }
-      if (service === 'issueReplicator') {
+      if (service === COMPLIANCE_TOOLS.ISSUE_REPLICATOR) {
         return (
           ocmNode.artefact_kind == node.artefact_kind &&
           ocmNode.component_name == node.component_name &&
