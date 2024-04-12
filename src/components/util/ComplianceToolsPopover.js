@@ -692,29 +692,8 @@ const ComplianceToolPopover = ({
         if (!scanConfig) return true
 
         // if artefact type filter is set, don't show nodes that are filtered out
-        if (service === COMPLIANCE_TOOLS.BDBA) {
-          const artefactTypes = scanConfig.config.bdba.artefact_types
-            ? scanConfig.config.bdba.artefact_types
-            : scanConfig.config.defaults.artefact_types
-
-          return !artefactTypes || artefactTypes.some((type) => type === node.artefact.type)
-
-        } else if (service === COMPLIANCE_TOOLS.CLAMAV) {
-          const artefactTypes = scanConfig.config.clamav.artefact_types
-            ? scanConfig.config.clamav.artefact_types
-            : scanConfig.config.defaults.artefact_types
-
-          console.log(artefactTypes)
-
-          return !artefactTypes || artefactTypes.some((type) => type === node.artefact.type)
-
-        } else if (service === COMPLIANCE_TOOLS.ISSUE_REPLICATOR) {
-          const artefactTypes = scanConfig.config.issueReplicator.artefact_types
-            ? scanConfig.config.issueReplicator.artefact_types
-            : scanConfig.config.defaults.artefact_types
-
-          return !artefactTypes || artefactTypes.some((type) => type === node.artefact.type)
-        }
+        const artefactTypes = scanConfig.config[service].artefact_types || scanConfig.config.defaults.artefact_types
+        return !artefactTypes || artefactTypes.some((type) => type === node.artefact.type)
       })
     }, []))
   }, [dependencies, scanConfig, isLoading, isError, service, servicesIsLoading, servicesIsError])
