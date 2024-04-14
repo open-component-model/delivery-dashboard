@@ -1840,7 +1840,7 @@ const BDBARescoringModal = ({
   const [progress, setProgress] = React.useState(0)
   const [showProgress, setShowProgress] = React.useState(false)
 
-  const [scope, setScope] = React.useState(scopeOptions.SINGLE)
+  const [scope, setScope] = React.useState(scopeOptions.ARTEFACT)
 
   const editRescoring = React.useCallback(({
     rescoring,
