@@ -214,7 +214,7 @@ const VulnerabilityRescoringInputs = ({
   const cveCategorisationLabel = selectedNode.findLabel(knownLabelNames.cveCategorisation)
 
   return <Stack spacing={2}>
-    <Typography>CVE Categorisation (from Component-Descriptor label)</Typography>
+    <Typography>CVSS Categorisation (from Component-Descriptor label)</Typography>
     <FormControl>
       <InputLabel>Artefact</InputLabel>
       <Select
@@ -238,7 +238,7 @@ const VulnerabilityRescoringInputs = ({
       <ObjectTextViewer obj={cveCategorisationLabel ? cveCategorisationLabel : { info: 'no label found for this artefact' } }/>
     </Box>
     <Divider/>
-    <Typography>CVE Rescoring Rule Set</Typography>
+    <Typography>CVSS Rescoring Rule Set</Typography>
     <SelectCveRescoringRuleSet
       cveRescoringRuleSet={cveRescoringRuleSet}
       setCveRescoringRuleSet={setCveRescoringRuleSet}
@@ -1883,7 +1883,7 @@ const BDBARescoringModal = ({
   React.useEffect(() => {
     if (cveRescoringRuleSet || !rescoringFeature?.isAvailable) return
 
-    // set initial value to default cve rescoring rule set
+    // set initial value to default cvss rescoring rule set
     const defaultCveRescoringruleSet = rescoringFeature.rescoring_rule_sets.find((rs) => {
       return rs.name === rescoringFeature.default_rescoring_rule_set_name
     })
