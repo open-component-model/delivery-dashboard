@@ -943,18 +943,20 @@ const RescoringRow = ({
             </div>
           </Stack> : <Stack spacing={0.5}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.4rem'}}>
-              <Link
-                href={finding.urls[0]} // assume first always nist.gov
-                target='_blank'
-                rel='noopener'
-                color='secondary'
-                marginRight='0.4rem'
-                variant='inherit'
-              >
-                {
-                  finding.cve
-                }
-              </Link>
+              <Tooltip title={finding.summary ?? 'No description available, please use the link instead'}>
+                <Link
+                  href={finding.urls[0]} // assume first always nist.gov
+                  target='_blank'
+                  rel='noopener'
+                  color='secondary'
+                  marginRight='0.4rem'
+                  variant='inherit'
+                >
+                  {
+                    finding.cve
+                  }
+                </Link>
+              </Tooltip>
               <VulnerabilityExtraInfo vector={finding.cvss} filesystemPaths={finding.filesystem_paths}/>
             </div>
             <div style={{ display: 'flex' }}>
