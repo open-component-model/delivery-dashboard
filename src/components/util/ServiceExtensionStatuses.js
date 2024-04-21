@@ -47,7 +47,7 @@ const ServiceExtensionStatus = () => {
         size='small'
         clickable
       />
-    </a> 
+    </a>
   }
 
   const aggregatedServiceStatuses = services.map((service) => {
@@ -70,7 +70,7 @@ const ServiceExtensionStatus = () => {
     }
   })
 
-  return <ServiceExtensionStatusChip serviceStatuses={aggregatedServiceStatuses} />
+  return <ServiceExtensionStatusChip serviceStatuses={aggregatedServiceStatuses}/>
 }
 
 
@@ -83,12 +83,20 @@ const ServiceExtensionStatusChip = ({
     return cur.worstStatus.severity > worstStatus.severity ? cur.worstStatus : worstStatus
   }, healthStatuses.HEALTHY)
 
-  const worstServices = serviceStatuses.filter((serviceStatus) => serviceStatus.worstStatus === worstHealthStatus)
-  const serviceExtensionsStatus = `${worstServices.length} service${worstServices.length > 1 ? 's are' : ' is'}` + (
+  const worstServices = serviceStatuses.filter((serviceStatus) => {
+    if (worstHealthStatus === healthStatuses.NOT_FOUND) {
+      // Handle both `NOT_FOUND` and `HEALTHY` the same in the general status chip,
+      // but differently in the detailed status overview table
+      return serviceStatus.worstStatus.severity <= worstHealthStatus.severity
+    } else {
+      return serviceStatus.worstStatus === worstHealthStatus
+    }
+  })
+  const numServices = worstServices.length === serviceStatuses.length ? 'All' : worstServices.length
+  const serviceExtensionsStatus = `${numServices} service${worstServices.length > 1 ? 's are' : ' is'}` + (
     worstHealthStatus === healthStatuses.UNHEALTHY ? ' unhealthy' :
       (worstHealthStatus === healthStatuses.RETRIEVAL_ERROR ? ' in an erroneous status retrieval state' :
-        (worstHealthStatus === healthStatuses.CHECKING ? ' being checked...' :
-          (worstHealthStatus === healthStatuses.NOT_FOUND ? ' missing containers' : ' healthy'))))
+        (worstHealthStatus === healthStatuses.CHECKING ? ' being checked...' : ' healthy')))
 
   const tooltipContent = <Table
     padding='checkbox'
@@ -152,7 +160,7 @@ const ServiceExtensionStatusChip = ({
         clickable
       />
     </ExtraWideTooltip>
-  </a> 
+  </a>
 }
 ServiceExtensionStatusChip.displayName = 'ServiceExtensionStatusChip'
 ServiceExtensionStatusChip.propTypes = {
