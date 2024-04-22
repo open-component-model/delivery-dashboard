@@ -229,6 +229,9 @@ const InnerRouter = () => {
     get: (param) => {
       return searchParams.get(param)
     },
+    getAll: (param) => {
+      return searchParams.getAll(param)
+    },
     getDefault: (param) => {
       const defaultValues = {
         'view': tabConfig.BOM.id,
@@ -239,7 +242,7 @@ const InnerRouter = () => {
     },
     set: (params) => {
       setSearchParams(params)
-    }
+    },
   }
 
   return <SearchParamContext.Provider value={searchParamConfig}>
