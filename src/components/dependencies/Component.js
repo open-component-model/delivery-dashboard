@@ -37,7 +37,7 @@ import PublishedWithChangesIcon from '@mui/icons-material/PublishedWithChanges'
 import SearchIcon from '@mui/icons-material/Search'
 import { useSnackbar } from 'notistack'
 
-import { FeatureRegistrationContext } from '../../App'
+import { FeatureRegistrationContext, SearchParamContext } from '../../App'
 import { artefactsQueryMetadata } from './../../api'
 import { generateArtefactID } from '../../cnudie'
 import { ComponentChip } from './ComplianceChips'
@@ -220,11 +220,12 @@ const Component = React.memo(
     ocmRepo,
     isParentComponent,
   }) => {
+    const searchParamContext = React.useContext(SearchParamContext)
     const theme = useTheme()
 
     const name = trimComponentName(component.name)
 
-    const [expanded, setExpanded] = React.useState(false)
+    const [expanded, setExpanded] = React.useState(Boolean(isParentComponent && Boolean(searchParamContext.get('rootExpanded'))))
 
     let componentComplianceStatus
     if (isSummaryError) {
