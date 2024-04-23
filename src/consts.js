@@ -196,3 +196,15 @@ export const SEVERITIES = {
   BLOCKER: 'BLOCKER',
 }
 Object.freeze(SEVERITIES)
+
+export const META_RESCORING_RULES = {
+  CUSTOM_RESCORING: 'custom-rescoring',
+  ORIGINAL_SEVERITY: 'original-severity',
+}
+Object.freeze(META_RESCORING_RULES)
+
+export const META_SPRINT_NAMES = {
+  OVERDUE: 'Overdue',
+  RESOLVED: 'Resolved',
+}
+Object.freeze(META_SPRINT_NAMES)

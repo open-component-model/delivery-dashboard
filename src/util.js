@@ -10,6 +10,7 @@ import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
 import {
   COMPONENT_PATH,
   FEATURES_CFG_KEY,
+  META_SPRINT_NAMES,
   OCM_REPO_AUTO_OPTION,
   PATH_KEY,
   SEVERITIES,
@@ -193,6 +194,74 @@ export const artefactMetadatumSeverity = (artefactMetadatum) => {
     return findSeverityCfgByName({name: artefactMetadatum.data.severity})
   }
   return findSeverityCfgByName({name: artefactMetadatum.meta.severity})
+}
+
+export const findingIsResolved = (rescoring) => {
+  if (rescoring.applicable_rescorings.length === 0) return false
+  const rescoringsOrderedBySpecificity = orderRescoringsBySpecificity(rescoring.applicable_rescorings)
+  return rescoringsOrderedBySpecificity[0].data.severity === SEVERITIES.NONE
+}
+
+export const sprintNameForRescoring = (rescoring) => {
+  const now = new Date(new Date().setHours(0, 0, 0, 0))
+
+  if (findingIsResolved(rescoring))
+    return META_SPRINT_NAMES.RESOLVED
+  if (!rescoring.sprint)
+    return null
+  if (new Date(rescoring.sprint.end_date) < now)
+    return META_SPRINT_NAMES.OVERDUE
+
+  return rescoring.sprint.name
+}
+
+export const formatAndSortSprints = (sprints) => {
+  return sprints.map((sprint) => {
+    const commonSprintInfo = {
+      name: sprint.name,
+      discoveryDate: sprint.discoveryDate,
+    }
+
+    if (sprint.name === META_SPRINT_NAMES.RESOLVED) return {
+      ...commonSprintInfo,
+      displayName: sprint.name,
+      tooltip: 'Finding is already assessed',
+      color: 'success',
+    }
+
+    if (!sprint.name) return {
+      ...commonSprintInfo,
+      displayName: 'Date not found',
+      tooltip: 'Date not found, please check the sprints configuration',
+      color: 'warning',
+    }
+
+    if (sprint.name === META_SPRINT_NAMES.OVERDUE) return {
+      ...commonSprintInfo,
+      displayName: sprint.name,
+      tooltip: sprint.name,
+      color: 'blocker',
+    }
+
+    const now = new Date(new Date().setHours(0, 0, 0, 0))
+    const endDate = new Date(sprint.end_date)
+    const timeDeltaDays = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+
+    return {
+      ...commonSprintInfo,
+      displayName: timeDeltaDays <= 14 ? `In ${timeDeltaDays} Days` : endDate.toLocaleDateString(),
+      tooltip: `Sprint ${sprint.name}\nDue in ${timeDeltaDays} days on ${endDate.toLocaleDateString()}`,
+      color: 'default',
+      endDate: endDate,
+    }
+  }).sort((a, b) => {
+    if (a.name === META_SPRINT_NAMES.OVERDUE) return -1
+    if (b.name === META_SPRINT_NAMES.OVERDUE) return 1
+    if (a.name === null) return -1
+    if (b.name === null) return 1
+
+    return a.endDate - b.endDate
+  })
 }
 
 export const artefactMetadataSeverityComparator = ({
