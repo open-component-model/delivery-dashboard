@@ -9,6 +9,7 @@ import {
   Box,
   Card,
   Checkbox,
+  Chip,
   CircularProgress,
   Collapse,
   Dialog,
@@ -55,12 +56,18 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat'
 import UndoIcon from '@mui/icons-material/Undo'
 
-import { ConfigContext, FeatureRegistrationContext } from './../../App'
+import {
+  ConfigContext,
+  FeatureRegistrationContext,
+  SearchParamContext,
+} from './../../App'
 import { rescore } from './../../api'
 import {
   copyNotificationCfg,
   errorSnackbarProps,
   features,
+  META_RESCORING_RULES,
+  META_SPRINT_NAMES,
   SEVERITIES,
   TOKEN_KEY,
 } from './../../consts'
@@ -72,20 +79,21 @@ import {
   knownLabelNames,
 } from './../../ocm/model'
 import {
+  findingIsResolved,
   findSeverityCfgByName,
+  formatAndSortSprints,
   isTokenExpired,
   mostSpecificRescoring,
   normaliseObject,
   orderRescoringsBySpecificity,
   pluralise,
+  sprintNameForRescoring,
   trimLongString,
 } from './../../util'
 import CopyOnClickChip from './../util/CopyOnClickChip'
 import ErrorBoundary from './../util/ErrorBoundary'
 import ObjectTextViewer from './../util/ObjectTextViewer'
 
-
-const CUSTOM_RESCORING_RULE_NAME = 'custom-rescoring'
 
 const scopeOptions = {
   GLOBAL: 'Global',
@@ -375,7 +383,96 @@ RescoringHeader.propTypes = {
 }
 
 
-const RescoringRowLoading = () => {
+const Filtering = ({
+  selectedSprints,
+  setSelectedSprints,
+  sprints,
+}) => {
+  const searchParamContext = React.useContext(SearchParamContext)
+  const theme = useTheme()
+
+  if (sprints.length === 0) return null
+
+  // if there are any sprints selected which don't have any
+  // associated findings, remove them from the selection
+  if (selectedSprints.some((sprint) => !sprints.find((s) => sprint === s.name))) {
+    const updatedSprintSelection = selectedSprints.filter((sprint) => sprints.find((s) => sprint === s.name))
+    setSelectedSprints(updatedSprintSelection)
+    searchParamContext.update({'sprints': updatedSprintSelection})
+  }
+
+  return <>
+    <Divider sx={{ marginY: '0.8rem' }}/>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Typography>Filter by Due Date</Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+          margin: 0,
+          listStyle: 'none',
+        }}
+        component='ul'
+      >
+        {
+          sprints.map((sprint) => <li
+            key={sprint.name}
+            style={{
+              margin: theme.spacing(0.5),
+            }}
+          >
+            <Tooltip
+              title={<Typography
+                variant='inherit'
+                whiteSpace='pre-line'
+              >
+                {
+                  sprint.tooltip
+                }
+              </Typography>}
+            >
+              {
+                selectedSprints.includes(sprint.name) ? <Chip
+                  label={sprint.displayName}
+                  variant='filled'
+                  onClick={() => {
+                    const updatedSprintSelection = selectedSprints.filter((selected) => selected !== sprint.name)
+                    searchParamContext.update({'sprints': updatedSprintSelection})
+                    setSelectedSprints(updatedSprintSelection)
+                  }}
+                  color={sprint.color}
+                  size='small'
+                /> : <Chip
+                  label={sprint.displayName}
+                  variant='outlined'
+                  onClick={() => {
+                    const updatedSprintSelection = [...selectedSprints, sprint.name]
+                    searchParamContext.update({'sprints': updatedSprintSelection})
+                    setSelectedSprints(updatedSprintSelection)
+                  }}
+                  color={sprint.color}
+                  size='small'
+                />
+              }
+            </Tooltip>
+          </li>)
+        }
+      </Box>
+    </div>
+  </>
+}
+Filtering.displayName = 'Filtering'
+Filtering.propTypes = {
+  selectedSprints: PropTypes.arrayOf(PropTypes.string).isRequired,
+  setSelectedSprints: PropTypes.func.isRequired,
+  sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
+}
+
+
+const RescoringRowLoading = ({
+  sprintsIsAvailable,
+}) => {
   return <TableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
     <TableCell width='50vw'/>
     <TableCell width='100vw'>
@@ -384,6 +481,11 @@ const RescoringRowLoading = () => {
     <TableCell width='140vw'>
       <Skeleton/>
     </TableCell>
+    {
+      sprintsIsAvailable && <TableCell width='140vw'>
+        <Skeleton/>
+      </TableCell>
+    }
     <TableCell width='70vw'>
       <Skeleton/>
     </TableCell>
@@ -400,6 +502,9 @@ const RescoringRowLoading = () => {
   </TableRow>
 }
 RescoringRowLoading.displayName = 'RescoringRowLoading'
+RescoringRowLoading.propTypes = {
+  sprintsIsAvailable: PropTypes.bool.isRequired,
+}
 
 
 const FilesystemPathsInfo = ({
@@ -568,7 +673,10 @@ VulnerabilityExtraInfo.propTypes = {
 const AppliedRulesExtraInfo = ({
   matchingRules,
 }) => {
-  if (matchingRules.every((rule) => ['original-severity', 'custom-rescoring'].includes(rule))) {
+  if (matchingRules.every((rule) => [
+    META_RESCORING_RULES.ORIGINAL_SEVERITY,
+    META_RESCORING_RULES.CUSTOM_RESCORING,
+  ].includes(rule))) {
     return null
   }
 
@@ -712,6 +820,7 @@ const ApplicableRescorings = ({
   isAuthenticated,
   expanded,
   rescoringFeature,
+  sprintsIsAvailable,
 }) => {
   if (rescoring.applicable_rescorings.length === 0) {
     // if all applicable rescorings were deleted, don't show collapse anymore
@@ -764,7 +873,7 @@ const ApplicableRescorings = ({
   }
 
   return <TableRow>
-    <TableCell sx={{ padding: 0, border: 'none' }} colSpan={9}>
+    <TableCell sx={{ padding: 0, border: 'none' }} colSpan={sprintsIsAvailable ? 9 : 8}>
       <Collapse in={expanded} unmountOnExit>
         <Card sx={{ paddingY: '1rem' }}>
           <Typography sx={{ paddingLeft: '1rem' }}>Applicable Rescorings</Typography>
@@ -861,6 +970,7 @@ ApplicableRescorings.propTypes = {
   isAuthenticated: PropTypes.bool.isRequired,
   expanded: PropTypes.bool.isRequired,
   rescoringFeature: PropTypes.object,
+  sprintsIsAvailable: PropTypes.bool.isRequired,
 }
 
 
@@ -875,6 +985,7 @@ const RescoringRow = ({
   fetchComplianceSummary,
   ocmRepo,
   rescoringFeature,
+  sprints,
 }) => {
   const [expanded, setExpanded] = React.useState(false)
   const [commentDelayTimer, setCommentDelayTimer] = React.useState(null)
@@ -900,6 +1011,8 @@ const RescoringRow = ({
   const versionHasOverlength = finding.id.package_versions.reduce((hasOverlength, version) => {
     return hasOverlength || version.length > maxVersionStrLength
   }, false)
+
+  const sprintInfo = sprints.find((s) => s.name === sprintNameForRescoring(rescoring))
 
   const selectRescoring = () => {
     if (selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))) {
@@ -1029,6 +1142,27 @@ const RescoringRow = ({
           </Stack>
         }
       </TableCell>
+      {
+        sprintInfo && <TableCell align='center'>
+          <Tooltip
+            title={<Typography
+              variant='inherit'
+              whiteSpace='pre-line'
+            >
+              {
+                `${sprintInfo.tooltip}\nFirst discovered on ${sprintInfo.discoveryDate.toLocaleDateString()}`
+              }
+            </Typography>}
+          >
+            <Chip
+              label={sprintInfo.displayName}
+              variant='outlined'
+              color={sprintInfo.color}
+              size='small'
+            />
+          </Tooltip>
+        </TableCell>
+      }
       <TableCell align='right' sx={{ paddingX: 0 }}>
         <Typography variant='inherit' color={`${currentSeverityCfg.color}.main`}>
           {
@@ -1047,7 +1181,7 @@ const RescoringRow = ({
               editRescoring({
                 rescoring: rescoring,
                 severity: e.target.value,
-                matchingRules: [CUSTOM_RESCORING_RULE_NAME],
+                matchingRules: [META_RESCORING_RULES.CUSTOM_RESCORING],
               })
               if (!selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))) {
                 selectRescoring()
@@ -1077,7 +1211,7 @@ const RescoringRow = ({
             }
           </Select>
           {
-            matching_rules.includes(CUSTOM_RESCORING_RULE_NAME) && <Tooltip
+            matching_rules.includes(META_RESCORING_RULES.CUSTOM_RESCORING) && <Tooltip
               title={`Reset to ${originalSeverityProposal}`}
             >
               <IconButton
@@ -1105,7 +1239,7 @@ const RescoringRow = ({
           defaultValue={rescoring.comment}
           onChange={(e) => delayCommentUpdate(e.target.value)}
           onClick={(e) => e.stopPropagation()}
-          error={!rescoring.comment && rescoring.matching_rules.includes(CUSTOM_RESCORING_RULE_NAME)}
+          error={!rescoring.comment && rescoring.matching_rules.includes(META_RESCORING_RULES.CUSTOM_RESCORING)}
           disabled={!isAuthenticated}
           size='small'
           maxRows={4}
@@ -1134,6 +1268,7 @@ const RescoringRow = ({
       isAuthenticated={isAuthenticated}
       expanded={expanded}
       rescoringFeature={rescoringFeature}
+      sprintsIsAvailable={sprints.length > 0}
     />
   </>
 }
@@ -1149,6 +1284,7 @@ RescoringRow.propTypes = {
   fetchComplianceSummary: PropTypes.func,
   ocmRepo: PropTypes.string,
   rescoringFeature: PropTypes.object,
+  sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -1163,6 +1299,7 @@ const RescoringDiff = ({
   fetchComplianceSummary,
   ocmRepo,
   rescoringFeature,
+  sprints,
 }) => {
   const theme = useTheme()
   const context = React.useContext(ConfigContext)
@@ -1177,6 +1314,7 @@ const RescoringDiff = ({
   const orderAttributes = {
     PACKAGE: 'package',
     FINDING: 'finding',
+    SPRINT: 'sprint',
     CURRENT: 'current',
     RESCORED: 'rescored',
   }
@@ -1209,6 +1347,7 @@ const RescoringDiff = ({
         return parseInt(r.finding.cve.replace(/\D/g,'')) // sort numbers rather than strings
       }
     }
+    if (orderBy === orderAttributes.SPRINT) return (r) => r.sprint ? new Date(r.sprint.end_date) : new Date(-1)
     if (orderBy === orderAttributes.CURRENT) return (r) => findSeverityCfgByName({name: rescoringProposalSeverity(r)}).value
     if (orderBy === orderAttributes.RESCORED) return (r) => findSeverityCfgByName({name: r.severity}).value
   }
@@ -1316,6 +1455,17 @@ const RescoringDiff = ({
                 }
               </TableSortLabel>
             </TableCell>
+            {
+              sprints.length > 0 && <TableCell width='140vw' align='center' sx={{ background: headerBackground }}>
+                <TableSortLabel
+                  onClick={() => handleSort(orderAttributes.SPRINT)}
+                  active={orderBy === orderAttributes.SPRINT}
+                  direction={order}
+                >
+                  Due Date
+                </TableSortLabel>
+              </TableCell>
+            }
             <TableCell width='70vw' align='right' sx={{ background: headerBackground }}>
               <TableSortLabel
                 onClick={() => handleSort(orderAttributes.CURRENT)}
@@ -1345,6 +1495,7 @@ const RescoringDiff = ({
           {
             !rescorings ? [...Array(loadingRowsCount).keys()].map((e) => <RescoringRowLoading
               key={e}
+              sprintsIsAvailable={sprints.length > 0}
             />) : sortData([...rescorings], getComparator())
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((rescoring, idx) => <RescoringRow
@@ -1359,6 +1510,7 @@ const RescoringDiff = ({
                 fetchComplianceSummary={fetchComplianceSummary}
                 ocmRepo={ocmRepo}
                 rescoringFeature={rescoringFeature}
+                sprints={sprints}
               />)
           }
         </TableBody>
@@ -1387,6 +1539,7 @@ RescoringDiff.propTypes = {
   fetchComplianceSummary: PropTypes.func,
   ocmRepo: PropTypes.string,
   rescoringFeature: PropTypes.object,
+  sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -1403,6 +1556,7 @@ const RescoringDiffGroup = ({
   defaultExpanded,
   title,
   rescoringFeature,
+  sprints,
 }) => {
   const [expanded, setExpanded] = React.useState(defaultExpanded)
 
@@ -1426,6 +1580,7 @@ const RescoringDiffGroup = ({
         fetchComplianceSummary={fetchComplianceSummary}
         ocmRepo={ocmRepo}
         rescoringFeature={rescoringFeature}
+        sprints={sprints}
       />
     </AccordionDetails>
   </Accordion>
@@ -1444,6 +1599,7 @@ RescoringDiffGroup.propTypes = {
   defaultExpanded: PropTypes.bool.isRequired,
   title: PropTypes.string.isRequired,
   rescoringFeature: PropTypes.object,
+  sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -1454,6 +1610,7 @@ const Rescoring = ({
   cveRescoringRuleSet,
   rescorings,
   setRescorings,
+  setFilteredRescorings,
   selectedRescorings,
   setSelectedRescorings,
   editRescoring,
@@ -1462,6 +1619,7 @@ const Rescoring = ({
   fetchComplianceData,
   fetchComplianceSummary,
   rescoringFeature,
+  sprints,
 }) => {
   const [isLoading, setIsLoading] = React.useState(false)
   const [isError, setIsError] = React.useState(false)
@@ -1505,7 +1663,9 @@ const Rescoring = ({
           setProgress(finishedRequestCount / (requestCount / 100))
           return rescoringProposals
         }))
-        setRescorings(rescoringProposals.reduce((prev, rescoringProposal) => [...prev, ...rescoringProposal], []))
+        const updatedRescorings = rescoringProposals.reduce((prev, rescoringProposal) => [...prev, ...rescoringProposal], [])
+        setRescorings(updatedRescorings)
+        setFilteredRescorings(updatedRescorings)
       } catch (error) {
         enqueueSnackbar(
           'Rescoring could not be fetched',
@@ -1522,7 +1682,7 @@ const Rescoring = ({
       setProgress(0)
     }
     fetchRescorings(ocmNodes)
-  }, [ocmNodes, type, rescorings, setRescorings, cveRescoringRuleSet, isLoading, setIsLoading, isError, setIsError, setProgress, setShowProgress])
+  }, [ocmNodes, type, rescorings, setRescorings, setFilteredRescorings, cveRescoringRuleSet, isLoading, setIsLoading, isError, setIsError, setProgress, setShowProgress])
 
   if (isError) return <Box display='flex' justifyContent='center'>
     <Typography display='flex' justifyContent='center' variant='h6'>
@@ -1548,11 +1708,7 @@ const Rescoring = ({
     const rescoringsOrderedBySpecificity = orderRescoringsBySpecificity(rescoring.applicable_rescorings)
     return rescoringsOrderedBySpecificity[0].data.severity !== SEVERITIES.NONE
   })
-  const resolvedFindings = rescorings?.filter((rescoring) => {
-    if (rescoring.applicable_rescorings.length === 0) return false
-    const rescoringsOrderedBySpecificity = orderRescoringsBySpecificity(rescoring.applicable_rescorings)
-    return rescoringsOrderedBySpecificity[0].data.severity === SEVERITIES.NONE
-  })
+  const resolvedFindings = rescorings?.filter(findingIsResolved)
 
   const title = findTypedefByName({name: type}).friendlyName
 
@@ -1574,6 +1730,7 @@ const Rescoring = ({
           : pluralise(title)
         }
         rescoringFeature={rescoringFeature}
+        sprints={sprints}
       />
     }
     {
@@ -1590,6 +1747,7 @@ const Rescoring = ({
         defaultExpanded={false}
         title={`Rescored ${pluralise(title, rescoredFindings.length)} (${rescoredFindings.length})`}
         rescoringFeature={rescoringFeature}
+        sprints={sprints}
       />
     }
     {
@@ -1606,6 +1764,7 @@ const Rescoring = ({
         defaultExpanded={false}
         title={`Resolved ${pluralise(title, resolvedFindings.length)} (${resolvedFindings.length})`}
         rescoringFeature={rescoringFeature}
+        sprints={sprints}
       />
     }
   </Stack>
@@ -1618,6 +1777,7 @@ Rescoring.propTypes = {
   cveRescoringRuleSet: PropTypes.object,
   rescorings: PropTypes.array,
   setRescorings: PropTypes.func.isRequired,
+  setFilteredRescorings: PropTypes.func.isRequired,
   selectedRescorings: PropTypes.array.isRequired,
   setSelectedRescorings: PropTypes.func.isRequired,
   editRescoring: PropTypes.func.isRequired,
@@ -1626,6 +1786,7 @@ Rescoring.propTypes = {
   fetchComplianceData: PropTypes.func.isRequired,
   fetchComplianceSummary: PropTypes.func,
   rescoringFeature: PropTypes.object,
+  sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -1707,7 +1868,7 @@ const Rescore = ({
   </Button>
 
   const customRescoringsWithoutComment = rescorings.filter((rescoring) => {
-    return rescoring.matching_rules.includes(CUSTOM_RESCORING_RULE_NAME) && (!rescoring.comment)
+    return rescoring.matching_rules.includes(META_RESCORING_RULES.CUSTOM_RESCORING) && (!rescoring.comment)
   })
 
   if (customRescoringsWithoutComment.length > 0) return <Tooltip
@@ -1840,12 +2001,20 @@ const BDBARescoringModal = ({
   const [openInput, setOpenInput] = React.useState(false)
 
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
+  const searchParamContext = React.useContext(SearchParamContext)
   const [rescoringFeature, setRescoringFeature] = React.useState()
   const [cveRescoringRuleSet, setCveRescoringRuleSet] = React.useState()
   const [rescorings, setRescorings] = React.useState()
+  const [filteredRescorings, setFilteredRescorings] = React.useState()
   const [selectedRescorings, setSelectedRescorings] = React.useState([])
   const [progress, setProgress] = React.useState(0)
   const [showProgress, setShowProgress] = React.useState(false)
+  const [sprints, setSprints] = React.useState([])
+  const [selectedSprints, setSelectedSprints] = React.useState(searchParamContext.getAll('sprints').map((sprint) => {
+    // since url parameters are interpreted as string, parse it to null again
+    if (sprint === 'null') return null
+    return sprint
+  }) ?? [])
 
   const [scope, setScope] = React.useState(scopeOptions.ARTEFACT)
 
@@ -1904,18 +2073,54 @@ const BDBARescoringModal = ({
     setCveRescoringRuleSet(rescoringFeature.rescoring_rule_sets[0])
   }, [rescoringFeature, cveRescoringRuleSet])
 
+  React.useEffect(() => {
+    if (!rescorings) return
+
+    if (!rescorings.some((rescoring) => rescoring.sprint)) {
+      setSprints([])
+      return
+    }
+
+    // get unique sprints by name if any
+    setSprints(formatAndSortSprints(rescorings ? [...new Map(rescorings.map((rescoring) => {
+      const sprintName = sprintNameForRescoring(rescoring)
+      return [
+        sprintName,
+        {
+          ...(rescoring.sprint ?? {}),
+          name: sprintName,
+          discoveryDate: new Date(rescoring.discovery_date),
+        },
+      ]
+    })).values()]: []))
+  }, [rescorings, setSprints])
+
+  React.useEffect(() => {
+    if (!rescorings) return
+
+    if (selectedSprints.length === 0) {
+      setFilteredRescorings(rescorings)
+      return
+    }
+
+    setFilteredRescorings(rescorings.filter((rescoring) => {
+      const sprintName = sprintNameForRescoring(rescoring)
+      return selectedSprints.some((sprint) => sprintName === sprint)
+    }))
+  }, [rescorings, selectedSprints])
+
   const closeInput = (e) => {
     if (openInput) setOpenInput(false)
     e.stopPropagation() // stop interaction with background
   }
 
-  const filteredRescorings = rescorings?.filter((rescoring) => {
+  const allowedRescorings = filteredRescorings?.filter((rescoring) => {
     return (
       selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))
       && rescoring.severity !== rescoringProposalSeverity(rescoring)
     )
   })
-  const filteredOutRescoringsLength = rescorings ? selectedRescorings.length - filteredRescorings.length : 0
+  const filteredOutRescoringsLength = filteredRescorings ? selectedRescorings.length - allowedRescorings.length : 0
 
   return <Dialog
     open
@@ -1965,6 +2170,13 @@ const BDBARescoringModal = ({
         </Grid>
         <Grid item xs={1}/>
       </Grid>
+      <Grid item xs={12}>
+        <Filtering
+          selectedSprints={selectedSprints}
+          setSelectedSprints={setSelectedSprints}
+          sprints={sprints.filter((sprint) => sprint.name !== META_SPRINT_NAMES.RESOLVED)}
+        />
+      </Grid>
     </DialogTitle>
     <DialogContent
       sx={{
@@ -1985,8 +2197,9 @@ const BDBARescoringModal = ({
           ocmRepo={ocmRepo}
           type={type}
           cveRescoringRuleSet={cveRescoringRuleSet}
-          rescorings={rescorings}
+          rescorings={filteredRescorings}
           setRescorings={setRescorings}
+          setFilteredRescorings={setFilteredRescorings}
           selectedRescorings={selectedRescorings}
           setSelectedRescorings={setSelectedRescorings}
           editRescoring={editRescoring}
@@ -1995,6 +2208,7 @@ const BDBARescoringModal = ({
           fetchComplianceData={fetchComplianceData}
           fetchComplianceSummary={fetchComplianceSummary}
           rescoringFeature={rescoringFeature}
+          sprints={sprints}
         />
       </ErrorBoundary>
     </DialogContent>
@@ -2047,7 +2261,7 @@ const BDBARescoringModal = ({
         <Grid item xs={4}>
           <Box display='flex' justifyContent='center'>
             <Rescore
-              rescorings={filteredRescorings}
+              rescorings={allowedRescorings}
               type={type}
               handleClose={handleClose}
               setShowProgress={setShowProgress}
@@ -2062,7 +2276,7 @@ const BDBARescoringModal = ({
             filteredOutRescoringsLength > 0 && <Tooltip
               title={
                 `${filteredOutRescoringsLength} ${pluralise('rescoring', filteredOutRescoringsLength, 'is', 'are')}
-                filtered out because the severity did not change`
+                filtered out or the severity did not change`
               }
             >
               <InfoOutlinedIcon sx={{ height: '1rem' }}/>
