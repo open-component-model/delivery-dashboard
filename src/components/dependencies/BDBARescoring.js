@@ -1917,7 +1917,7 @@ const BDBARescoringModal = ({
     onClose={handleClose}
     maxWidth={false}
     fullWidth
-    PaperProps={{ sx: { width: '75%', height: '95%' } }}
+    PaperProps={{ sx: { width: '85%', height: '95%' } }}
     onClick={(e) => {
       handleClose()
       e.stopPropagation()
