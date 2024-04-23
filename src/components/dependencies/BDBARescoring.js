@@ -396,9 +396,6 @@ const RescoringRowLoading = () => {
     <TableCell width='220vw'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='150vw'>
-      <Skeleton/>
-    </TableCell>
     <TableCell width='50vw'/>
   </TableRow>
 }
@@ -565,6 +562,44 @@ VulnerabilityExtraInfo.displayName = 'VulnerabilityExtraInfo'
 VulnerabilityExtraInfo.propTypes = {
   vector: PropTypes.string.isRequired,
   filesystemPaths: PropTypes.arrayOf(PropTypes.object).isRequired,
+}
+
+
+const AppliedRulesExtraInfo = ({
+  matchingRules,
+}) => {
+  if (matchingRules.every((rule) => ['original-severity', 'custom-rescoring'].includes(rule))) {
+    return null
+  }
+
+  return <Tooltip
+    title={
+      <Stack onClick={(e) => e.stopPropagation()}>
+        <Typography
+          variant='inherit'
+          sx={{
+            fontWeight: 'bold',
+          }}
+          marginBottom='0.5rem'
+        >
+          Applied Rules
+        </Typography>
+        {
+          matchingRules.map((rule) => <Typography key={rule} variant='inherit'>
+            {
+              rule
+            }
+          </Typography>)
+        }
+      </Stack>
+    }
+  >
+    <InfoOutlinedIcon sx={{ height: '1rem' }}/>
+  </Tooltip>
+}
+AppliedRulesExtraInfo.displayName = 'AppliedRulesExtraInfo'
+AppliedRulesExtraInfo.propTypes = {
+  matchingRules: PropTypes.arrayOf(PropTypes.string).isRequired,
 }
 
 
@@ -994,7 +1029,7 @@ const RescoringRow = ({
           </Stack>
         }
       </TableCell>
-      <TableCell align='right'>
+      <TableCell align='right' sx={{ paddingX: 0 }}>
         <Typography variant='inherit' color={`${currentSeverityCfg.color}.main`}>
           {
             currentSeverity
@@ -1004,8 +1039,8 @@ const RescoringRow = ({
       <TableCell align='center'>
         <TrendingFlatIcon/>
       </TableCell>
-      <TableCell>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <TableCell sx={{ paddingX: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Select
             value={severity}
             onChange={(e) => {
@@ -1062,6 +1097,7 @@ const RescoringRow = ({
               </IconButton>
             </Tooltip>
           }
+          <AppliedRulesExtraInfo matchingRules={matching_rules}/>
         </div>
       </TableCell>
       <TableCell>
@@ -1081,17 +1117,6 @@ const RescoringRow = ({
           fullWidth
           multiline
         />
-      </TableCell>
-      <TableCell align='right'>
-        <Stack>
-          {
-            matching_rules.map((rule_name) => <Typography key={rule_name} variant='inherit'>
-              {
-                rule_name
-              }
-            </Typography>)
-          }
-        </Stack>
       </TableCell>
       <TableCell>
         {
@@ -1154,7 +1179,6 @@ const RescoringDiff = ({
     FINDING: 'finding',
     CURRENT: 'current',
     RESCORED: 'rescored',
-    RULES: 'rules',
   }
 
   const [order, setOrder] = React.useState(orderDirections.ASCENDING)
@@ -1187,7 +1211,6 @@ const RescoringDiff = ({
     }
     if (orderBy === orderAttributes.CURRENT) return (r) => findSeverityCfgByName({name: rescoringProposalSeverity(r)}).value
     if (orderBy === orderAttributes.RESCORED) return (r) => findSeverityCfgByName({name: r.severity}).value
-    if (orderBy === orderAttributes.RULES) return (r) => r.matching_rules.toString()
   }
 
   const descendingComparator = (l, r) => {
@@ -1314,35 +1337,6 @@ const RescoringDiff = ({
             </TableCell>
             <TableCell width='220vw' sx={{ background: headerBackground }}>
               Comment
-            </TableCell>
-            <TableCell width='150vw' align='right' sx={{ background: headerBackground }}>
-              <TableSortLabel
-                onClick={() => handleSort(orderAttributes.RULES)}
-                active={orderBy === orderAttributes.RULES}
-                direction={order}
-              >
-                {
-                  rescoringFeature?.cve_categorisation_label_url ? <Tooltip
-                    title={<Typography variant='inherit'>
-                      See <Link
-                        href={rescoringFeature.cve_categorisation_label_url}
-                        target='_blank'
-                        sx={{
-                          color: 'orange'
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {' docs '}
-                      </Link> for more information about rescoring rules.
-                    </Typography>}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <Typography variant='inherit'>Applied Rules</Typography>
-                      <HelpOutlineIcon sx={{ height: '1rem' }}/>
-                    </div>
-                  </Tooltip> : <Typography variant='inherit'>Applied Rules</Typography>
-                }
-              </TableSortLabel>
             </TableCell>
             <TableCell width='50vw' sx={{ background: headerBackground }}/>
           </TableRow>
