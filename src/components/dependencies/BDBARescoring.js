@@ -842,6 +842,7 @@ const RescoringRow = ({
   rescoringFeature,
 }) => {
   const [expanded, setExpanded] = React.useState(false)
+  const [commentDelayTimer, setCommentDelayTimer] = React.useState(null)
 
   const {
     finding,
@@ -874,6 +875,21 @@ const RescoringRow = ({
       ...prev,
       rescoring,
     ])
+  }
+
+  const delayCommentUpdate = (comment) => {
+    if (commentDelayTimer) {
+      clearTimeout(commentDelayTimer)
+      setCommentDelayTimer(null)
+    }
+    setCommentDelayTimer(
+      setTimeout(() => {
+        editRescoring({
+          rescoring,
+          comment,
+        })
+      }, 300)
+    )
   }
 
   return <>
@@ -1051,12 +1067,7 @@ const RescoringRow = ({
       <TableCell>
         <TextField
           defaultValue={rescoring.comment}
-          onChange={(e) => {
-            editRescoring({
-              rescoring: rescoring,
-              comment: e.target.value,
-            })
-          }}
+          onChange={(e) => delayCommentUpdate(e.target.value)}
           onClick={(e) => e.stopPropagation()}
           error={!rescoring.comment && rescoring.matching_rules.includes(CUSTOM_RESCORING_RULE_NAME)}
           disabled={!isAuthenticated}
