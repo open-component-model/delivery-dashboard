@@ -401,6 +401,15 @@ const Filtering = ({
     searchParamContext.update({'sprints': updatedSprintSelection})
   }
 
+  const onChipToggle = (sprint) => {
+    const updatedSprintSelection = selectedSprints.includes(sprint.name)
+      ? selectedSprints.filter((selected) => selected !== sprint.name)
+      : [...selectedSprints, sprint.name]
+
+    searchParamContext.update({'sprints': updatedSprintSelection})
+    setSelectedSprints(updatedSprintSelection)
+  }
+
   return <>
     <Divider sx={{ marginY: '0.8rem' }}/>
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -419,7 +428,10 @@ const Filtering = ({
           sprints.map((sprint) => <li
             key={sprint.name}
             style={{
-              margin: theme.spacing(0.5),
+              marginTop: theme.spacing(0.5),
+              marginBottom: theme.spacing(0.5),
+              marginRight: theme.spacing(1),
+              marginLeft: theme.spacing(1),
             }}
           >
             <Tooltip
@@ -432,29 +444,35 @@ const Filtering = ({
                 }
               </Typography>}
             >
-              {
-                selectedSprints.includes(sprint.name) ? <Chip
-                  label={sprint.displayName}
-                  variant='filled'
-                  onClick={() => {
-                    const updatedSprintSelection = selectedSprints.filter((selected) => selected !== sprint.name)
-                    searchParamContext.update({'sprints': updatedSprintSelection})
-                    setSelectedSprints(updatedSprintSelection)
-                  }}
-                  color={sprint.color}
-                  size='small'
-                /> : <Chip
-                  label={sprint.displayName}
-                  variant='outlined'
-                  onClick={() => {
-                    const updatedSprintSelection = [...selectedSprints, sprint.name]
-                    searchParamContext.update({'sprints': updatedSprintSelection})
-                    setSelectedSprints(updatedSprintSelection)
-                  }}
-                  color={sprint.color}
-                  size='small'
-                />
-              }
+              <Chip
+                label={sprint.displayName}
+                color={sprint.color}
+                size='small'
+                variant={selectedSprints.includes(sprint.name) ? 'filled' : 'outlined'}
+                onClick={() => onChipToggle(sprint)}
+                // onDelete has to be set to show deleteIcon, just mimic behaviour of onClick event
+                onDelete={() => onChipToggle(sprint)}
+                // deleteIcon property is used to display number of findings in the sprint (-> not for deletion)
+                deleteIcon={<div style={{
+                  background: theme.bomButton.color === 'white' ? 'black' : 'white',
+                  marginBottom: '1rem',
+                  marginRight: '-0.5rem',
+                  borderRadius: '50%',
+                  width: '1.3rem',
+                  height: '1.3rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderStyle: 'solid',
+                  borderWidth: '0.1rem',
+                }}>
+                  <Typography variant='caption' color={theme.bomButton.color}>
+                    {
+                      sprint.count
+                    }
+                  </Typography>
+                </div>}
+              />
             </Tooltip>
           </li>)
         }
@@ -2090,6 +2108,7 @@ const BDBARescoringModal = ({
           ...(rescoring.sprint ?? {}),
           name: sprintName,
           discoveryDate: new Date(rescoring.discovery_date),
+          count: rescorings.filter((r) => sprintName === sprintNameForRescoring(r)).length,
         },
       ]
     })).values()]: []))
