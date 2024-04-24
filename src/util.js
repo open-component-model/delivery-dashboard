@@ -220,6 +220,7 @@ export const formatAndSortSprints = (sprints) => {
     const commonSprintInfo = {
       name: sprint.name,
       discoveryDate: sprint.discoveryDate,
+      count: sprint.count,
     }
 
     if (sprint.name === META_SPRINT_NAMES.RESOLVED) return {
@@ -231,8 +232,8 @@ export const formatAndSortSprints = (sprints) => {
 
     if (!sprint.name) return {
       ...commonSprintInfo,
-      displayName: 'Date not found',
-      tooltip: 'Date not found, please check the sprints configuration',
+      displayName: 'No date found',
+      tooltip: 'No date found, please check the sprints configuration',
       color: 'warning',
     }
 
