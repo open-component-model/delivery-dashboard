@@ -1053,10 +1053,15 @@ const RescoringRow = ({
   const maxProcessingDays = scanConfig?.config.issueReplicator?.max_processing_days
   const currentDays = severityToDays(currentSeverity, maxProcessingDays)
   const rescoredDays = severityToDays(severity, maxProcessingDays)
+  const diffDays = rescoredDays !== null && currentDays !== null && currentDays !== rescoredDays
+    ? `${rescoredDays - currentDays >= 0 ? '+' : ''}${rescoredDays - currentDays} days`
+    : null
 
-  const newProccesingDays = maxProcessingDays && currentDays !== null && rescoredDays !== null && currentDays !== rescoredDays
-    ? <Typography variant='inherit'>{`${rescoredDays - currentDays >= 0 ? '+' : ''}${rescoredDays - currentDays} days`}</Typography>
-    : <Typography variant='inherit' visibility='hidden'>Dummy</Typography>
+  const newProccesingDays = diffDays ? <Tooltip
+    title={`Rescoring to ${severity} will modify the due date by ${diffDays}`}
+  >
+    <Typography variant='inherit'>{diffDays}</Typography>
+  </Tooltip> : <Typography variant='inherit' visibility='hidden'>Dummy</Typography>
 
   const selectRescoring = () => {
     if (selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))) {
