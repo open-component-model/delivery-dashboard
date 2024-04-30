@@ -634,6 +634,7 @@ const BDBACell = ({
         handleClose={handleRescoringClose}
         fetchComplianceData={fetchComplianceData}
         fetchComplianceSummary={fetchComplianceSummary}
+        scanConfig={scanConfig}
       />
     }
     <Tooltip

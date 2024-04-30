@@ -40,7 +40,7 @@ import { useSnackbar } from 'notistack'
 import { useTheme } from '@emotion/react'
 
 import { artefactsQueryMetadata } from '../../api'
-import { useFetchBom } from '../../api/useFetch'
+import { useFetchBom, useFetchScanConfigurations } from '../../api/useFetch'
 import {
   artefactMetadataTypes,
   findTypedefByName,
@@ -862,6 +862,7 @@ const Artefacts = ({
   const [artefactMetadata, setArtefactMetadata] = React.useState()
   const [isLoading, setIsLoading] = React.useState(true)
   const [isError, setIsError] = React.useState(false)
+  const [scanConfigs] = useFetchScanConfigurations()
 
   const fetchQueryMetadata = React.useCallback(async () => {
     try {
@@ -947,6 +948,7 @@ const Artefacts = ({
         type={type}
         handleClose={() => setMountRescoring(false)}
         fetchComplianceData={fetchQueryMetadata}
+        scanConfig={scanConfigs?.length === 1 ? scanConfigs[0] : null}
       />
     }
     <Header

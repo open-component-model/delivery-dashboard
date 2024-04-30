@@ -1010,6 +1010,7 @@ const RescoringRow = ({
   ocmRepo,
   rescoringFeature,
   sprints,
+  scanConfig,
 }) => {
   const [expanded, setExpanded] = React.useState(false)
   const [commentDelayTimer, setCommentDelayTimer] = React.useState(null)
@@ -1037,6 +1038,25 @@ const RescoringRow = ({
   }, false)
 
   const sprintInfo = sprints.find((s) => s.name === sprintNameForRescoring(rescoring))
+
+  const severityToDays = (severity, maxProcessingDays) => {
+    const severityLowerCase = severity.toLowerCase()
+    if (!maxProcessingDays)
+      return null
+    if (severityLowerCase in maxProcessingDays)
+      return maxProcessingDays[severityLowerCase]
+    if (severityLowerCase === SEVERITIES.CRITICAL.toLowerCase())
+      return maxProcessingDays.very_high_or_greater
+    return null
+  }
+
+  const maxProcessingDays = scanConfig?.config.issueReplicator?.max_processing_days
+  const currentDays = severityToDays(currentSeverity, maxProcessingDays)
+  const rescoredDays = severityToDays(severity, maxProcessingDays)
+
+  const newProccesingDays = maxProcessingDays && currentDays !== null && rescoredDays !== null && currentDays !== rescoredDays
+    ? <Typography variant='inherit'>{`${rescoredDays - currentDays >= 0 ? '+' : ''}${rescoredDays - currentDays} days`}</Typography>
+    : <Typography variant='inherit' visibility='hidden'>Dummy</Typography>
 
   const selectRescoring = () => {
     if (selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))) {
@@ -1199,41 +1219,48 @@ const RescoringRow = ({
       </TableCell>
       <TableCell sx={{ paddingX: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Select
-            value={severity}
-            onChange={(e) => {
-              editRescoring({
-                rescoring: rescoring,
-                severity: e.target.value,
-                matchingRules: [META_RESCORING_RULES.CUSTOM_RESCORING],
-              })
-              if (!selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))) {
-                selectRescoring()
+          <div>
+            <Typography variant='inherit' visibility='hidden'>Dummy</Typography>
+            <Select
+              value={severity}
+              onChange={(e) => {
+                editRescoring({
+                  rescoring: rescoring,
+                  severity: e.target.value,
+                  matchingRules: [META_RESCORING_RULES.CUSTOM_RESCORING],
+                })
+                if (!selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))) {
+                  selectRescoring()
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+              variant='standard'
+              disabled={!isAuthenticated}
+              sx={{ marginY: '0.5rem' }}
+            >
+              {
+                [
+                  findSeverityCfgByName({name: SEVERITIES.NONE}),
+                  findSeverityCfgByName({name: SEVERITIES.LOW}),
+                  findSeverityCfgByName({name: SEVERITIES.MEDIUM}),
+                  findSeverityCfgByName({name: SEVERITIES.HIGH}),
+                  findSeverityCfgByName({name: SEVERITIES.CRITICAL}),
+                  findSeverityCfgByName({name: SEVERITIES.BLOCKER}),
+                ].map((cfg) => {
+                  return <MenuItem key={cfg.name} value={cfg.name}>
+                    <Typography color={`${cfg.color}.main`} variant='body2'>
+                      {
+                        cfg.name
+                      }
+                    </Typography>
+                  </MenuItem>
+                })
               }
-            }}
-            onClick={(e) => e.stopPropagation()}
-            variant='standard'
-            disabled={!isAuthenticated}
-          >
+            </Select>
             {
-              [
-                findSeverityCfgByName({name: SEVERITIES.NONE}),
-                findSeverityCfgByName({name: SEVERITIES.LOW}),
-                findSeverityCfgByName({name: SEVERITIES.MEDIUM}),
-                findSeverityCfgByName({name: SEVERITIES.HIGH}),
-                findSeverityCfgByName({name: SEVERITIES.CRITICAL}),
-                findSeverityCfgByName({name: SEVERITIES.BLOCKER}),
-              ].map((cfg) => {
-                return <MenuItem key={cfg.name} value={cfg.name}>
-                  <Typography color={`${cfg.color}.main`} variant='body2'>
-                    {
-                      cfg.name
-                    }
-                  </Typography>
-                </MenuItem>
-              })
+              newProccesingDays
             }
-          </Select>
+          </div>
           {
             matching_rules.includes(META_RESCORING_RULES.CUSTOM_RESCORING) && <Tooltip
               title={`Reset to ${originalSeverityProposal}`}
@@ -1309,6 +1336,7 @@ RescoringRow.propTypes = {
   ocmRepo: PropTypes.string,
   rescoringFeature: PropTypes.object,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
+  scanConfig: PropTypes.object,
 }
 
 
@@ -1324,6 +1352,7 @@ const RescoringDiff = ({
   ocmRepo,
   rescoringFeature,
   sprints,
+  scanConfig,
 }) => {
   const theme = useTheme()
   const context = React.useContext(ConfigContext)
@@ -1535,6 +1564,7 @@ const RescoringDiff = ({
                 ocmRepo={ocmRepo}
                 rescoringFeature={rescoringFeature}
                 sprints={sprints}
+                scanConfig={scanConfig}
               />)
           }
         </TableBody>
@@ -1564,6 +1594,7 @@ RescoringDiff.propTypes = {
   ocmRepo: PropTypes.string,
   rescoringFeature: PropTypes.object,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
+  scanConfig: PropTypes.object,
 }
 
 
@@ -1581,6 +1612,7 @@ const RescoringDiffGroup = ({
   title,
   rescoringFeature,
   sprints,
+  scanConfig,
 }) => {
   const [expanded, setExpanded] = React.useState(defaultExpanded)
 
@@ -1605,6 +1637,7 @@ const RescoringDiffGroup = ({
         ocmRepo={ocmRepo}
         rescoringFeature={rescoringFeature}
         sprints={sprints}
+        scanConfig={scanConfig}
       />
     </AccordionDetails>
   </Accordion>
@@ -1624,6 +1657,7 @@ RescoringDiffGroup.propTypes = {
   title: PropTypes.string.isRequired,
   rescoringFeature: PropTypes.object,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
+  scanConfig: PropTypes.object,
 }
 
 
@@ -1644,6 +1678,7 @@ const Rescoring = ({
   fetchComplianceSummary,
   rescoringFeature,
   sprints,
+  scanConfig,
 }) => {
   const [isLoading, setIsLoading] = React.useState(false)
   const [isError, setIsError] = React.useState(false)
@@ -1755,6 +1790,7 @@ const Rescoring = ({
         }
         rescoringFeature={rescoringFeature}
         sprints={sprints}
+        scanConfig={scanConfig}
       />
     }
     {
@@ -1772,6 +1808,7 @@ const Rescoring = ({
         title={`Rescored ${pluralise(title, rescoredFindings.length)} (${rescoredFindings.length})`}
         rescoringFeature={rescoringFeature}
         sprints={sprints}
+        scanConfig={scanConfig}
       />
     }
     {
@@ -1789,6 +1826,7 @@ const Rescoring = ({
         title={`Resolved ${pluralise(title, resolvedFindings.length)} (${resolvedFindings.length})`}
         rescoringFeature={rescoringFeature}
         sprints={sprints}
+        scanConfig={scanConfig}
       />
     }
   </Stack>
@@ -1811,6 +1849,7 @@ Rescoring.propTypes = {
   fetchComplianceSummary: PropTypes.func,
   rescoringFeature: PropTypes.object,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
+  scanConfig: PropTypes.object,
 }
 
 
@@ -2021,6 +2060,7 @@ const BDBARescoringModal = ({
   handleClose,
   fetchComplianceData,
   fetchComplianceSummary,
+  scanConfig,
 }) => {
   const [openInput, setOpenInput] = React.useState(false)
 
@@ -2234,6 +2274,7 @@ const BDBARescoringModal = ({
           fetchComplianceSummary={fetchComplianceSummary}
           rescoringFeature={rescoringFeature}
           sprints={sprints}
+          scanConfig={scanConfig}
         />
       </ErrorBoundary>
     </DialogContent>
@@ -2332,6 +2373,7 @@ BDBARescoringModal.propTypes = {
   handleClose: PropTypes.func.isRequired,
   fetchComplianceData: PropTypes.func.isRequired,
   fetchComplianceSummary: PropTypes.func,
+  scanConfig: PropTypes.object,
 }
 
 
