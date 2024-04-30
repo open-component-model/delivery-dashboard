@@ -92,6 +92,7 @@ import {
 } from './../../util'
 import CopyOnClickChip from './../util/CopyOnClickChip'
 import ErrorBoundary from './../util/ErrorBoundary'
+import ExtraWideTooltip from './../util/ExtraWideTooltip'
 import ObjectTextViewer from './../util/ObjectTextViewer'
 
 
@@ -539,14 +540,15 @@ const FilesystemPathsInfo = ({
       Filesystem Paths
     </Typography>
     {
-      filesystemPaths.map((filesystemPath, idx) => <React.Fragment key={filesystemPath.digest}>
+      filesystemPaths.map((filesystemPath, idx) => <React.Fragment key={`${filesystemPath.digest}${idx}`}>
         {
           idx !== 0 && <Divider sx={{ marginY: '0.5rem' }}/>
         }
-        <Typography variant='inherit' whiteSpace='pre-line'>
+        <Typography variant='inherit' whiteSpace='pre-wrap'>
           {
-            `Path: ${filesystemPath.path}
-            Digest: ${filesystemPath.digest}`
+            `Digest: ${filesystemPath.digest}\nPath: ${filesystemPath.path.map((pathEntry, idx) => {
+              return `\n${'   '.repeat(idx)}- ${pathEntry.path} (${pathEntry.type})`
+            }).join('')}`
           }
         </Typography>
       </React.Fragment>)
@@ -562,11 +564,15 @@ FilesystemPathsInfo.propTypes = {
 const LicenseExtraInfo = ({
   filesystemPaths,
 }) => {
-  return filesystemPaths.length > 0 && <Tooltip
-    title={<FilesystemPathsInfo filesystemPaths={filesystemPaths}/>}
+  return filesystemPaths.length > 0 && <ExtraWideTooltip
+    title={
+      <div style={{ overflowY: 'auto', maxHeight: '15rem' }}>
+        <FilesystemPathsInfo filesystemPaths={filesystemPaths}/>
+      </div>
+    }
   >
     <InfoOutlinedIcon sx={{ height: '1rem' }}/>
-  </Tooltip>
+  </ExtraWideTooltip>
 }
 LicenseExtraInfo.displayName = 'LicenseExtraInfo'
 LicenseExtraInfo.propTypes = {
@@ -647,9 +653,9 @@ const VulnerabilityExtraInfo = ({
   }
   Object.freeze(details)
 
-  return <Tooltip
+  return <ExtraWideTooltip
     title={
-      <Stack onClick={(e) => e.stopPropagation()}>
+      <div style={{ overflowY: 'auto', maxHeight: '15rem' }}>
         {
           filesystemPaths.length > 0 && <>
             <FilesystemPathsInfo filesystemPaths={filesystemPaths}/>
@@ -675,11 +681,11 @@ const VulnerabilityExtraInfo = ({
             </Typography>
           })
         }
-      </Stack>
+      </div>
     }
   >
     <InfoOutlinedIcon sx={{ height: '1rem' }}/>
-  </Tooltip>
+  </ExtraWideTooltip>
 }
 VulnerabilityExtraInfo.displayName = 'VulnerabilityExtraInfo'
 VulnerabilityExtraInfo.propTypes = {
