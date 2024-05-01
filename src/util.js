@@ -219,7 +219,6 @@ export const formatAndSortSprints = (sprints) => {
   return sprints.map((sprint) => {
     const commonSprintInfo = {
       name: sprint.name,
-      discoveryDate: sprint.discoveryDate,
       count: sprint.count,
     }
 

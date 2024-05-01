@@ -797,7 +797,7 @@ const ApplicableRescoringsRow = ({
         }
       </Typography>
     </TableCell>
-    <TableCell align='center'>{applicableRescoring.data.user.username}</TableCell>
+    <TableCell align='center' sx={{ wordWrap: 'break-word' }}>{applicableRescoring.data.user.username}</TableCell>
     <TableCell>
       <Typography variant='inherit' sx={{ wordWrap: 'break-word' }}>{applicableRescoring.data.comment}</Typography>
     </TableCell>
@@ -1156,7 +1156,13 @@ const RescoringRow = ({
             </div>
           </Stack> : <Stack spacing={0.5}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.4rem'}}>
-              <Tooltip title={finding.summary ?? 'No description available, please use the link instead'}>
+              <Tooltip
+                title={<div style={{ overflowY: 'auto', maxHeight: '15rem' }}>
+                  {
+                    finding.summary ?? 'No description available, please use the link instead'
+                  }
+                </div>}
+              >
                 <Link
                   href={finding.urls[0]} // assume first always nist.gov
                   target='_blank'
@@ -1199,7 +1205,7 @@ const RescoringRow = ({
               whiteSpace='pre-line'
             >
               {
-                `${sprintInfo.tooltip}\nFirst discovered on ${sprintInfo.discoveryDate.toLocaleDateString()}`
+                `${sprintInfo.tooltip}\nFirst discovered on ${new Date(rescoring.discovery_date).toLocaleDateString()}`
               }
             </Typography>}
           >
@@ -2158,7 +2164,6 @@ const BDBARescoringModal = ({
         {
           ...(rescoring.sprint ?? {}),
           name: sprintName,
-          discoveryDate: new Date(rescoring.discovery_date),
           count: rescorings.filter((r) => sprintName === sprintNameForRescoring(r)).length,
         },
       ]
