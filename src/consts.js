@@ -198,6 +198,7 @@ export const SEVERITIES = {
 Object.freeze(SEVERITIES)
 
 export const META_RESCORING_RULES = {
+  BDBA_TRIAGE: 'bdba-triage',
   CUSTOM_RESCORING: 'custom-rescoring',
   ORIGINAL_SEVERITY: 'original-severity',
 }

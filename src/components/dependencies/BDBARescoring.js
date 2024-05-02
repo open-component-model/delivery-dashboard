@@ -811,7 +811,10 @@ const ApplicableRescoringsRow = ({
       }
     </TableCell>
     {
-      isAuthenticated && <TableCell align='center' sx={{ border: 0 }}>
+      isAuthenticated && !applicableRescoring.data.matching_rules.includes(META_RESCORING_RULES.BDBA_TRIAGE) ? <TableCell
+        align='center'
+        sx={{ border: 0 }}
+      >
         {
           rowHovered && (isConfirmDeletion ? <Tooltip title='Confirm'>
             <IconButton onClick={() => fetchDeleteApplicableRescoring(applicableRescoring)}>
@@ -823,7 +826,7 @@ const ApplicableRescoringsRow = ({
             </IconButton>
           </Tooltip>)
         }
-      </TableCell>
+      </TableCell> : <TableCell sx={{ border: 0 }}/>
     }
   </TableRow>
 }
