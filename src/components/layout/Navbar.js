@@ -242,7 +242,7 @@ const ServiceList = () => {
 
   return <List component='nav'>
     <ListItemButton onClick={handleClick} href={`#${SERVICES_PATH}`}>
-      <ListItemText primary='Services'/>
+      <ListItemText primary='Extensions'/>
       {open ? <ExpandLess/> : <ExpandMore/>}
     </ListItemButton>
     <Collapse in={open} timeout='auto' unmountOnExit>

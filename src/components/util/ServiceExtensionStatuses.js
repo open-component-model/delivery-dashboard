@@ -41,8 +41,8 @@ const ServiceExtensionStatus = () => {
   if (!services || servicesAreLoading || servicesHaveError) {
     return <a href={`#${SERVICES_PATH}`}>
       <Chip
-        label={'Service Extension Status: Checking...'}
-        color={'levelDebug'}
+        label='Extension Status: Checking...'
+        color='levelDebug'
         variant='outlined'
         size='small'
         clickable
@@ -93,7 +93,7 @@ const ServiceExtensionStatusChip = ({
     }
   })
   const numServices = worstServices.length === serviceStatuses.length ? 'All' : worstServices.length
-  const serviceExtensionsStatus = `${numServices} service${worstServices.length > 1 ? 's are' : ' is'}` + (
+  const serviceExtensionsStatus = `${numServices} extension${worstServices.length > 1 ? 's are' : ' is'}` + (
     worstHealthStatus === healthStatuses.UNHEALTHY ? ' unhealthy' :
       (worstHealthStatus === healthStatuses.RETRIEVAL_ERROR ? ' in an erroneous status retrieval state' :
         (worstHealthStatus === healthStatuses.CHECKING ? ' being checked...' : ' healthy')))

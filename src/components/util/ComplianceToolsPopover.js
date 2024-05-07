@@ -65,10 +65,10 @@ const ServiceConfiguration = ({
   const {service, setService, services} = serviceConfigsAgg
 
   return <FormControl style={{width: '45%'}}>
-    <InputLabel>Service</InputLabel>
+    <InputLabel>Extension</InputLabel>
     <Select
       value={service}
-      label={'Service'}
+      label='Extension'
       onChange={(e) => setService(e.target.value)}
     >
       {
@@ -161,7 +161,7 @@ const Configuration = ({
     <Typography>Please select the scan configuration of your choice.</Typography>
     <div style={{display: 'flex', justifyContent: 'space-between'}}>
       <ScanConfiguration scanConfigsAgg={scanConfigsAgg}/>
-      <Tooltip title={`filter scan configuration based on service ${camelCaseToDisplayText(service).toLowerCase()}`}>
+      <Tooltip title={`filter scan configuration based on extension ${camelCaseToDisplayText(service).toLowerCase()}`}>
         <Checkbox
           checked={filterScanConfig}
           onChange={() => setFilterScanConfig(!filterScanConfig)}
