@@ -39,7 +39,7 @@ import {
 export const ServicesPage = () => {
   return <PersistentDrawerLeft open={true}>
     <Stack direction='column' spacing={5}>
-      <Typography variant='h4'>Service Overview</Typography>
+      <Typography variant='h4'>Extension Overview</Typography>
       <Services />
     </Stack>
   </PersistentDrawerLeft>
