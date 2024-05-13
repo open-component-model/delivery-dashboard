@@ -247,12 +247,12 @@ const ComplianceCell = ({
   }))
 
   const bdbaFindings = complianceFiltered.filter((d) => d.meta.datasource === 'bdba')
-  const structureInfos = bdbaFindings.filter((d) => d.type === artefactMetadataTypes.STRUCTURE_INFO)
-  const licenseFindings = bdbaFindings.filter((d) => d.type === artefactMetadataTypes.LICENSE)
-  const vulnerabilities = bdbaFindings.filter((d) => d.type === artefactMetadataTypes.VULNERABILITY)
-  const malwareData = complianceFiltered.find((d) => d.type === artefactMetadataTypes.MALWARE)
-  const osData = complianceFiltered.find((d) => d.type === artefactMetadataTypes.OS_IDS)
-  const codecheckData = complianceFiltered.find((d) => d.type === artefactMetadataTypes.CODECHECKS_AGGREGATED)
+  const structureInfos = bdbaFindings.filter((d) => d.meta.type === artefactMetadataTypes.STRUCTURE_INFO)
+  const licenseFindings = bdbaFindings.filter((d) => d.meta.type === artefactMetadataTypes.LICENSE)
+  const vulnerabilities = bdbaFindings.filter((d) => d.meta.type === artefactMetadataTypes.VULNERABILITY)
+  const malwareData = complianceFiltered.find((d) => d.meta.type === artefactMetadataTypes.MALWARE)
+  const osData = complianceFiltered.find((d) => d.meta.type === artefactMetadataTypes.OS_IDS)
+  const codecheckData = complianceFiltered.find((d) => d.meta.type === artefactMetadataTypes.CODECHECKS_AGGREGATED)
 
   return <TableCell>
     <Grid container direction='row-reverse' spacing={1}>

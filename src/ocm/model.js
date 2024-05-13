@@ -593,24 +593,24 @@ const MetadataViewerAccordion = ({
     <AccordionDetails>
       {
         artefactMetadata.map((data) => {
-          const typedef = findTypedefByName({name: data.type})
+          const typedef = findTypedefByName({name: data.meta.type})
           const Handler = typedef ? typedef.SpecificTypeHandler
-            : defaultTypedefForName({name: data.type}).SpecificTypeHandler
+            : defaultTypedefForName({name: data.meta.type}).SpecificTypeHandler
 
-          const key = data.type === artefactMetadataTypes.VULNERABILITY ?
-            `${data.type}:${data.data.cve}:${data.artefactId.artefactName}:${data.artefactId.artefactVersion}:${data.data.id.package_name}:${data.data.id.package_version}` :
+          const key = data.meta.type === artefactMetadataTypes.VULNERABILITY ?
+            `${data.meta.type}:${data.data.cve}:${data.artefact.artefact.artefact_name}:${data.artefact.artefact.artefact_version}:${data.data.id.package_name}:${data.data.id.package_version}` :
             (
-              data.type === artefactMetadataTypes.LICENSE ?
-                `${data.type}:${data.data.license.name}:${data.artefactId.artefactName}:${data.artefactId.artefactVersion}` :
+              data.meta.type === artefactMetadataTypes.LICENSE ?
+                `${data.meta.type}:${data.data.license.name}:${data.artefact.artefact.artefact_name}:${data.artefact.artefact.artefact_version}` :
                 (
-                  data.type === artefactMetadataTypes.STRUCTURE_INFO ?
-                    `${data.type}:${data.data.id.package_name}:${data.data.id.package_version}` :
-                    data.type
+                  data.meta.type === artefactMetadataTypes.STRUCTURE_INFO ?
+                    `${data.meta.type}:${data.data.id.package_name}:${data.data.id.package_version}` :
+                    data.meta.type
                 )
             )
           return <MetadataViewer
             key={key}
-            type={data.type}
+            type={data.meta.type}
             data={{
               ...data.data,
               ...data.rescorings && { rescorings: data.rescorings },
@@ -667,11 +667,11 @@ const uniqueTypedefs = ({
   const typeDefs = new Set()
 
   complianceData.map((data) => {
-    const typedef = findTypedefByName({name: data.type})
+    const typedef = findTypedefByName({name: data.meta.type})
     if (typedef) {
       typeDefs.add(typedef)
     } else {
-      typeDefs.add(defaultTypedefForName({name: data.type}))
+      typeDefs.add(defaultTypedefForName({name: data.meta.type}))
     }
   })
 
@@ -760,10 +760,10 @@ const MetadataViewerPopover = ({
     if (attributeToSortBy === 'name') {
       if (sortDirection === 'asc') {
         // a -> Z
-        return artefactMetadata.sort((left, right) => left.type.localeCompare(right.type))
+        return artefactMetadata.sort((left, right) => left.meta.type.localeCompare(right.meta.type))
       } else if (sortDirection === 'desc') {
         // Z -> a
-        return artefactMetadata.sort((left, right) => -left.type.localeCompare(right.type))
+        return artefactMetadata.sort((left, right) => -left.meta.type.localeCompare(right.meta.type))
       }
     } else if (attributeToSortBy === 'severity') {
       return artefactMetadata.sort((left ,right) => artefactMetadataSeverityComparator({
@@ -860,8 +860,8 @@ const MetadataViewerPopover = ({
 
             filteredArtefactMetadataCount += filteredArtefactMetadata.length
 
-            const artefactMetadataTypes = artefactMetadata.map(e => e.type)
-            const filteredArtefactMetadataTypes = filteredArtefactMetadata.map(e => e.type)
+            const artefactMetadataTypes = artefactMetadata.map(e => e.meta.type)
+            const filteredArtefactMetadataTypes = filteredArtefactMetadata.map(e => e.meta.type)
             const hiddenaArtefactMetadataTypes = [...new Set(artefactMetadataTypes.filter((type) => {
               return !filteredArtefactMetadataTypes.includes(type)
             }))]

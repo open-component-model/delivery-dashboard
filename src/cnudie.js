@@ -25,15 +25,15 @@ const artefactMetadataFilter = ({
   metadataType,
 }) => {
   return (metadata) => {
-    const id = metadata.artefactId
-    if(componentName && componentName !== id.componentName) return false
-    if(componentVersion && componentVersion !== id.componentVersion) return false
-    if(artefactKind && artefactKind !== id.artefactKind) return false
-    if(artefactType && artefactType !== id.artefactType) return false
-    if(artefactName && artefactName !== id.artefactName) return false
-    if(artefactVersion && artefactVersion !== id.artefactVersion) return false
+    const artefact = metadata.artefact.artefact
+    if(componentName && componentName !== metadata.artefact.component_name) return false
+    if(componentVersion && componentVersion !== metadata.artefact.component_version) return false
+    if(artefactKind && artefactKind !== metadata.artefact.artefact_kind) return false
+    if(artefactType && artefactType !== artefact.artefact_type) return false
+    if(artefactName && artefactName !== artefact.artefact_name) return false
+    if(artefactVersion && artefactVersion !== artefact.artefact_version) return false
     // XXX ignore artefactExtraId for now (need to normalise and compare)
-    if(metadataType && metadataType !== metadata.type) return false
+    if(metadataType && metadataType !== metadata.meta.type) return false
 
     return true
   }
@@ -57,7 +57,7 @@ const artefactMetadataTypeFilter = ({
   return (artefactMetadata) => {
     if (positiveList.length === 0) return true
 
-    return positiveList.includes(artefactMetadata.type)
+    return positiveList.includes(artefactMetadata.meta.type)
   }
 }
 

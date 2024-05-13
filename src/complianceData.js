@@ -20,7 +20,7 @@ const addMetadata = async (complianceData) => {
     complianceData.data.severity = SEVERITIES.UNKNOWN
   }
 
-  if (complianceData.type === 'os_ids') {
+  if (complianceData.meta.type === 'os_ids') {
     return await addOsInfo(complianceData)
   } else {
     return complianceData
