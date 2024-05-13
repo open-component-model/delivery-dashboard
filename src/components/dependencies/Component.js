@@ -434,7 +434,7 @@ const ComponentDetails = React.memo(
       componentVersion: component.version,
       ocmRepo: ocmRepo,
     })
-  
+
     const [complianceData, setComplianceData] = React.useState()
     const [isComplianceDataLoading, setIsComplianceDataLoading] = React.useState(true)
     const [isComplianceDataError, setIsComplianceDataError] = React.useState(false)
@@ -448,14 +448,14 @@ const ComponentDetails = React.memo(
           }],
           types: Object.values(artefactMetadataTypes),
         })
-  
+
         setComplianceData(_complianceData)
         setIsComplianceDataLoading(false)
         setIsComplianceDataError(false)
       } catch (error) {
         setIsComplianceDataLoading(false)
         setIsComplianceDataError(true)
-  
+
         enqueueSnackbar('Unable to fetch compliance data', {
           ...errorSnackbarProps,
           details: error.toString(),

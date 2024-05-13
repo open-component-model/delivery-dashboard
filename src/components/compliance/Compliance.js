@@ -335,16 +335,16 @@ const findArtefactMetadatumForOcmNode = (ocmNode, artefactMetadata) => {
     const artefactMetadataOcmNode = new OcmNode(
       [
         {
-          name: am.artefactId.componentName,
-          version: am.artefactId.componentVersion,
+          name: am.artefact.component_name,
+          version: am.artefact.component_version,
         },
       ],
       {
-        name: am.artefactId.artefactName,
-        version: am.artefactId.artefactVersion,
-        extraIdentity: sanitiseArtefactExtraId(am.artefactId.artefactExtraId),
+        name: am.artefact.artefact.artefact_name,
+        version: am.artefact.artefact.artefact_version,
+        extraIdentity: sanitiseArtefactExtraId(am.artefact.artefact.artefact_extra_id),
       },
-      am.artefactId.artefactKind,
+      am.artefact.artefact_kind,
     )
 
     return artefactMetadataOcmNode.identity() === ocmNode.identity()

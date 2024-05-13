@@ -1896,10 +1896,6 @@ const Rescore = ({
     const meta = {
       datasource: 'delivery-dashboard',
       type: 'rescorings',
-      relation: {
-        refers_to: type,
-        relation_kind: 'rescore',
-      },
       creation_date: date,
       last_update: date,
     }
@@ -1916,6 +1912,7 @@ const Rescore = ({
           cve: rescoring.finding.cve,
         },
       },
+      referenced_type: type,
       severity: rescoring.severity,
       matching_rules: rescoring.matching_rules,
       comment: rescoring.comment,
