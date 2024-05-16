@@ -145,7 +145,7 @@ const MetadataViewer = ({
                     `${displayName} ${data.license.name}` :
                     (
                       type === artefactMetadataTypes.STRUCTURE_INFO ?
-                        `Package ${data.id.package_name} ${data.id.package_version}` :
+                        `Package ${data.package_name} ${data.package_version}` :
                         displayName
                     )
                 )
@@ -598,13 +598,13 @@ const MetadataViewerAccordion = ({
             : defaultTypedefForName({name: data.meta.type}).SpecificTypeHandler
 
           const key = data.meta.type === artefactMetadataTypes.VULNERABILITY ?
-            `${data.meta.type}:${data.data.cve}:${data.artefact.artefact.artefact_name}:${data.artefact.artefact.artefact_version}:${data.data.id.package_name}:${data.data.id.package_version}` :
+            `${data.meta.type}:${data.data.cve}:${data.artefact.artefact.artefact_name}:${data.artefact.artefact.artefact_version}:${data.data.package_name}:${data.data.package_version}` :
             (
               data.meta.type === artefactMetadataTypes.LICENSE ?
                 `${data.meta.type}:${data.data.license.name}:${data.artefact.artefact.artefact_name}:${data.artefact.artefact.artefact_version}` :
                 (
                   data.meta.type === artefactMetadataTypes.STRUCTURE_INFO ?
-                    `${data.meta.type}:${data.data.id.package_name}:${data.data.id.package_version}` :
+                    `${data.meta.type}:${data.data.package_name}:${data.data.package_version}` :
                     data.meta.type
                 )
             )

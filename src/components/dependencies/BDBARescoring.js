@@ -129,9 +129,11 @@ const patchRescoringProposals = (rescoringProposals, ocmNode) => {
 
 
 const rescoringIdentity = (rescoring) => {
-  const findingId = JSON.stringify(normaliseObject(rescoring.finding.id))
-
-  return `${rescoring.ocmNode.identity()}_${findingId}_${rescoring.finding.cve}`
+  const finding = rescoring.finding
+  if (finding.cve) {
+    return `${rescoring.ocmNode.identity()}_${finding.package_name}_${finding.cve}`
+  }
+  return `${rescoring.ocmNode.identity()}_${finding.package_name}_${finding.license.name}`
 }
 
 
@@ -1033,10 +1035,10 @@ const RescoringRow = ({
   const isAuthenticated = JSON.parse(localStorage.getItem(TOKEN_KEY)) !== null
 
   const maxVersionStrLength = 12
-  const packageVersions = finding.id.package_versions.map((version) => {
+  const packageVersions = finding.package_versions.map((version) => {
     return trimLongString(version, maxVersionStrLength)
   }).join('\n')
-  const versionHasOverlength = finding.id.package_versions.reduce((hasOverlength, version) => {
+  const versionHasOverlength = finding.package_versions.reduce((hasOverlength, version) => {
     return hasOverlength || version.length > maxVersionStrLength
   }, false)
 
@@ -1115,7 +1117,7 @@ const RescoringRow = ({
       <TableCell>
         <Stack>
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant='inherit'>{finding.id.package_name}</Typography>
+            <Typography variant='inherit'>{finding.package_name}</Typography>
             <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
           </div>
           {
@@ -1125,7 +1127,7 @@ const RescoringRow = ({
                 whiteSpace='pre-line'
               >
                 {
-                  finding.id.package_versions.join('\n')
+                  finding.package_versions.join('\n')
                 }
               </Typography>}
             >
@@ -1406,7 +1408,7 @@ const RescoringDiff = ({
   }
 
   const getAccessMethod = () => {
-    if (orderBy === orderAttributes.PACKAGE) return (r) => r.finding.id.package_name
+    if (orderBy === orderAttributes.PACKAGE) return (r) => r.finding.package_name
     if (orderBy === orderAttributes.FINDING) return (r) => {
       if (type === artefactMetadataTypes.LICENSE) {
         return r.finding.license.name
@@ -1902,10 +1904,7 @@ const Rescore = ({
 
     const data = {
       finding: {
-        id: {
-          package_name: rescoring.finding.id.package_name,
-          source: rescoring.finding.id.source,
-        },
+        package_name: rescoring.finding.package_name,
         ...type === artefactMetadataTypes.LICENSE ? {
           license: rescoring.finding.license,
         } : {
@@ -1954,7 +1953,7 @@ const Rescore = ({
           {
             customRescoringsWithoutComment.map((r, idx) => <Typography key={idx} variant='body2'>
               {
-                `${r.finding.id.package_name} - ${type === artefactMetadataTypes.LICENSE ? r.finding.license.name : r.finding.cve}`
+                `${r.finding.package_name} - ${type === artefactMetadataTypes.LICENSE ? r.finding.license.name : r.finding.cve}`
               }
             </Typography>)
           }
