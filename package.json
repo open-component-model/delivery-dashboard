@@ -22,7 +22,7 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.23.1",
     "react-scripts": "5.0.1",
-    "semver": "^7.3.8",
+    "semver": "^7.6.2",
     "url-join": "^5.0.0"
   },
   "scripts": {
