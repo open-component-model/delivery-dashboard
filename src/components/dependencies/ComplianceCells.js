@@ -238,7 +238,7 @@ const ComplianceCell = ({
     }, new Date(0))
   }
   const getReportUrl = (findings) => {
-    return findings.find((finding) => finding.data.scan_id.report_url)?.data.scan_id.report_url
+    return findings.find((finding) => finding.data.report_url)?.data.report_url
   }
 
   const complianceFiltered = compliance.filter(artefactMetadataFilter({
@@ -277,8 +277,8 @@ const ComplianceCell = ({
       }
       <GolangChip
         versions={structureInfos.filter((structureInfo) => {
-          return structureInfo.data.id.package_name === 'golang-runtime'
-        }).map((structureInfo) => structureInfo.data.id.package_version)}
+          return structureInfo.data.package_name === 'golang-runtime'
+        }).map((structureInfo) => structureInfo.data.package_version)}
         timestamp={getLatestUpdateTimestamp(structureInfos).toLocaleString()}
       />
       {
