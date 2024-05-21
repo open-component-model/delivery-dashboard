@@ -1897,7 +1897,7 @@ const Rescore = ({
     const date = new Date().toISOString()
     const meta = {
       datasource: 'delivery-dashboard',
-      type: 'rescorings',
+      type: artefactMetadataTypes.RESCORINGS,
       creation_date: date,
       last_update: date,
     }

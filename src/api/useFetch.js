@@ -376,7 +376,11 @@ const useFetchBom = (component, ocmRepo, populate) => {
 }
 
 
-const useFetchQueryMetadata = ({components, types}) => {
+const useFetchQueryMetadata = ({
+  components,
+  types,
+  referenced_types,
+}) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
 
   const [artefactMetadata, setArtefactMetadata] = React.useState()
@@ -401,11 +405,12 @@ const useFetchQueryMetadata = ({components, types}) => {
   const { enqueueSnackbar } = useSnackbar()
 
   React.useEffect(() => {
-    const fetchQueryMetadata = async ({components, types}) => {
+    const fetchQueryMetadata = async ({components, types, referenced_types}) => {
       try {
         const _artefactMetadata = await artefactsQueryMetadata({
           components,
           types,
+          referenced_types,
         })
 
         setArtefactMetadata(_artefactMetadata)
@@ -422,7 +427,7 @@ const useFetchQueryMetadata = ({components, types}) => {
           {
             ...errorSnackbarProps,
             details: error.toString(),
-            onRetry: () => fetchQueryMetadata({components, types}),
+            onRetry: () => fetchQueryMetadata({components, types, referenced_types}),
           }
         )
       }
@@ -430,9 +435,9 @@ const useFetchQueryMetadata = ({components, types}) => {
 
     if (isAvailable && !isFetching) {
       setIsFetching(true)
-      fetchQueryMetadata({components, types})
+      fetchQueryMetadata({components, types, referenced_types})
     }
-  }, [components, types, enqueueSnackbar, isAvailable, isFetching])
+  }, [components, types, referenced_types, enqueueSnackbar, isAvailable, isFetching])
 
   return [artefactMetadata, isLoading, isError, error]
 }

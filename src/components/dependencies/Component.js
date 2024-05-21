@@ -45,6 +45,7 @@ import { Responsibles } from './Responsibles'
 import {
   componentPathQuery,
   enhanceComponentRefFromPath,
+  mixupFindingsWithRescorings,
   trimComponentName,
   trimLongString,
   updatePathFromComponentRef,
@@ -441,15 +442,22 @@ const ComponentDetails = React.memo(
 
     const fetchComplianceData = React.useCallback(async () => {
       try {
-        const _complianceData = await artefactsQueryMetadata({
-          components: [{
-            name: component.name,
-            version: component.version,
-          }],
-          types: Object.values(artefactMetadataTypes),
+        const components = [{
+          name: component.name,
+          version: component.version,
+        }]
+        const types = Object.values(artefactMetadataTypes).filter((type) => type !== artefactMetadataTypes.RESCORINGS)
+        const findings = await artefactsQueryMetadata({
+          components,
+          types,
+        })
+        const rescorings = await artefactsQueryMetadata({
+          components: components,
+          types: [artefactMetadataTypes.RESCORINGS],
+          referenced_types: types,
         })
 
-        setComplianceData(_complianceData)
+        setComplianceData(mixupFindingsWithRescorings(findings, rescorings))
         setIsComplianceDataLoading(false)
         setIsComplianceDataError(false)
       } catch (error) {
