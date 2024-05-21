@@ -38,6 +38,7 @@ import {
   artefactMetadataSeverityComparator,
   artefactMetadatumSeverity,
   findSeverityCfgByName,
+  mixupFindingsWithRescorings,
   severityComparator,
   trimLongString,
 } from '../util'
@@ -67,6 +68,7 @@ const artefactMetadataTypes = {
   MALWARE: 'malware',
   OS_IDS: 'os_ids',
   CODECHECKS_AGGREGATED: 'codechecks/aggregated',
+  RESCORINGS: 'rescorings',
 }
 Object.freeze(artefactMetadataTypes)
 
@@ -693,12 +695,19 @@ const MetadataViewerPopover = ({
     version: componentVersion,
   })
 
-  const [compliance, complianceLoading, complianceError] = useFetchQueryMetadata({
-    components: [{
-      name: componentName,
-      version: componentVersion,
-    }],
-    types: Object.values(artefactMetadataTypes),
+  const components = [{
+    name: componentName,
+    version: componentVersion,
+  }]
+  const types = Object.values(artefactMetadataTypes).filter((type) => type !== artefactMetadataTypes.RESCORINGS)
+  const [findings, findingsLoading, findingsError] = useFetchQueryMetadata({
+    components,
+    types,
+  })
+  const [rescorings, rescoringsLoading, rescoringsError] = useFetchQueryMetadata({
+    components: components,
+    types: [artefactMetadataTypes.RESCORINGS],
+    referenced_types: types,
   })
 
   const [selectedSeverities, setSelectedSeverities] = React.useState([])
@@ -714,13 +723,17 @@ const MetadataViewerPopover = ({
     cd &&
     !cdLoading &&
     !cdError &&
-    compliance &&
-    !complianceLoading &&
-    !complianceError) {
+    findings &&
+    rescorings &&
+    !findingsLoading &&
+    !findingsError &&
+    !rescoringsLoading &&
+    !rescoringsError) {
     setOpen(true)
   }
   if (!open) return null
 
+  const compliance = mixupFindingsWithRescorings(findings, rescorings)
   const artefactMetadataCount = compliance.length
   let filteredArtefactMetadataCount = 0
 

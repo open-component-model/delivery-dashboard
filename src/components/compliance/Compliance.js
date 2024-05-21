@@ -52,6 +52,7 @@ import {
   artefactMetadatumSeverity,
   findSeverityCfgByName,
   matchObjectWithSearchQuery,
+  mixupFindingsWithRescorings,
   NoMaxWidthTooltip,
   pluralise,
   trimLongString,
@@ -866,12 +867,17 @@ const Artefacts = ({
 
   const fetchQueryMetadata = React.useCallback(async () => {
     try {
-      const _artefactMetadata = await artefactsQueryMetadata({
+      const findings = await artefactsQueryMetadata({
         components: components,
         types: [type],
       })
+      const rescorings = await artefactsQueryMetadata({
+        components: components,
+        types: [artefactMetadataTypes.RESCORINGS],
+        referenced_types: [type],
+      })
 
-      setArtefactMetadata(_artefactMetadata)
+      setArtefactMetadata(mixupFindingsWithRescorings(findings, rescorings))
       setIsLoading(false)
       setIsError(false)
     } catch (error) {

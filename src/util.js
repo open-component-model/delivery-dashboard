@@ -17,7 +17,7 @@ import {
   healthStatuses,
   tabConfig,
 } from './consts'
-import { severityConfigs, worstSeverity } from './ocm/model'
+import { artefactMetadataTypes, severityConfigs, worstSeverity } from './ocm/model'
 import {
   artefactMetadataFilter,
   artefactMetadataSeverityFilter,
@@ -194,6 +194,60 @@ export const artefactMetadatumSeverity = (artefactMetadatum) => {
     return findSeverityCfgByName({name: artefactMetadatum.data.severity})
   }
   return findSeverityCfgByName({name: artefactMetadatum.meta.severity})
+}
+
+export const filterRescoringsForFinding = (finding, rescorings) => {
+  return rescorings.filter((rescoring) => {
+    if (rescoring.data.referenced_type !== finding.meta.type) return false
+    if (rescoring.artefact.artefact_kind !== finding.artefact.artefact_kind) return false
+    if (rescoring.artefact.artefact.artefact_type !== finding.artefact.artefact.artefact_type) return false
+    if (
+      rescoring.artefact.component_name
+      && rescoring.artefact.component_name !== finding.artefact.component_name
+    ) return false
+    if (
+      rescoring.artefact.component_version
+      && rescoring.artefact.component_version !== finding.artefact.component_version
+    ) return false
+    if (
+      rescoring.artefact.artefact.artefact_name
+      && rescoring.artefact.artefact.artefact_name !== finding.artefact.artefact.artefact_name
+    ) return false
+    if (
+      rescoring.artefact.artefact.artefact_version
+      && rescoring.artefact.artefact.artefact_version !== finding.artefact.artefact.artefact_version
+    ) return false
+    if (
+      Object.keys(rescoring.artefact.artefact.artefact_extra_id) > 0
+      && JSON.stringify(normaliseObject(rescoring.artefact.artefact.artefact_extra_id))
+        === JSON.stringify(normaliseObject(finding.artefact.artefact.artefact_extra_id))
+    ) return false
+    if (
+      finding.meta.type === artefactMetadataTypes.VULNERABILITY
+      && (
+        rescoring.data.finding.cve !== finding.data.cve
+        || rescoring.data.finding.package_name !== finding.data.package_name
+      )
+    ) return false
+    if (
+      finding.meta.type === artefactMetadataTypes.LICENSE
+      && (
+        rescoring.data.finding.license.name !== finding.data.license.name
+        || rescoring.data.finding.package_name !== finding.data.package_name
+      )
+    ) return false
+
+    return true
+  })
+}
+
+export const mixupFindingsWithRescorings = (findings, rescorings) => {
+  return findings.map((finding) => {
+    return {
+      ...finding,
+      rescorings: filterRescoringsForFinding(finding, rescorings),
+    }
+  })
 }
 
 export const findingIsResolved = (rescoring) => {

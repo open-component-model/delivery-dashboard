@@ -306,9 +306,11 @@ const componentsComplianceSummary = async ({
 const artefactsQueryMetadata = async ({
   components,
   types,
+  referenced_types,
 }) => {
   const url = new URL(routes.artefacts.queryMetadata)
   types?.map((type) => appendPresentParams(url, {type}))
+  referenced_types?.map((referenced_type) => appendPresentParams(url, {referenced_type}))
 
   const _components = components.map((component) => {
     return {
