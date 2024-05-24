@@ -4,7 +4,13 @@ import useMediaQuery from '@mui/material/useMediaQuery'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 
-import { HashRouter, Route, Routes, useSearchParams } from 'react-router-dom'
+import {
+  HashRouter,
+  Route,
+  Routes,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom'
 import { enqueueSnackbar, SnackbarProvider } from 'notistack'
 
 import { ComponentPage } from './pages/ComponentPage'
@@ -12,6 +18,7 @@ import NotFoundPage from './pages/NotFoundPage'
 import {
   COMPONENT_PATH,
   copyNotificationCfg,
+  LOGIN_PATH,
   MONITORING_PATH,
   SERVICES_PATH,
   errorSnackbarProps,
@@ -19,6 +26,7 @@ import {
   tabConfig,
   TOKEN_KEY,
 } from './consts'
+import { LoginPage } from './pages/LoginPage'
 import { LandingPage } from './pages/LandingPage'
 import { MonitoringPage } from './pages/MonitoringPage'
 import { ServicesPage } from './pages/ServicesPage'
@@ -58,6 +66,18 @@ const App = () => {
       },
       secondary: {
         main: '#0b8062',
+      },
+      background: {
+        main: themeMode ? '#20000000' : '#ffffff',
+        white: '#ffffff',
+        lightgrey: '#424242',
+        grey: '#2b2b2b',
+        darkgrey: '#212121',
+      },
+      text: {
+        main: themeMode ? '#ffffff' : '#000000',
+        white: '#ffffff',
+        grey: '#808080',
       },
       levelDebug: palette.augmentColor({
         color: {
@@ -215,7 +235,21 @@ const App = () => {
 
 
 const InnerRouter = () => {
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const [token, setToken] = React.useState(JSON.parse(localStorage.getItem(TOKEN_KEY)))
+
+  addEventListener('token', () => setToken(JSON.parse(localStorage.getItem(TOKEN_KEY))))
+
+  React.useEffect(() => {
+    const url = new URL(document.location)
+    if (!token) {
+      navigate(LOGIN_PATH)
+    } else if (url.hash.startsWith(`#${LOGIN_PATH}`)) {
+      // navigate to landing page if login page is open but user is logged in
+      navigate('/')
+    }
+  }, [token, navigate])
 
   const searchParamConfig = {
     update: (obj) => {
@@ -247,6 +281,10 @@ const InnerRouter = () => {
 
   return <SearchParamContext.Provider value={searchParamConfig}>
     <Routes>
+      <Route
+        path={`${LOGIN_PATH}/*`}
+        element={<LoginPage/>}
+      />
       <Route
         path={`${COMPONENT_PATH}/*`}
         element={<ComponentPage/>}
@@ -309,8 +347,9 @@ const AuthProvider = () => {
       window.history.pushState('', '', url)
       try {
         if (mounted) {
-          const dashboard_jwt = await auth.auth(code, clientId)
+          const dashboard_jwt = await auth.auth({code, clientId})
           localStorage.setItem(TOKEN_KEY, JSON.stringify(dashboard_jwt))
+          dispatchEvent(new Event('token'))
         }
       } catch (e) {
         if (mounted) {

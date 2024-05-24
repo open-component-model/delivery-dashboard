@@ -480,10 +480,14 @@ const auth = {
 
     return body
   },
-  auth: async (code, client_id) => {
+  auth: async ({code, clientId, accessToken, apiUrl}) => {
     const authUrl = new URL(routes.auth.base)
-    authUrl.searchParams.set('code', code)
-    authUrl.searchParams.set('client_id', client_id)
+    appendPresentParams(authUrl, {
+      code: code,
+      client_id: clientId,
+      access_token: accessToken,
+      api_url: apiUrl,
+    })
 
     return await _toJson(withAuth(authUrl))
   },

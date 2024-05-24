@@ -1,3 +1,5 @@
+export const DASHBOARD_TITLE = 'Delivery Dashboard'
+
 export const tabConfig = {
   BOM: {
     id: 'bom',
@@ -38,6 +40,7 @@ export const servicesTabConfig = {
 }
 Object.freeze(servicesTabConfig)
 
+export const LOGIN_PATH = '/login'
 export const COMPONENT_PATH = '/component'
 export const SERVICES_PATH = '/services'
 export const MONITORING_PATH = '/monitoring'
