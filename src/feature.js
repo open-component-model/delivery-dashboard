@@ -2,7 +2,7 @@ import React from 'react'
 
 import { features } from './api'
 import { FeatureContext } from './App'
-import { features as featureNames, featureStates } from './consts'
+import { features as featureNames, featureStates, TOKEN_KEY } from './consts'
 
 
 const featureCfgsFromEnv = () => {
@@ -33,6 +33,9 @@ const FeatureProvider = () => {
   const [allFeatures, setAllFeatures] = React.useState()
   const [isFeaturesLoading, setIsFeaturesLoading] = React.useState()
   const featureContext = React.useContext(FeatureContext)
+  const [token, setToken] = React.useState(JSON.parse(localStorage.getItem(TOKEN_KEY)))
+
+  addEventListener('token', () => setToken(JSON.parse(localStorage.getItem(TOKEN_KEY))))
 
   React.useEffect(() => {
     const loadFeatures = async () => {
@@ -65,14 +68,14 @@ const FeatureProvider = () => {
       }
     }
 
-    if (isFeaturesLoading)
+    if (isFeaturesLoading || !token)
       return
 
     if (allFeatures)
       callCallbacks()
     else
       loadFeatures()
-  }, [featureContext, allFeatures, isFeaturesLoading])
+  }, [featureContext, allFeatures, isFeaturesLoading, token])
 
   return null
 }

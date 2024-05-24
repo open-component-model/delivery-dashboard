@@ -110,7 +110,7 @@ export const routes = {
 const features = async () => {
   const url = new URL(routes.features)
 
-  return (await _toJson(fetch(url))).features
+  return (await _toJson(withAuth(url))).features
 }
 
 const cnudieComponent = async ({
@@ -127,7 +127,7 @@ const cnudieComponent = async ({
     version_filter: versionFilter,
   })
 
-  const resp = await fetch(url)
+  const resp = await withAuth(url)
 
   if (!resp.ok) {
     const statusBody = await resp.json()
@@ -158,7 +158,7 @@ const cnudieComponentDependencies = async (componentName, version, ocmRepoUrl, p
     return serveFromCache(requestId)
   }
 
-  const resp = await fetch(url)
+  const resp = await withAuth(url)
 
   if (!resp.ok) {
     const status_text = resp.statusText
@@ -190,7 +190,7 @@ const cnudieComponentResponsibles = async (componentName, version, ocmRepoUrl) =
     return serveFromCache(requestId)
   }
 
-  const result = await fetch(url)
+  const result = await withAuth(url)
   if (result.status === 202) return API_RESPONSES.RETRY // caller is supposed to retry
 
   const json = _toJson(result)
@@ -214,7 +214,7 @@ const cnudieComponentVersions = async ({
     version_filter: versionFilter,
   })
 
-  return await _toJson(fetch(url))
+  return await _toJson(withAuth(url))
 }
 
 
@@ -233,7 +233,7 @@ const componentUpgradePRs = async ({
     return serveFromCache(requestId)
   }
 
-  const resp = await fetch(url)
+  const resp = await withAuth(url)
   if (!resp.ok) throw Error(resp.statusText)
 
   const result = await resp.json()
@@ -245,7 +245,7 @@ const fetchJoke = async () => {
   const url = new URL(
     'https://sv443.net/jokeapi/v2/joke/Programming?blacklistFlags=nsfw,religious,political,racist,sexist'
   )
-  return await _toJson(fetch(url))
+  return await _toJson(withAuth(url))
 }
 
 /**
@@ -258,7 +258,7 @@ const componentsDiff = async (leftComponent, rightComponent) => {
   if (!rightComponent) throw new Error('rightComponent must be passed')
 
   return await _toJson(
-    fetch(route, {
+    withAuth(route, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -289,7 +289,7 @@ const componentsComplianceSummary = async ({
     return serveFromCache(requestId)
   }
 
-  const resp = await fetch(url)
+  const resp = await withAuth(url)
 
   if (!resp.ok) {
     const status_text = resp.statusText
@@ -320,7 +320,7 @@ const artefactsQueryMetadata = async ({
   })
 
   const artefactMetadata = await _toJson(
-    fetch(url, {
+    withAuth(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -344,7 +344,7 @@ const artefactsQueryMetadata = async ({
 const osBranches = async (name) => {
   const route = routes.os.branches(name)
 
-  const resp = await fetch(route, {
+  const resp = await withAuth(route, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -368,7 +368,7 @@ const specialComponentCurrentDependencies = async (component) => {
     return serveFromCache(requestId)
   }
 
-  const resp = await fetch(url)
+  const resp = await withAuth(url)
 
   if (!resp.ok) throw Error(resp.statusText)
 
@@ -385,7 +385,7 @@ const deliverySprintInfosCurrent = async () => {
     return serveFromCache(requestId)
   }
 
-  const resp = await fetch(url)
+  const resp = await withAuth(url)
   if (!resp.ok) throw Error(resp.statusText)
 
   const result = await resp.json()
@@ -419,7 +419,7 @@ const rescore = {
     })
     types?.map((type) => appendPresentParams(url, {type}))
 
-    return await _toJson(fetch(url))
+    return await _toJson(withAuth(url))
   },
   create: async ({rescorings}) => {
     const url = new URL(routes.rescore)
@@ -508,7 +508,7 @@ const serviceExtensions = {
       return serveFromCache(requestId)
     }
 
-    const resp = await fetch(url)
+    const resp = await withAuth(url)
 
     if (!resp.ok) throw Error(resp.statusText)
 
@@ -531,7 +531,7 @@ const serviceExtensions = {
       return serveFromCache(requestId)
     }
 
-    const resp = await fetch(url)
+    const resp = await withAuth(url)
 
     if (!resp.ok) throw Error(resp.statusText)
 
@@ -553,7 +553,7 @@ const serviceExtensions = {
       return serveFromCache(requestId)
     }
 
-    const resp = await fetch(url)
+    const resp = await withAuth(url)
 
     if (!resp.ok) throw Error(resp.statusText)
 
@@ -572,7 +572,7 @@ const serviceExtensions = {
       return serveFromCache(requestId)
     }
 
-    const resp = await fetch(url)
+    const resp = await withAuth(url)
 
     if (!resp.ok) throw Error(resp.statusText)
 
@@ -667,7 +667,7 @@ const dora = {
       return serveFromCache(requestId)
     }
 
-    const resp = await fetch(url)
+    const resp = await withAuth(url)
     if (resp.status === 202) return API_RESPONSES.RETRY // caller is supposed to retry
 
     if (!resp.ok) throw Error(resp.statusText)
