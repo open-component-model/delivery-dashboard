@@ -15,7 +15,6 @@ import {
   ListItemButton,
   ListItemText,
   Popover,
-  Skeleton,
   Tooltip,
 } from '@mui/material'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
@@ -32,7 +31,7 @@ import { FeatureRegistrationContext } from '../../App.js'
 import { registerCallbackHandler } from '../../feature.js'
 
 
-const SettingsMenu = () => {
+export const SettingsMenu = () => {
   const theme = useTheme()
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
 
@@ -40,7 +39,7 @@ const SettingsMenu = () => {
   const [anchorElement, setAnchorElement] = React.useState(null)
   const [token, setToken] = React.useState(JSON.parse(localStorage.getItem(TOKEN_KEY)))
 
-  addEventListener('localStorage', () => setToken(JSON.parse(localStorage.getItem(TOKEN_KEY))))
+  addEventListener('token', () => setToken(JSON.parse(localStorage.getItem(TOKEN_KEY))))
 
   React.useEffect(() => {
     return registerCallbackHandler({
@@ -142,27 +141,9 @@ const LoginPanel = ({
 }) => {
   const { enqueueSnackbar } = useSnackbar()
 
-  const login = async (authConfig) => {
-    const loc = document.location
-    const currentUrl = new URL(
-      `${loc.protocol}//${loc.host}${loc.pathname}${loc.search}`
-    ) // XXX hack
-    currentUrl.searchParams.set('client_id', authConfig.client_id)
-
-    const githubAuthUrl = new URL(authConfig.oauth_url)
-    githubAuthUrl.search = new URLSearchParams({
-      client_id: authConfig.client_id,
-      scope: authConfig.scope,
-      redirect_uri: currentUrl.href,
-    })
-
-    // forward to github-oauth (user will come back soon enough)
-    window.location.replace(githubAuthUrl.href)
-  }
-
   const logout = async () => {
     localStorage.removeItem(TOKEN_KEY)
-    dispatchEvent(new Event('localStorage'))
+    dispatchEvent(new Event('token'))
     try {
       await auth.logout()
     } catch (e) {
@@ -178,48 +159,8 @@ const LoginPanel = ({
   }
 
   return <FeatureDependent requiredFeatures={[features.AUTHENTICATION]}>
-    <LoginState
-      token={token}
-      login={login}
-      logout={logout}
-    />
-  </FeatureDependent>
-}
-LoginPanel.displayName = 'LoginPanel'
-LoginPanel.propTypes = {
-  token: PropTypes.object,
-}
-
-const LoginState = ({
-  token,
-  login,
-  logout,
-}) => {
-  const [authConfigs, setAuthConfigs] = React.useState()
-  const { enqueueSnackbar } = useSnackbar()
-
-  React.useEffect(() => {
-    const retrieveAuthCfgs = async () => {
-      try {
-        const authCfgs = await auth.authConfigs()
-        setAuthConfigs(authCfgs)
-      } catch (e) {
-        enqueueSnackbar(
-          'Unable to fetch auth configs',
-          {
-            ...errorSnackbarProps,
-            details: e.toString(),
-            onRetry: () => retrieveAuthCfgs(),
-          }
-        )
-      }
-    }
-    retrieveAuthCfgs()
-  }, [enqueueSnackbar])
-
-  if (token) return <>
     <ListItem sx={{ display: 'flex', justifyContent: 'center' }}>
-      <Tooltip title={`logged in as ${token.sub}`}>
+      <Tooltip title={`logged in as ${token?.sub}`}>
         <Avatar/>
       </Tooltip>
     </ListItem>
@@ -230,31 +171,9 @@ const LoginState = ({
         <ListItemText primary='Logout'/>
       </ListItemButton>
     </ListItem>
-  </>
-
-  if (authConfigs) return authConfigs.map((el) => <ListItem
-    key={el.client_id}
-    disablePadding
-  >
-    <ListItemButton onClick={() => login(el)}>
-      <Login color='success'/>
-      <div style={{ padding: '0.3em' }}/>
-      <ListItemText primary={`Login ${el.name}`}/>
-    </ListItemButton>
-  </ListItem>)
-
-  return <ListItem disablePadding>
-    <ListItemButton>
-      <Skeleton sx={{ width: '100%' }}/>
-    </ListItemButton>
-  </ListItem>
+  </FeatureDependent>
 }
-LoginState.displayName = 'LoginState'
-LoginState.propTypes = {
+LoginPanel.displayName = 'LoginPanel'
+LoginPanel.propTypes = {
   token: PropTypes.object,
-  login: PropTypes.func.isRequired,
-  logout: PropTypes.func.isRequired,
 }
-
-
-export { LoginPanel, SettingsMenu }

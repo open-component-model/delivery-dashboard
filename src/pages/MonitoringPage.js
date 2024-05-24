@@ -10,7 +10,6 @@ import {
   FormControl,
   IconButton,
   InputLabel,
-  List,
   MenuItem,
   Paper,
   Select,
@@ -48,13 +47,11 @@ import {
 import CopyOnClickChip from './../components/util/CopyOnClickChip'
 import PersistentDrawerLeft from './../components/layout/Drawer'
 import { TabPanel } from './../components/Tabs'
-import { LoginPanel } from './../components/util/SettingsMenu'
 import {
   COMPLIANCE_TOOLS,
   errorSnackbarProps,
   PRIORITIES,
   servicesTabConfig,
-  TOKEN_KEY,
 } from './../consts'
 import {
   camelCaseToDisplayText,
@@ -161,8 +158,6 @@ const ServiceTabs = ({
     searchParamContext.update({'servicesTab': newTab})
   }
 
-  const token = JSON.parse(localStorage.getItem(TOKEN_KEY))
-
   return <>
     <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
       <Tabs
@@ -182,21 +177,14 @@ const ServiceTabs = ({
       </Tabs>
     </Box>
     <TabPanel value={currentTab} index={servicesTabConfig.BACKLOG.id}>
-      {
-        token ? <BacklogTab
-          service={service}
-          aggregatedContainerStatus={aggregatedContainerStatus}
-          scanConfigsFetchDetails={scanConfigsFetchDetails}
-          cfgNameState={{cfgName, setCfgName}}
-          priorityState={{priority, setPriority}}
-          refresh={refresh}
-        /> : <Box display='flex' justifyContent='center' alignItems='center'>
-          <List>
-            <Typography>Log in to monitor backlog items</Typography>
-            <LoginPanel token={token}/>
-          </List>
-        </Box>
-      }
+      <BacklogTab
+        service={service}
+        aggregatedContainerStatus={aggregatedContainerStatus}
+        scanConfigsFetchDetails={scanConfigsFetchDetails}
+        cfgNameState={{cfgName, setCfgName}}
+        priorityState={{priority, setPriority}}
+        refresh={refresh}
+      />
     </TabPanel>
     <TabPanel value={currentTab} index={servicesTabConfig.LOGS.id}>
       <LogTab

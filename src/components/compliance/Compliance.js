@@ -59,7 +59,6 @@ import {
 } from '../../util'
 import CopyOnClickChip from '../util/CopyOnClickChip'
 import { errorSnackbarProps, SEVERITIES, TOKEN_KEY } from '../../consts'
-import { LoginPanel } from '../util/SettingsMenu'
 import { OcmNode, OcmNodeDetails } from '../../ocm/iter'
 import { BDBARescoringModal } from '../dependencies/BDBARescoring'
 import { sanitiseArtefactExtraId } from '../../ocm/util'
@@ -1065,21 +1064,6 @@ const ComplianceTab = ({
     setSelectedOcmNodes([])
     setCustomSelectedOcmNodes([])
   }, [type])
-
-  const token = JSON.parse(localStorage.getItem(TOKEN_KEY))
-
-  if (!token) return <Box
-    display='flex'
-    justifyContent='center'
-    alignItems='center'
-  >
-    <List>
-      <Typography>
-        Log in to apply rescorings
-      </Typography>
-      <LoginPanel token={token}/>
-    </List>
-  </Box>
 
   if (isError) return <Alert severity='error'>
     Unable to load Components
