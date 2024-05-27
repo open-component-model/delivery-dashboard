@@ -66,6 +66,7 @@ const artefactMetadataTypes = {
   STRUCTURE_INFO: 'structure_info',
   LICENSE: 'finding/license',
   VULNERABILITY: 'finding/vulnerability',
+  FINDING_MALWARE: 'finding/malware',
   MALWARE: 'malware',
   OS_IDS: 'os_ids',
   CODECHECKS_AGGREGATED: 'codechecks/aggregated',
