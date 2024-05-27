@@ -667,18 +667,14 @@ const worstSeverity = ({ artefactMetadataSequence }) => {
 const uniqueTypedefs = ({
   complianceData,
 }) => {
-  const typeDefs = new Set()
+  const typeDefs = new Map()
 
   complianceData.map((data) => {
-    const typedef = findTypedefByName({name: data.meta.type})
-    if (typedef) {
-      typeDefs.add(typedef)
-    } else {
-      typeDefs.add(defaultTypedefForName({name: data.meta.type}))
-    }
+    const typedef = findTypedefByName({name: data.meta.type}) || defaultTypedefForName({name: data.meta.type})
+    typeDefs.set(typedef.name, typedef)
   })
 
-  return [...typeDefs]
+  return [...typeDefs.values()]
 }
 
 
