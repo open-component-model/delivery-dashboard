@@ -39,7 +39,7 @@ import {
   findSeverityCfgByName,
 } from '../../util'
 import DockerLogo from '../../res/docker-icon.svg'
-import { artefactMetadataTypes, findTypedefByName } from '../../ocm/model'
+import { artefactMetadataTypes, datasources, findTypedefByName } from '../../ocm/model'
 import { artefactMetadataFilter } from './../../cnudie'
 import { COMPLIANCE_TOOLS, SEVERITIES, TOKEN_KEY } from '../../consts'
 import { BDBARescoringModal } from './BDBARescoring'
@@ -196,6 +196,17 @@ IconCell.propTypes = {
   defaultIcon: PropTypes.element,
 }
 
+
+const findLastScan = (complianceData, datasource) => {
+  return complianceData.find((d) => {
+    return (
+      d.meta.type === artefactMetadataTypes.ARTEFACT_SCAN_INFO
+      && d.meta.datasource === datasource
+    )
+  })
+}
+
+
 const ComplianceCell = ({
   component,
   artefact,
@@ -254,6 +265,18 @@ const ComplianceCell = ({
   const osData = complianceFiltered.find((d) => d.meta.type === artefactMetadataTypes.OS_IDS)
   const codecheckData = complianceFiltered.find((d) => d.meta.type === artefactMetadataTypes.CODECHECKS_AGGREGATED)
 
+  const malwareFindings = complianceFiltered.filter((d) => d.meta.type === artefactMetadataTypes.FINDING_MALWARE)
+  const lastMalwareScan = findLastScan(complianceFiltered, datasources.CLAMAV)
+
+  const singleScanCfgOrNull = ({
+    scanCfgs,
+    complianceToolName,
+  }) => {
+    // only show the "shortcut" rescan button iff there is _one_ scan config and this scan config includes
+    // a certain configuration (otherwise, we're not able to determine the correct configs (i.e. bdba groups))
+    return scanCfgs?.length === 1 && complianceToolName in scanCfgs[0].config ? scanCfgs[0] : null
+  }
+
   return <TableCell>
     <Grid container direction='row-reverse' spacing={1}>
       <IssueChip
@@ -289,6 +312,18 @@ const ComplianceCell = ({
         />
       }
       {
+        artefact.kind === 'resource' && <MalwareFindingCell
+          ocmNode={new OcmNode([component], artefact, 'resource')}
+          ocmRepo={ocmRepo}
+          metadataTypedef={findTypedefByName({name: artefactMetadataTypes.FINDING_MALWARE})}
+          scanConfig={singleScanCfgOrNull({scanCfgs: scanConfigs, complianceToolName: COMPLIANCE_TOOLS.CLAMAV})}
+          fetchComplianceData={fetchComplianceData}
+          fetchComplianceSummary={fetchComplianceSummary}
+          lastScan={lastMalwareScan}
+          severity={getMaxSeverity(malwareFindings)}
+        />
+      }
+      {
         artefact.kind === 'resource' && <OsCell
           severity={artefactMetadatumSeverity(osData)}
           timestamp={osData?.meta.creation_date}
@@ -312,7 +347,7 @@ const ComplianceCell = ({
           severity={getMaxSeverity(vulnerabilities)}
           lastUpdateDate={getLatestUpdateTimestamp(bdbaFindings).toLocaleString()}
           reportUrl={getReportUrl(bdbaFindings)}
-          scanConfigs={scanConfigs}
+          scanConfig={singleScanCfgOrNull({scanCfgs: scanConfigs, complianceToolName: COMPLIANCE_TOOLS.BDBA})}
           fetchComplianceData={fetchComplianceData}
           fetchComplianceSummary={fetchComplianceSummary}
         />
@@ -563,6 +598,105 @@ BDBAButton.propTypes = {
 }
 
 
+const MalwareFindingCell = ({
+  ocmNode,
+  ocmRepo,
+  metadataTypedef,
+  scanConfig,
+  fetchComplianceData,
+  fetchComplianceSummary,
+  lastScan,
+  severity,
+}) => {
+  const [mountRescoring, setMountRescoring] = React.useState(false)
+
+  const handleRescoringClose = () => {
+    setMountRescoring(false)
+  }
+
+  const title = metadataTypedef.friendlyName
+
+  const lastScanTimestamp = (lastScan) => {
+    if (!lastScan) return null
+    return new Date(lastScan.meta.last_update).toLocaleString()
+  }
+
+  return <Grid item onClick={(e) => e.stopPropagation()}>
+    {
+      mountRescoring && <BDBARescoringModal
+        ocmNodes={[ocmNode]}
+        ocmRepo={ocmRepo}
+        type={metadataTypedef.name}
+        handleClose={handleRescoringClose}
+        fetchComplianceData={fetchComplianceData}
+        fetchComplianceSummary={fetchComplianceSummary}
+        scanConfig={scanConfig}
+      />
+    }
+    <Tooltip
+      title={
+        <Stack>
+          <List>
+            {
+              scanConfig && <TriggerComplianceToolButton
+                ocmNode={ocmNode}
+                cfgName={scanConfig.name}
+                service={COMPLIANCE_TOOLS.CLAMAV}
+              />
+            }
+            {
+              lastScan && <RescoringButton
+                setMountRescoring={setMountRescoring}
+                title={`${title} Rescoring`}
+              />
+            }
+          </List>
+          <Typography variant='inherit'>
+            {
+              lastScan
+                ? `Last scan: ${lastScanTimestamp(lastScan)}`
+                : 'No last scan'
+            }
+          </Typography>
+        </Stack>
+      }
+    >
+      {
+        lastScan ? <Chip
+          color={severity.color}
+          label={severity.name === SEVERITIES.CLEAN
+            ? `No ${title}`
+            : `${title} found`
+          }
+          variant='outlined'
+          size='small'
+          icon={<UnfoldMoreIcon/>}
+          clickable={false}
+        /> : <Chip
+          color='default'
+          label={`No ${title} Scan`}
+          variant='outlined'
+          size='small'
+          icon={scanConfig && <UnfoldMoreIcon/>}
+          clickable={false}
+        />
+      }
+    </Tooltip>
+  </Grid>
+}
+MalwareFindingCell.displayName = 'MalwareFindingCell'
+MalwareFindingCell.propTypes = {
+  ocmNode: PropTypes.object.isRequired,
+  ocmRepo: PropTypes.string,
+  metadataTypedef: PropTypes.object.isRequired,
+  severity: PropTypes.object.isRequired,
+  lastScan: PropTypes.object,
+  scanConfig: PropTypes.object,
+  fetchComplianceData: PropTypes.func.isRequired,
+  fetchComplianceSummary: PropTypes.func.isRequired,
+}
+
+
 const BDBACell = ({
   component,
   artefact,
@@ -571,7 +705,7 @@ const BDBACell = ({
   severity,
   lastUpdateDate,
   reportUrl,
-  scanConfigs,
+  scanConfig,
   fetchComplianceData,
   fetchComplianceSummary,
 }) => {
@@ -580,10 +714,6 @@ const BDBACell = ({
   const handleRescoringClose = () => {
     setMountRescoring(false)
   }
-
-  // only show the "shortcut" bdba rescan button iff there is _one_ scan config and this scan config includes
-  // a bdba configuration (otherwise, we're not able to determine the correct bdba configs (i.e. groups))
-  const scanConfig = scanConfigs?.length === 1 && COMPLIANCE_TOOLS.BDBA in scanConfigs[0].config ? scanConfigs[0] : null
 
   if (scanConfig) {
     // if artefact type filter is set, don't show bdba cell for types that are filtered out
@@ -684,7 +814,7 @@ BDBACell.propTypes = {
   severity: PropTypes.object.isRequired,
   lastUpdateDate: PropTypes.string.isRequired,
   reportUrl: PropTypes.string,
-  scanConfigs: PropTypes.arrayOf(PropTypes.object),
+  scanConfig: PropTypes.object,
   fetchComplianceData: PropTypes.func.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
 }

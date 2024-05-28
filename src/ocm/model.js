@@ -74,6 +74,15 @@ const artefactMetadataTypes = {
 }
 Object.freeze(artefactMetadataTypes)
 
+
+const datasources = {
+  BDBA: 'bdba',
+  CLAMAV: 'clamav',
+  CC_UTILS: 'cc-utils',
+}
+Object.freeze(datasources)
+
+
 /**
  * Icon representing severity, defaults to UNKNOWN
  * @param {String} severity   Severity
@@ -265,6 +274,11 @@ const knownMetadataTypes = [
   {
     name: 'codechecks/aggregated',
     friendlyName: 'Codechecks',
+    SpecificTypeHandler: ObjectTextViewer,
+  },
+  {
+    name: 'finding/malware',
+    friendlyName: 'Malware',
     SpecificTypeHandler: ObjectTextViewer,
   },
 ]
@@ -981,6 +995,7 @@ ComplianceDataTypeSelector.propTypes = {
 
 export {
   artefactMetadataTypes,
+  datasources,
   defaultTypedefForName,
   findTypedefByName,
   knownMetadataTypes,
