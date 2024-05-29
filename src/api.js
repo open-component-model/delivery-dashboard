@@ -4,6 +4,7 @@ import urljoin from 'url-join'
 
 import { addMetadata } from './complianceData'
 import { appendPresentParams } from './util'
+import { TOKEN_KEY } from './consts'
 
 
 export const API_RESPONSES = {
@@ -41,7 +42,16 @@ const withAuth = async (url, config) => {
     ...config,
     credentials: 'include',
   }
-  return fetch(url, cfg)
+  const resp = await fetch(url, cfg)
+
+  // if the user is logged in but the server responds 401, it means the credentials are not valid
+  // anymore -> re-authenticate
+  if (resp.status === 401) {
+    localStorage.removeItem(TOKEN_KEY)
+    dispatchEvent(new Event('token'))
+  }
+
+  return resp
 }
 
 const _toJson = async (responsePromise) => {
