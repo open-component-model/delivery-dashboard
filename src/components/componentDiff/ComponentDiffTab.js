@@ -852,15 +852,15 @@ export const ComponentDiffTab = React.memo(({
     })
   }
 
-  const [customDiffs, setCustomDiffs] = React.useState(componentDiffsFromParam())
-
-  React.useEffect(() => {
+  const componentDiffsAsParam = (componentDiffs) => {
     searchParamContext.update({
-      componentDiff: customDiffs.map((diff) => {
+      componentDiff: componentDiffs.map((diff) => {
         return `${diff.leftName}:${diff.leftVersion}:${diff.rightName}:${diff.rightVersion}`
       })
     })
-  }, [customDiffs, searchParamContext])
+  }
+
+  const [customDiffs, setCustomDiffs] = React.useState(componentDiffsFromParam())
 
   if (isRefsLoading) return <ComponentDiffTabLoading loadingPullRequestsCount={3}/>
 
@@ -870,7 +870,6 @@ export const ComponentDiffTab = React.memo(({
     leftVersion,
     rightVersion,
   }) => {
-
     const diffExists = customDiffs.find(diff => {
       return diffIdentity(
         diff.leftName,
@@ -887,15 +886,17 @@ export const ComponentDiffTab = React.memo(({
 
     if (diffExists) return
 
-    setCustomDiffs(prev => [
-      ...prev,
+    const componentDiffs = [
+      ...customDiffs,
       {
         leftName: leftName,
         rightName: rightName,
         leftVersion: leftVersion,
         rightVersion: rightVersion,
       }
-    ])
+    ]
+    setCustomDiffs(componentDiffs)
+    componentDiffsAsParam(componentDiffs)
   }
 
   const deleteComponentDiff = ({
@@ -904,7 +905,7 @@ export const ComponentDiffTab = React.memo(({
     leftVersion,
     rightVersion,
   }) => {
-    setCustomDiffs(prev => prev.filter(diff => {
+    const componentDiffs = customDiffs.filter(diff => {
       return diffIdentity(
         diff.leftName,
         diff.rightName,
@@ -916,7 +917,9 @@ export const ComponentDiffTab = React.memo(({
         leftVersion,
         rightVersion,
       )
-    }))
+    })
+    setCustomDiffs(componentDiffs)
+    componentDiffsAsParam(componentDiffs)
   }
 
   if (prsLoading) return <ComponentDiffTabLoading loadingPullRequestsCount={3}/>
