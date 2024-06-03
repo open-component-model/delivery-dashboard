@@ -35,6 +35,7 @@ import TrendingFlatIcon from '@mui/icons-material/TrendingFlat'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import { useTheme } from '@emotion/react'
 
+import { SearchParamContext } from './../../App'
 import { ComponentVector } from './ComponentVector'
 import { shortenComponentName } from '../../util'
 import { TabPanel } from './../Tabs'
@@ -811,6 +812,8 @@ export const ComponentDiffTab = React.memo(({
   component,
   ocmRepo,
 }) => {
+  const searchParamContext = React.useContext(SearchParamContext)
+
   // eslint-disable-next-line no-unused-vars
   const [componentRefs, isRefsLoading, isRefsError, refsError] = useFetchBom(
     component,
@@ -833,7 +836,31 @@ export const ComponentDiffTab = React.memo(({
 
   const [selectedClosedPr, setSelectedClosedPr] = React.useState()
 
-  const [customDiffs, setCustomDiffs] = React.useState([])
+  const componentDiffsFromParam = () => {
+    const componentDiffs = searchParamContext.getAll('componentDiff')
+
+    // only try to parse those component diffs which have all required parts supplied
+    // -> <leftName>:<leftVersion>:<rightName>:<rightVersion>
+    return componentDiffs.filter((diff) => diff.split(':').length === 4).map((diff) => {
+      const diffParts = diff.split(':')
+      return {
+        leftName: diffParts[0],
+        leftVersion: diffParts[1],
+        rightName: diffParts[2],
+        rightVersion: diffParts[3],
+      }
+    })
+  }
+
+  const [customDiffs, setCustomDiffs] = React.useState(componentDiffsFromParam())
+
+  React.useEffect(() => {
+    searchParamContext.update({
+      componentDiff: customDiffs.map((diff) => {
+        return `${diff.leftName}:${diff.leftVersion}:${diff.rightName}:${diff.rightVersion}`
+      })
+    })
+  }, [customDiffs, searchParamContext])
 
   if (isRefsLoading) return <ComponentDiffTabLoading loadingPullRequestsCount={3}/>
 
