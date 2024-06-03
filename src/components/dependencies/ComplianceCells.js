@@ -261,7 +261,6 @@ const ComplianceCell = ({
   const structureInfos = bdbaFindings.filter((d) => d.meta.type === artefactMetadataTypes.STRUCTURE_INFO)
   const licenseFindings = bdbaFindings.filter((d) => d.meta.type === artefactMetadataTypes.LICENSE)
   const vulnerabilities = bdbaFindings.filter((d) => d.meta.type === artefactMetadataTypes.VULNERABILITY)
-  const malwareData = complianceFiltered.find((d) => d.meta.type === artefactMetadataTypes.MALWARE)
   const osData = complianceFiltered.find((d) => d.meta.type === artefactMetadataTypes.OS_IDS)
   const codecheckData = complianceFiltered.find((d) => d.meta.type === artefactMetadataTypes.CODECHECKS_AGGREGATED)
 
@@ -304,13 +303,6 @@ const ComplianceCell = ({
         }).map((structureInfo) => structureInfo.data.package_version)}
         timestamp={getLatestUpdateTimestamp(structureInfos).toLocaleString()}
       />
-      {
-        artefact.kind === 'resource' && <MalwareCell
-          findings={malwareData?.data.findings}
-          timestamp={malwareData?.meta.creation_date}
-          severity={artefactMetadatumSeverity(malwareData)}
-        />
-      }
       {
         artefact.kind === 'resource' && <MalwareFindingCell
           ocmNode={new OcmNode([component], artefact, 'resource')}
@@ -817,58 +809,6 @@ BDBACell.propTypes = {
   scanConfig: PropTypes.object,
   fetchComplianceData: PropTypes.func.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-}
-
-
-const MalwareCell = ({
-  findings,
-  timestamp,
-  severity,
-}) => {
-  if (severity.name === findSeverityCfgByName({name: SEVERITIES.UNKNOWN}).name) return <Tooltip
-    title={<Typography variant='inherit'>Last scan: Not scanned yet</Typography>}
-  >
-    <Grid item>
-      <Chip
-        color='default'
-        label='No Malware Scan'
-        variant='outlined'
-        size='small'
-        clickable={false}
-      />
-    </Grid>
-  </Tooltip>
-
-  return <Tooltip
-    title={
-      <Typography
-        variant='inherit'
-        sx={{
-          whiteSpace: 'pre-wrap',
-          maxWidth: 'none',
-        }}
-      >
-        {findings.length
-          ? JSON.stringify(findings, null, 2)
-          : `Last scan: ${new Date(timestamp).toLocaleString()}`}
-      </Typography>
-    }
-  >
-    <Grid item>
-      <Chip
-        color={severity.color}
-        label={!findings.length ? 'No Malware' : 'Malware found'}
-        variant='outlined'
-        size='small'
-      />
-    </Grid>
-  </Tooltip>
-}
-MalwareCell.displayName = 'MalwareCell'
-MalwareCell.propTypes = {
-  findings: PropTypes.arrayOf(PropTypes.object),
-  timestamp: PropTypes.string,
-  severity: PropTypes.object.isRequired,
 }
 
 
