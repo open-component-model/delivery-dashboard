@@ -42,7 +42,7 @@ import DockerLogo from '../../res/docker-icon.svg'
 import { artefactMetadataTypes, datasources, findTypedefByName } from '../../ocm/model'
 import { artefactMetadataFilter } from './../../cnudie'
 import { COMPLIANCE_TOOLS, SEVERITIES, TOKEN_KEY } from '../../consts'
-import { BDBARescoringModal } from './BDBARescoring'
+import { RescoringModal } from './RescoringModal'
 import { OcmNode } from '../../ocm/iter'
 import TriggerComplianceToolButton from './../util/TriggerComplianceToolButton'
 import { routes } from '../../api'
@@ -615,7 +615,7 @@ const MalwareFindingCell = ({
 
   return <Grid item onClick={(e) => e.stopPropagation()}>
     {
-      mountRescoring && <BDBARescoringModal
+      mountRescoring && <RescoringModal
         ocmNodes={[ocmNode]}
         ocmRepo={ocmRepo}
         type={metadataTypedef.name}
@@ -749,7 +749,7 @@ const BDBACell = ({
 
   return <Grid item onClick={(e) => e.stopPropagation()}>
     {
-      mountRescoring && <BDBARescoringModal
+      mountRescoring && <RescoringModal
         ocmNodes={[ocmNode]}
         ocmRepo={ocmRepo}
         type={type}
