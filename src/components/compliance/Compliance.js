@@ -60,7 +60,7 @@ import {
 import CopyOnClickChip from '../util/CopyOnClickChip'
 import { errorSnackbarProps, SEVERITIES, TOKEN_KEY } from '../../consts'
 import { OcmNode, OcmNodeDetails } from '../../ocm/iter'
-import { BDBARescoringModal } from '../dependencies/BDBARescoring'
+import { RescoringModal } from '../dependencies/RescoringModal'
 import { sanitiseArtefactExtraId } from '../../ocm/util'
 
 
@@ -947,7 +947,7 @@ const Artefacts = ({
 
   return <Box>
     {
-      mountRescoring && <BDBARescoringModal
+      mountRescoring && <RescoringModal
         ocmNodes={selectedOcmNodes}
         ocmRepo={ocmRepo}
         type={type}

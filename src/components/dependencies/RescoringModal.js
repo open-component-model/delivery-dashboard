@@ -60,8 +60,8 @@ import {
   ConfigContext,
   FeatureRegistrationContext,
   SearchParamContext,
-} from './../../App'
-import { rescore } from './../../api'
+} from '../../App'
+import { rescore } from '../../api'
 import {
   copyNotificationCfg,
   errorSnackbarProps,
@@ -70,14 +70,14 @@ import {
   META_SPRINT_NAMES,
   SEVERITIES,
   TOKEN_KEY,
-} from './../../consts'
-import { registerCallbackHandler } from './../../feature'
-import { OcmNode, OcmNodeDetails } from './../../ocm/iter'
+} from '../../consts'
+import { registerCallbackHandler } from '../../feature'
+import { OcmNode, OcmNodeDetails } from '../../ocm/iter'
 import {
   artefactMetadataTypes,
   findTypedefByName,
   knownLabelNames,
-} from './../../ocm/model'
+} from '../../ocm/model'
 import {
   findingIsResolved,
   findSeverityCfgByName,
@@ -89,11 +89,11 @@ import {
   pluralise,
   sprintNameForRescoring,
   trimLongString,
-} from './../../util'
-import CopyOnClickChip from './../util/CopyOnClickChip'
-import ErrorBoundary from './../util/ErrorBoundary'
-import ExtraWideTooltip from './../util/ExtraWideTooltip'
-import ObjectTextViewer from './../util/ObjectTextViewer'
+} from '../../util'
+import CopyOnClickChip from '../util/CopyOnClickChip'
+import ErrorBoundary from '../util/ErrorBoundary'
+import ExtraWideTooltip from '../util/ExtraWideTooltip'
+import ObjectTextViewer from '../util/ObjectTextViewer'
 
 
 const scopeOptions = {
@@ -2063,7 +2063,7 @@ Rescore.propTypes = {
 }
 
 
-const BDBARescoringModal = ({
+const RescoringModal = ({
   ocmNodes,
   ocmRepo,
   type,
@@ -2374,8 +2374,8 @@ const BDBARescoringModal = ({
     </DialogActions>
   </Dialog>
 }
-BDBARescoringModal.displayName = 'BDBARescoringModal'
-BDBARescoringModal.propTypes = {
+RescoringModal.displayName = 'RescoringModal'
+RescoringModal.propTypes = {
   ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   ocmRepo: PropTypes.string,
   type: PropTypes.string.isRequired,
@@ -2386,4 +2386,4 @@ BDBARescoringModal.propTypes = {
 }
 
 
-export { BDBARescoringModal }
+export { RescoringModal }
