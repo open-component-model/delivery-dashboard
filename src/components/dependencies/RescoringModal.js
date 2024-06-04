@@ -130,10 +130,18 @@ const patchRescoringProposals = (rescoringProposals, ocmNode) => {
 
 const rescoringIdentity = (rescoring) => {
   const finding = rescoring.finding
-  if (finding.cve) {
-    return `${rescoring.ocmNode.identity()}_${finding.package_name}_${finding.cve}`
+
+  const typeSpecific = () => {
+    if (finding.cve) {
+      return `${finding.package_name}_${finding.cve}`
+    } else if (finding.license) {
+      return `${finding.package_name}_${finding.license.name}`
+    } else if (finding.virus_name) {
+      return `${finding.virus_name}_${finding.content_digest}_${finding.filename}_${finding.layer_digest}`
+    }
   }
-  return `${rescoring.ocmNode.identity()}_${finding.package_name}_${finding.license.name}`
+
+  return `${rescoring.ocmNode.identity()}_${rescoring.finding_type}_${typeSpecific()}`
 }
 
 
