@@ -3,7 +3,8 @@ import PropTypes from 'prop-types'
 
 import { useNavigate } from 'react-router-dom'
 import {
-  Chip,
+  Badge,
+  Skeleton,
   Table,
   TableBody,
   TableCell,
@@ -12,6 +13,10 @@ import {
   Typography,
 } from '@mui/material'
 import { tableCellClasses } from '@mui/material/TableCell'
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
+import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
+import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 
 import {
   useFetchContainerStatuses,
@@ -40,13 +45,9 @@ const ServiceExtensionStatus = () => {
 
   if (!services || servicesAreLoading || servicesHaveError) {
     return <a href={`#${SERVICES_PATH}`}>
-      <Chip
-        label='Extension Status: Checking...'
-        color='levelDebug'
-        variant='outlined'
-        size='small'
-        clickable
-      />
+      <Skeleton sx={{
+        width: '1rem',
+      }}/>
     </a>
   }
 
@@ -92,11 +93,6 @@ const ServiceExtensionStatusChip = ({
       return serviceStatus.worstStatus === worstHealthStatus
     }
   })
-  const numServices = worstServices.length === serviceStatuses.length ? 'All' : worstServices.length
-  const serviceExtensionsStatus = `${numServices} extension${worstServices.length > 1 ? 's are' : ' is'}` + (
-    worstHealthStatus === healthStatuses.UNHEALTHY ? ' unhealthy' :
-      (worstHealthStatus === healthStatuses.RETRIEVAL_ERROR ? ' in an erroneous status retrieval state' :
-        (worstHealthStatus === healthStatuses.CHECKING ? ' being checked...' : ' healthy')))
 
   const tooltipContent = <Table
     padding='checkbox'
@@ -152,19 +148,39 @@ const ServiceExtensionStatusChip = ({
 
   return <a href={`#${SERVICES_PATH}`}>
     <ExtraWideTooltip title={tooltipContent}>
-      <Chip
-        label={serviceExtensionsStatus}
-        color={worstHealthStatus.color}
-        variant='outlined'
-        size='small'
-        clickable
-      />
+      <Badge
+        badgeContent={worstServices.length}
+        invisible={worstServices.length <= 1}
+        color='primary'
+      >
+        <ServiceStatusIndicator serviceStatus={worstHealthStatus}/>
+      </Badge>
     </ExtraWideTooltip>
   </a>
 }
 ServiceExtensionStatusChip.displayName = 'ServiceExtensionStatusChip'
 ServiceExtensionStatusChip.propTypes = {
-  serviceStatuses: PropTypes.arrayOf(PropTypes.object),
+  serviceStatuses: PropTypes.arrayOf(PropTypes.object).isRequired,
+}
+
+
+const ServiceStatusIndicator = ({
+  serviceStatus,
+}) => {
+  if (serviceStatus === healthStatuses.UNHEALTHY)
+    return <ReportProblemOutlinedIcon color={serviceStatus.color}/>
+
+  if (serviceStatus === healthStatuses.CHECKING)
+    return <WarningAmberIcon color={serviceStatus.color}/>
+
+  if (serviceStatus === healthStatuses.HEALTHY || serviceStatus === healthStatuses.NOT_FOUND)
+    return <CheckCircleOutlineIcon color={serviceStatus.color}/>
+
+  return <HelpOutlineOutlinedIcon color={serviceStatus.color}/>
+}
+ServiceStatusIndicator.displayName = 'ServiceStatusIndicator'
+ServiceStatusIndicator.propTypes = {
+  serviceStatus: PropTypes.object.isRequired,
 }
 
 

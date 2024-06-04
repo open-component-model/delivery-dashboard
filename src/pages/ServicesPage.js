@@ -124,7 +124,7 @@ Services.displayName = 'Services'
 export const ServiceStatus = ({
   serviceStatus,
 }) => {
-  const chip = <Chip 
+  const chip = <Chip
     label={serviceStatus.description}
     color={serviceStatus.status.color}
     variant='outlined'
