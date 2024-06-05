@@ -1910,15 +1910,28 @@ const Rescore = ({
       last_update: date,
     }
 
-    const data = {
-      finding: {
-        package_name: rescoring.finding.package_name,
-        ...type === artefactMetadataTypes.LICENSE ? {
+    const findingForType = (type) => {
+      if (type === artefactMetadataTypes.LICENSE) {
+        return {
+          package_name: rescoring.finding.package_name,
           license: rescoring.finding.license,
-        } : {
+        }
+      } else if (type === artefactMetadataTypes.VULNERABILITY) {
+        return {
+          package_name: rescoring.finding.package_name,
           cve: rescoring.finding.cve,
-        },
-      },
+        }
+      } else if (type === artefactMetadataTypes.FINDING_MALWARE) {
+        return {
+          content_digest: rescoring.finding.content_digest,
+          filename: rescoring.finding.filename,
+          malware: rescoring.finding.malware,
+        }
+      }
+    }
+
+    const data = {
+      finding: findingForType(type),
       referenced_type: type,
       severity: rescoring.severity,
       matching_rules: rescoring.matching_rules,
