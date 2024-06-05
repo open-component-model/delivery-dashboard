@@ -69,7 +69,7 @@ export const routes = {
   },
   features: api('features'),
   artefacts: {
-    queryMetadata: api('artefacts/query-metadata'),
+    queryMetadata: api('artefacts/metadata/query'),
   },
   os: {
     branches: (name) => api(`os/${name}/branches`),
