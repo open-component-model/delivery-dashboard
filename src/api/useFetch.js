@@ -285,7 +285,7 @@ const useFetchComponentDescriptor = ({
       versionFilter,
     ) => {
       try {
-        const _componentDescriptor = await components.cnudieComponent({
+        const _componentDescriptor = await components.ocmComponent({
           componentName,
           ocmRepoUrl,
           version,

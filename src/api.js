@@ -74,13 +74,14 @@ export const routes = {
   os: {
     branches: (name) => api(`os/${name}/branches`),
   },
-  cnudie: {
+  ocm: {
     component: {
-      base: api('cnudie/component'),
-      dependencies: () => `${routes.cnudie.component.base}/dependencies`,
-      versions: () => `${routes.cnudie.component.base}/versions`,
-      responsibles: () => `${routes.cnudie.component.base}/responsibles`,
-    }
+      base: api('ocm/component'),
+      dependencies: () => `${routes.ocm.component.base}/dependencies`,
+      versions: () => `${routes.ocm.component.base}/versions`,
+      responsibles: () => `${routes.ocm.component.base}/responsibles`,
+    },
+    artefactsBlob: api('/ocm/artefacts/blob'),
   },
   components: {
     base: api('components'),
@@ -108,9 +109,6 @@ export const routes = {
     scanConfigurations: () => `${routes.serviceExtensions.base}/scan-configurations`,
     backlogItems: () => `${routes.serviceExtensions.base}/backlog-items`,
   },
-  ocm: {
-    artefactsBlob: api('/ocm/artefacts/blob')
-  },
   dora: {
     base: api('dora'),
     doraMetrics: () => `${routes.dora.base}/dora-metrics`,
@@ -123,13 +121,13 @@ const features = async () => {
   return (await _toJson(withAuth(url))).features
 }
 
-const cnudieComponent = async ({
+const ocmComponent = async ({
   componentName,
   ocmRepoUrl,
   version,
   versionFilter,
 }) => {
-  const url = new URL(routes.cnudie.component.base)
+  const url = new URL(routes.ocm.component.base)
   appendPresentParams(url, {
     component_name: componentName,
     ocm_repo_url: ocmRepoUrl,
@@ -154,8 +152,8 @@ const cnudieComponent = async ({
  * - ocmRepoUrl    : ocm repo context of component
  * - populate      : population strategy, one of (all, componentReferences)
  */
-const cnudieComponentDependencies = async (componentName, version, ocmRepoUrl, populate) => {
-  const url = new URL(routes.cnudie.component.dependencies())
+const ocmComponentDependencies = async (componentName, version, ocmRepoUrl, populate) => {
+  const url = new URL(routes.ocm.component.dependencies())
   appendPresentParams(url, {
     component_name: componentName,
     version: version,
@@ -163,7 +161,7 @@ const cnudieComponentDependencies = async (componentName, version, ocmRepoUrl, p
     populate: populate,
   })
 
-  const requestId = `cnudieComponentDependencies:${componentName}:${version}:${ocmRepoUrl}:${populate}`
+  const requestId = `ocmComponentDependencies:${componentName}:${version}:${ocmRepoUrl}:${populate}`
   if (serveFromCache(requestId)) {
     return serveFromCache(requestId)
   }
@@ -180,22 +178,22 @@ const cnudieComponentDependencies = async (componentName, version, ocmRepoUrl, p
   updateCache(requestId, result)
   return result
 }
-cnudieComponentDependencies.propTypes = {
+ocmComponentDependencies.propTypes = {
   componentName: PropTypes.string.isRequired,
   version: PropTypes.string.isRequired,
   ocmRepoUrl: PropTypes.string,
   populate: PropTypes.string.isRequired,
 }
 
-const cnudieComponentResponsibles = async (componentName, version, ocmRepoUrl) => {
-  const url = new URL(routes.cnudie.component.responsibles())
+const ocmComponentResponsibles = async (componentName, version, ocmRepoUrl) => {
+  const url = new URL(routes.ocm.component.responsibles())
   appendPresentParams(url, {
     component_name: componentName,
     version: version,
     ocm_repo_url: ocmRepoUrl,
   })
 
-  const requestId = `cnudieComponentResponsibles:${componentName}:${version}:${ocmRepoUrl}`
+  const requestId = `ocmComponentResponsibles:${componentName}:${version}:${ocmRepoUrl}`
   if (serveFromCache(requestId)) {
     return serveFromCache(requestId)
   }
@@ -208,14 +206,14 @@ const cnudieComponentResponsibles = async (componentName, version, ocmRepoUrl) =
   return json
 }
 
-const cnudieComponentVersions = async ({
+const ocmComponentVersions = async ({
   componentName,
   ocmRepoUrl,
   max = 5,
   version,
   versionFilter,
 }) => {
-  const url = new URL(routes.cnudie.component.versions())
+  const url = new URL(routes.ocm.component.versions())
   appendPresentParams(url, {
     component_name: componentName,
     ocm_repo_url: ocmRepoUrl,
@@ -472,10 +470,10 @@ const components = {
   diff: componentsDiff,
   complianceSummary: componentsComplianceSummary,
   upgradePullRequests: componentUpgradePRs,
-  cnudieComponent: cnudieComponent,
-  componentDependencies: cnudieComponentDependencies,
-  componentResponsibles: cnudieComponentResponsibles,
-  lastVersions: cnudieComponentVersions,
+  ocmComponent: ocmComponent,
+  componentDependencies: ocmComponentDependencies,
+  componentResponsibles: ocmComponentResponsibles,
+  lastVersions: ocmComponentVersions,
 }
 
 const auth = {
