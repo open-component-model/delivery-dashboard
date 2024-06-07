@@ -62,6 +62,7 @@ Object.freeze(knownLabelNames)
 
 
 const artefactMetadataTypes = {
+  ARTEFACT_SCAN_INFO: 'meta/artefact_scan_info',
   STRUCTURE_INFO: 'structure_info',
   LICENSE: 'finding/license',
   VULNERABILITY: 'finding/vulnerability',
@@ -699,7 +700,10 @@ const MetadataViewerPopover = ({
     name: componentName,
     version: componentVersion,
   }]
-  const types = Object.values(artefactMetadataTypes).filter((type) => type !== artefactMetadataTypes.RESCORINGS)
+  const types = Object.values(artefactMetadataTypes).filter((type) => ![
+    artefactMetadataTypes.ARTEFACT_SCAN_INFO,
+    artefactMetadataTypes.RESCORINGS,
+  ].includes(type))
   const [findings, findingsLoading, findingsError] = useFetchQueryMetadata({
     components,
     types,
