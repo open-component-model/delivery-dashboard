@@ -301,9 +301,16 @@ export const formatAndSortSprints = (sprints) => {
     const endDate = new Date(sprint.end_date)
     const timeDeltaDays = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
 
+    const displayName = () => {
+      if (timeDeltaDays === 0) return 'Today'
+      if (timeDeltaDays <= 14) return `In ${timeDeltaDays} Days`
+
+      return endDate.toLocaleDateString()
+    }
+
     return {
       ...commonSprintInfo,
-      displayName: timeDeltaDays <= 14 ? `In ${timeDeltaDays} Days` : endDate.toLocaleDateString(),
+      displayName: displayName(),
       tooltip: `Sprint ${sprint.name}\nDue in ${timeDeltaDays} days on ${endDate.toLocaleDateString()}`,
       color: 'default',
       endDate: endDate,
