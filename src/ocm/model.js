@@ -51,6 +51,9 @@ import {
 import ObjectTextViewer from '../components/util/ObjectTextViewer'
 import { useFetchComponentDescriptor, useFetchQueryMetadata } from '../api/useFetch'
 import CopyOnClickChip from '../components/util/CopyOnClickChip'
+import PestControlIcon from '@mui/icons-material/PestControl'
+import CoronavirusIcon from '@mui/icons-material/Coronavirus'
+import ArticleIcon from '@mui/icons-material/Article'
 
 
 const knownLabelNames = {
@@ -127,6 +130,7 @@ const defaultTypedefForName = ({
     name: name,
     friendlyName: name,
     SpecificTypeHandler: ObjectTextViewer,
+    Icon: ArticleIcon,
   }
 }
 
@@ -250,36 +254,43 @@ const knownMetadataTypes = [
     name: 'structure_info',
     friendlyName: 'Structure Info',
     SpecificTypeHandler: ObjectTextViewer,
+    Icon: ArticleIcon
   },
   {
     name: 'finding/license',
     friendlyName: 'License',
     SpecificTypeHandler: ObjectTextViewer,
+    Icon: ArticleIcon
   },
   {
     name: 'malware',
     friendlyName: 'Malware',
     SpecificTypeHandler: ObjectTextViewer,
+    Icon: ArticleIcon
   },
   {
     name: 'os_ids',
     friendlyName: 'OS Information',
     SpecificTypeHandler: ObjectTextViewer,
+    Icon: ArticleIcon
   },
   {
     name: 'finding/vulnerability',
     friendlyName: 'Vulnerability',
     SpecificTypeHandler: ObjectTextViewer,
+    Icon: PestControlIcon
   },
   {
     name: 'codechecks/aggregated',
     friendlyName: 'Codechecks',
     SpecificTypeHandler: ObjectTextViewer,
+    Icon: ArticleIcon
   },
   {
     name: 'finding/malware',
     friendlyName: 'Malware',
     SpecificTypeHandler: ObjectTextViewer,
+    Icon: CoronavirusIcon
   },
 ]
 
