@@ -618,7 +618,6 @@ const MalwareFindingCell = ({
       mountRescoring && <RescoringModal
         ocmNodes={[ocmNode]}
         ocmRepo={ocmRepo}
-        type={metadataTypedef.name}
         handleClose={handleRescoringClose}
         fetchComplianceData={fetchComplianceData}
         fetchComplianceSummary={fetchComplianceSummary}
@@ -636,12 +635,10 @@ const MalwareFindingCell = ({
                 service={COMPLIANCE_TOOLS.CLAMAV}
               />
             }
-            {
-              lastScan && <RescoringButton
-                setMountRescoring={setMountRescoring}
-                title={`${title} Rescoring`}
-              />
-            }
+            <RescoringButton
+              setMountRescoring={setMountRescoring}
+              title={'Rescoring'}
+            />
           </List>
           <Typography variant='inherit'>
             {
@@ -772,7 +769,7 @@ const BDBACell = ({
             }
             <RescoringButton
               setMountRescoring={setMountRescoring}
-              title={`${title} Rescoring`}
+              title={'Rescoring'}
             />
             <BDBAButton reportUrl={reportUrl}/>
           </List>
