@@ -2,9 +2,6 @@ import React from 'react'
 import PropTypes from 'prop-types'
 
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Button,
   Box,
   Card,
@@ -48,7 +45,6 @@ import CheckIcon from '@mui/icons-material/Check'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import DeleteIcon from '@mui/icons-material/Delete'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
@@ -75,17 +71,15 @@ import { registerCallbackHandler } from '../../feature'
 import { OcmNode, OcmNodeDetails } from '../../ocm/iter'
 import {
   artefactMetadataTypes,
+  defaultTypedefForName,
   findTypedefByName,
   knownLabelNames,
 } from '../../ocm/model'
 import {
-  findingIsResolved,
   findSeverityCfgByName,
   formatAndSortSprints,
   isTokenExpired,
-  mostSpecificRescoring,
   normaliseObject,
-  orderRescoringsBySpecificity,
   pluralise,
   rescoringProposalSeverity,
   sprintNameForRescoring,
@@ -95,7 +89,6 @@ import CopyOnClickChip from '../util/CopyOnClickChip'
 import ErrorBoundary from '../util/ErrorBoundary'
 import ExtraWideTooltip from '../util/ExtraWideTooltip'
 import ObjectTextViewer from '../util/ObjectTextViewer'
-
 
 const scopeOptions = {
   GLOBAL: 'Global',
@@ -384,108 +377,166 @@ RescoringHeader.propTypes = {
 }
 
 
-const Filtering = ({
-  selectedSprints,
-  setSelectedSprints,
-  sprints,
+
+const RescoringFilterOption = ({
+  updateFilterCallback,
+  isLoading,
+  filterCallback,
+  options,
+  optionIdCallback,
+  optionNameCallback,
+  title,
+  colorCallback = () => 'default',
 }) => {
-  const searchParamContext = React.useContext(SearchParamContext)
   const theme = useTheme()
+  const [selected, setSelected] = React.useState([])
 
-  if (sprints.length === 0) return null
+  React.useEffect(() => {
+    updateFilterCallback((rescoring) => {
+      if (selected.length === 0) return true
+      return filterCallback(selected, rescoring)
+    })
+  }, [updateFilterCallback, selected, filterCallback])
 
-  // if there are any sprints selected which don't have any
-  // associated findings, remove them from the selection
-  if (selectedSprints.some((sprint) => !sprints.find((s) => sprint === s.name))) {
-    const updatedSprintSelection = selectedSprints.filter((sprint) => sprints.find((s) => sprint === s.name))
-    setSelectedSprints(updatedSprintSelection)
-    searchParamContext.update({'sprints': updatedSprintSelection})
+  const Loading = () => {
+    return <li>
+      <Box width='15vw'>
+        <Skeleton/>
+      </Box>
+    </li>
   }
 
-  const onChipToggle = (sprint) => {
-    const updatedSprintSelection = selectedSprints.includes(sprint.name)
-      ? selectedSprints.filter((selected) => selected !== sprint.name)
-      : [...selectedSprints, sprint.name]
+  return <Stack direction='column' spacing={2}>
+    <Typography>
+      {title}
+    </Typography>
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+        listStyle: 'none',
+        p: 0.5,
+        m: 0,
+      }}
+      component='ul'
+    >
+      {
+        isLoading ? <Loading/> : options.map((option) => {
+          const select = (current, target) => {
+            setSelected([...current, target])
+          }
 
-    searchParamContext.update({'sprints': updatedSprintSelection})
-    setSelectedSprints(updatedSprintSelection)
-  }
+          const unselect = (current, target) => {
+            setSelected(current.filter(s => s !== target))
+          }
 
-  return <>
-    <Divider sx={{ marginY: '0.8rem' }}/>
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Typography>Filter by Due Date</Typography>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          flexWrap: 'wrap',
-          margin: 0,
-          listStyle: 'none',
-        }}
-        component='ul'
-      >
-        {
-          sprints.map((sprint) => <li
-            key={sprint.name}
+          const isSelected = (current, target) => {
+            return current.includes(target)
+          }
+
+          const onToggle = (current, target) => {
+            isSelected(current, target)
+              ? unselect(current, target)
+              : select(current, target)
+          }
+
+          return <li
+            key={optionIdCallback(option)}
             style={{
-              marginTop: theme.spacing(0.5),
-              marginBottom: theme.spacing(0.5),
-              marginRight: theme.spacing(1),
-              marginLeft: theme.spacing(1),
+              margin: theme.spacing(0.5),
             }}
           >
-            <Tooltip
-              title={<Typography
-                variant='inherit'
-                whiteSpace='pre-line'
-              >
-                {
-                  sprint.tooltip
-                }
-              </Typography>}
-            >
+            {
               <Chip
-                label={sprint.displayName}
-                color={sprint.color}
-                size='small'
-                variant={selectedSprints.includes(sprint.name) ? 'filled' : 'outlined'}
-                onClick={() => onChipToggle(sprint)}
-                // onDelete has to be set to show deleteIcon, just mimic behaviour of onClick event
-                onDelete={() => onChipToggle(sprint)}
-                // deleteIcon property is used to display number of findings in the sprint (-> not for deletion)
-                deleteIcon={<div style={{
-                  background: theme.bomButton.color === 'white' ? 'black' : 'white',
-                  marginBottom: '1rem',
-                  marginRight: '-0.5rem',
-                  borderRadius: '50%',
-                  width: '1.3rem',
-                  height: '1.3rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderStyle: 'solid',
-                  borderWidth: '0.1rem',
-                }}>
-                  <Typography variant='caption' color={theme.bomButton.color}>
-                    {
-                      sprint.count
-                    }
-                  </Typography>
-                </div>}
+                label={optionNameCallback(option)}
+                variant={
+                  isSelected(selected, optionIdCallback(option))
+                    ? 'filled'
+                    : 'outlined'
+                }
+                color={colorCallback(option)}
+                size={'small'}
+                onClick={() => onToggle(selected, optionIdCallback(option))}
               />
-            </Tooltip>
-          </li>)
-        }
-      </Box>
-    </div>
-  </>
+            }
+          </li>
+        })
+      }
+    </Box>
+  </Stack>
 }
-Filtering.displayName = 'Filtering'
-Filtering.propTypes = {
-  selectedSprints: PropTypes.arrayOf(PropTypes.string).isRequired,
-  setSelectedSprints: PropTypes.func.isRequired,
+RescoringFilterOption.displayName = 'RescoringFilterOption'
+RescoringFilterOption.propTypes = {
+  updateFilterCallback: PropTypes.func.isRequired,
+  isLoading: PropTypes.bool.isRequired,
+  filterCallback: PropTypes.func.isRequired,
+  colorCallback: PropTypes.func.isRequired,
+  options: PropTypes.arrayOf(PropTypes.object).isRequired,
+  optionIdCallback: PropTypes.func.isRequired,
+  optionNameCallback: PropTypes.func.isRequired,
+  title: PropTypes.string.isRequired,
+}
+
+
+const RescoringFilter = ({
+  sprints,
+  findingTypes,
+  updateFilter,
+  rescoringsLoading,
+  sprintsLoading,
+  severityCfgs,
+}) => {
+  return <Stack direction='column' spacing={5}>
+    <Stack direction='row' spacing={5}>
+      <RescoringFilterOption
+        updateFilterCallback={React.useCallback((callback) => updateFilter('severity', callback), [updateFilter])}
+        isLoading={rescoringsLoading}
+        filterCallback={React.useCallback((selected, rescoring) => selected.some(s => s === rescoringProposalSeverity(rescoring)), [])}
+        colorCallback={(severityCfg) => severityCfg.color}
+        options={severityCfgs}
+        optionIdCallback={(severityCfg) => severityCfg.name}
+        optionNameCallback={(severityCfg) => severityCfg.name}
+        title='Severity'
+      />
+      <Divider
+        orientation='vertical'
+        flexItem
+      />
+      <RescoringFilterOption
+        updateFilterCallback={React.useCallback((callback) => updateFilter('sprint', callback), [updateFilter])}
+        isLoading={rescoringsLoading}
+        filterCallback={React.useCallback((selected, rescoring) => selected.some(s => s === rescoring.finding_type), [])}
+        options={findingTypes}
+        optionIdCallback={(metadataType) => metadataType.name}
+        optionNameCallback={(metadataType) => metadataType.friendlyName}
+        title='Finding Type'
+      />
+      <Divider
+        orientation='vertical'
+        flexItem
+      />
+      <RescoringFilterOption
+        updateFilterCallback={React.useCallback(callback => updateFilter('sprint', callback), [updateFilter])}
+        isLoading={sprintsLoading}
+        filterCallback={React.useCallback((selected, rescoring) => selected.some((sprint) => sprintNameForRescoring(rescoring) === sprint), [])}
+        countCallback={(sprint) => sprint.count}
+        options={sprints}
+        optionIdCallback={(sprint) => sprint.name}
+        optionNameCallback={(sprint) => sprint.displayName}
+        title='Due Date'
+      />
+    </Stack>
+  </Stack>
+}
+RescoringFilter.displayName = 'RescoringFilter'
+RescoringFilter.propTypes = {
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
+  findingTypes: PropTypes.arrayOf(PropTypes.object).isRequired,
+  updateFilter: PropTypes.func.isRequired,
+  rescoringsLoading: PropTypes.bool.isRequired,
+  sprintsLoading: PropTypes.bool.isRequired,
+  severityCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -498,6 +549,9 @@ const RescoringRowLoading = ({
       <Skeleton/>
     </TableCell>
     <TableCell width='140vw'>
+      <Skeleton/>
+    </TableCell>
+    <TableCell width='20vw'>
       <Skeleton/>
     </TableCell>
     {
@@ -900,7 +954,7 @@ const ApplicableRescorings = ({
   }
 
   return <TableRow>
-    <TableCell sx={{ padding: 0, border: 'none' }} colSpan={sprintsIsAvailable ? 9 : 8}>
+    <TableCell sx={{ padding: 0, border: 'none' }} colSpan={sprintsIsAvailable ? 10 : 9}>
       <Collapse in={expanded} unmountOnExit>
         <Card sx={{ paddingY: '1rem' }}>
           <Typography sx={{ paddingLeft: '1rem' }}>Applicable Rescorings</Typography>
@@ -1001,25 +1055,212 @@ ApplicableRescorings.propTypes = {
 }
 
 
-const RescoringRow = ({
+const MalwareExtraInfo = ({
+  contentDigest,
+  filename,
+}) => {
+  return <ExtraWideTooltip
+    title={
+      <div style={{ overflowY: 'auto', maxHeight: '15rem' }}>
+        <Typography
+          variant='inherit'
+          sx={{
+            fontWeight: 'bold',
+          }}
+          marginBottom='0.5rem'
+        >
+          Content Digest
+        </Typography>
+        <Typography variant='inherit'>
+          {contentDigest}
+        </Typography>
+        <Divider/>
+        <Typography
+          variant='inherit'
+          sx={{
+            fontWeight: 'bold',
+          }}
+          marginBottom='0.5rem'
+        >
+          Layer Digest
+        </Typography>
+        <Divider/>
+        <Typography
+          variant='inherit'
+          sx={{
+            fontWeight: 'bold',
+          }}
+          marginBottom='0.5rem'
+        >
+          Filename
+        </Typography>
+        <Typography variant='inherit'>
+          {filename}
+        </Typography>
+      </div>
+    }
+  >
+    <InfoOutlinedIcon sx={{ height: '1rem' }}/>
+  </ExtraWideTooltip>
+}
+MalwareExtraInfo.displayName = 'MalwareExtraInfo'
+MalwareExtraInfo.propTypes = {
+  contentDigest: PropTypes.string.isRequired,
+  filename: PropTypes.string.isRequired,
+}
+
+
+const Subject = ({
   rescoring,
-  setRescorings,
-  selectedRescorings,
-  setSelectedRescorings,
-  type,
-  editRescoring,
-  fetchComplianceData,
-  fetchComplianceSummary,
+  ocmNode,
   ocmRepo,
-  rescoringFeature,
+}) => {
+  const finding = rescoring.finding
+
+  if ([
+    artefactMetadataTypes.VULNERABILITY,
+    artefactMetadataTypes.LICENSE,
+  ].includes(rescoring.finding_type)
+  ) {
+    return <Stack>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <Typography variant='inherit'>{finding.package_name}</Typography>
+        <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
+      </div>
+      <Typography variant='inherit' whiteSpace='pre-line'>{finding.package_versions}</Typography>
+    </Stack>
+
+  } else if (rescoring.finding_type === artefactMetadataTypes.FINDING_MALWARE) {
+    return <Stack>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <Typography variant='inherit'>{finding.filename.split('/').pop()}</Typography>
+        <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
+      </div>
+    </Stack>
+  }
+}
+Subject.displayName = 'Subject'
+Subject.propTypes = {
+  rescoring: PropTypes.object.isRequired,
+  ocmNode: PropTypes.object.isRequired,
+  ocmRepo: PropTypes.string,
+}
+
+
+const Finding = ({
+  rescoring,
+  severity,
+}) => {
+  const finding = rescoring.finding
+
+  if (rescoring.finding_type === artefactMetadataTypes.VULNERABILITY) {
+    return <Stack spacing={0.5}>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.4rem'}}>
+        <Tooltip
+          title={<div style={{ overflowY: 'auto', maxHeight: '15rem' }}>
+            {
+              finding.summary ?? 'No description available, please use the link instead'
+            }
+          </div>}
+        >
+          <Link
+            href={finding.urls[0]} // assume first always nist.gov
+            target='_blank'
+            rel='noopener'
+            color='secondary'
+            marginRight='0.4rem'
+            variant='inherit'
+          >
+            {
+              finding.cve
+            }
+          </Link>
+        </Tooltip>
+        <VulnerabilityExtraInfo vector={finding.cvss} filesystemPaths={finding.filesystem_paths}/>
+      </div>
+      <div style={{ display: 'flex' }}>
+        <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
+        <Typography variant='inherit' color={`${findSeverityCfgByName({name: finding.severity}).color}.main`}>
+          {
+            finding.severity
+          }
+        </Typography>
+      </div>
+      <div style={{ display: 'flex' }}>
+        <Typography variant='inherit' marginRight='0.4rem'>CVSS v3:</Typography>
+        <Typography variant='inherit' color={`${findSeverityCfgByName({name: finding.severity}).color}.main`}>
+          {
+            finding.cvss_v3_score
+          }
+        </Typography>
+      </div>
+    </Stack>
+
+  } else if (rescoring.finding_type === artefactMetadataTypes.FINDING_MALWARE) {
+    return <Stack spacing={0.5}>
+      <Typography variant='inherit' marginRight='0.4rem'>{finding.malware}</Typography>
+      <div style={{ display: 'flex' }}>
+        <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
+        <Typography variant='inherit' color={`${findSeverityCfgByName({name: severity}).color}.main`}>
+          {severity}
+        </Typography>
+        <MalwareExtraInfo
+          contentDigest={finding.content_digest}
+          filename={finding.filename}
+        />
+      </div>
+    </Stack>
+  } else if (rescoring.finding_type === artefactMetadataTypes.LICENSE) {
+    return <Stack spacing={0.5}>
+      <div style={{ display: 'flex' }}>
+        <Typography variant='inherit' marginRight='0.4rem'>{finding.license.name}</Typography>
+        <ExtraWideTooltip
+          title={
+            <div style={{ overflowY: 'auto', maxHeight: '15rem' }}>
+              {
+                finding.filesystem_paths.length > 0 && <>
+                  <FilesystemPathsInfo filesystemPaths={finding.filesystem_paths}/>
+                  <Divider sx={{ marginTop: '0.5rem', marginBottom: '1rem' }}/>
+                </>
+              }
+            </div>
+          }
+        >
+          <InfoOutlinedIcon sx={{ height: '1rem' }}/>
+        </ExtraWideTooltip>
+      </div>
+      <div style={{ display: 'flex' }}>
+        <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
+        <Typography variant='inherit' color={`${findSeverityCfgByName({name: severity}).color}.main`}>
+          {severity}
+        </Typography>
+      </div>
+      <Typography variant='inherit' marginRight='0.4rem'>{finding.malware}</Typography>
+    </Stack>
+  }
+}
+Finding.displayName = 'Finding'
+Finding.propTypes = {
+  rescoring: PropTypes.object.isRequired,
+  severity: PropTypes.string.isRequired,
+}
+
+
+const RescoringContentTableRow = ({
+  ocmRepo,
+  rescoring,
+  editRescoring,
+  selectedRescorings,
+  selectRescoring,
   sprints,
   scanConfig,
+  setRescorings,
+  fetchComplianceData,
+  fetchComplianceSummary,
+  rescoringFeature,
+  severityCfgs,
 }) => {
-  const [expanded, setExpanded] = React.useState(false)
-  const [commentDelayTimer, setCommentDelayTimer] = React.useState(null)
-
   const {
-    finding,
     severity,
     matching_rules,
     applicable_rescorings,
@@ -1027,19 +1268,16 @@ const RescoringRow = ({
     originalSeverityProposal,
     originalMatchingRules,
   } = rescoring
+
+  const [expanded, setExpanded] = React.useState(false)
+
+  const matchingRules = matching_rules
+  const applicableRescorings = applicable_rescorings
+
   const currentSeverity = rescoringProposalSeverity(rescoring)
   const currentSeverityCfg = findSeverityCfgByName({name: currentSeverity})
 
   const isAuthenticated = JSON.parse(localStorage.getItem(TOKEN_KEY)) !== null
-
-  const maxVersionStrLength = 12
-  const packageVersions = finding.package_versions.map((version) => {
-    return trimLongString(version, maxVersionStrLength)
-  }).join('\n')
-  const versionHasOverlength = finding.package_versions.reduce((hasOverlength, version) => {
-    return hasOverlength || version.length > maxVersionStrLength
-  }, false)
-
   const sprintInfo = sprints.find((s) => s.name === sprintNameForRescoring(rescoring))
 
   const severityToDays = (severity, maxProcessingDays) => {
@@ -1066,16 +1304,7 @@ const RescoringRow = ({
     <Typography variant='inherit'>{diffDays}</Typography>
   </Tooltip> : <Typography variant='inherit' visibility='hidden'>Dummy</Typography>
 
-  const selectRescoring = () => {
-    if (selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))) {
-      setSelectedRescorings((prev) => prev.filter((r) => rescoringIdentity(r) !== rescoringIdentity(rescoring)))
-      return
-    }
-    setSelectedRescorings((prev) => [
-      ...prev,
-      rescoring,
-    ])
-  }
+  const [commentDelayTimer, setCommentDelayTimer] = React.useState(null)
 
   const delayCommentUpdate = (comment) => {
     if (commentDelayTimer) {
@@ -1092,20 +1321,25 @@ const RescoringRow = ({
     )
   }
 
+  const typedef = findTypedefByName({name: rescoring.finding_type})
+  const Icon = typedef ? typedef.Icon
+    : defaultTypedefForName({name: rescoring.finding_type}).Icon
+
+
   return <>
     <TableRow
       onClick={() => {
-        if (applicable_rescorings.length > 0) {
+        if (applicableRescorings.length > 0) {
           setExpanded(!expanded)
         }
       }}
-      sx={applicable_rescorings.length > 0 ? { '&:hover': { cursor: 'pointer' } } : {}}
+      sx={applicableRescorings.length > 0 ? { '&:hover': { cursor: 'pointer' } } : {}}
       hover
     >
       <TableCell
         onClick={(e) => {
           e.stopPropagation()
-          selectRescoring()
+          selectRescoring(rescoring)
         }}
         sx={{ '&:hover': { cursor: 'pointer' } }}>
         <Checkbox
@@ -1113,92 +1347,24 @@ const RescoringRow = ({
         />
       </TableCell>
       <TableCell>
-        <Stack>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant='inherit'>{finding.package_name}</Typography>
-            <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
-          </div>
-          {
-            versionHasOverlength ? <Tooltip
-              title={<Typography
-                variant='inherit'
-                whiteSpace='pre-line'
-              >
-                {
-                  finding.package_versions.join('\n')
-                }
-              </Typography>}
-            >
-              <Typography variant='inherit' whiteSpace='pre-line'>{packageVersions}</Typography>
-            </Tooltip> : <Typography variant='inherit' whiteSpace='pre-line'>{packageVersions}</Typography>
-          }
-        </Stack>
+        <Subject
+          rescoring={rescoring}
+          ocmNode={ocmNode}
+          ocmRepo={ocmRepo}
+        />
       </TableCell>
       <TableCell>
-        {
-          type === artefactMetadataTypes.LICENSE ? <Stack spacing={0.5}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.4rem'}}>
-              <Typography
-                variant='inherit'
-                sx={{ fontWeight: 'bold' }}
-                marginRight='0.4rem'
-              >
-                {
-                  finding.license.name
-                }
-              </Typography>
-              <LicenseExtraInfo filesystemPaths={finding.filesystem_paths}/>
-            </div>
-            <div style={{ display: 'flex' }}>
-              <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
-              <Typography variant='inherit' color={`${findSeverityCfgByName({name: finding.severity}).color}.main`}>
-                {
-                  finding.severity
-                }
-              </Typography>
-            </div>
-          </Stack> : <Stack spacing={0.5}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.4rem'}}>
-              <Tooltip
-                title={<div style={{ overflowY: 'auto', maxHeight: '15rem' }}>
-                  {
-                    finding.summary ?? 'No description available, please use the link instead'
-                  }
-                </div>}
-              >
-                <Link
-                  href={finding.urls[0]} // assume first always nist.gov
-                  target='_blank'
-                  rel='noopener'
-                  color='secondary'
-                  marginRight='0.4rem'
-                  variant='inherit'
-                >
-                  {
-                    finding.cve
-                  }
-                </Link>
-              </Tooltip>
-              <VulnerabilityExtraInfo vector={finding.cvss} filesystemPaths={finding.filesystem_paths}/>
-            </div>
-            <div style={{ display: 'flex' }}>
-              <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
-              <Typography variant='inherit' color={`${findSeverityCfgByName({name: finding.severity}).color}.main`}>
-                {
-                  finding.severity
-                }
-              </Typography>
-            </div>
-            <div style={{ display: 'flex' }}>
-              <Typography variant='inherit' marginRight='0.4rem'>CVSS v3:</Typography>
-              <Typography variant='inherit' color={`${findSeverityCfgByName({name: finding.severity}).color}.main`}>
-                {
-                  finding.cvss_v3_score
-                }
-              </Typography>
-            </div>
-          </Stack>
-        }
+        <Finding
+          rescoring={rescoring}
+          ocmNode={ocmNode}
+          ocmRepo={ocmRepo}
+          severity={severity}
+        />
+      </TableCell>
+      <TableCell>
+        <Tooltip title={typedef.friendlyName}>
+          <Icon/>
+        </Tooltip>
       </TableCell>
       {
         sprintInfo && <TableCell align='center'>
@@ -1244,7 +1410,7 @@ const RescoringRow = ({
                   matchingRules: [META_RESCORING_RULES.CUSTOM_RESCORING],
                 })
                 if (!selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))) {
-                  selectRescoring()
+                  selectRescoring(rescoring)
                 }
               }}
               onClick={(e) => e.stopPropagation()}
@@ -1253,14 +1419,7 @@ const RescoringRow = ({
               sx={{ marginY: '0.5rem' }}
             >
               {
-                [
-                  findSeverityCfgByName({name: SEVERITIES.NONE}),
-                  findSeverityCfgByName({name: SEVERITIES.LOW}),
-                  findSeverityCfgByName({name: SEVERITIES.MEDIUM}),
-                  findSeverityCfgByName({name: SEVERITIES.HIGH}),
-                  findSeverityCfgByName({name: SEVERITIES.CRITICAL}),
-                  findSeverityCfgByName({name: SEVERITIES.BLOCKER}),
-                ].map((cfg) => {
+                severityCfgs.map((cfg) => {
                   return <MenuItem key={cfg.name} value={cfg.name}>
                     <Typography color={`${cfg.color}.main`} variant='body2'>
                       {
@@ -1276,7 +1435,7 @@ const RescoringRow = ({
             }
           </div>
           {
-            matching_rules.includes(META_RESCORING_RULES.CUSTOM_RESCORING) && <Tooltip
+            matchingRules.includes(META_RESCORING_RULES.CUSTOM_RESCORING) && <Tooltip
               title={`Reset to ${originalSeverityProposal}`}
             >
               <IconButton
@@ -1288,7 +1447,7 @@ const RescoringRow = ({
                     matchingRules: originalMatchingRules,
                   })
                   if (selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))) {
-                    selectRescoring()
+                    selectRescoring(rescoring)
                   }
                 }}
               >
@@ -1296,7 +1455,7 @@ const RescoringRow = ({
               </IconButton>
             </Tooltip>
           }
-          <AppliedRulesExtraInfo matchingRules={matching_rules}/>
+          <AppliedRulesExtraInfo matchingRules={matchingRules}/>
         </div>
       </TableCell>
       <TableCell>
@@ -1319,7 +1478,7 @@ const RescoringRow = ({
       </TableCell>
       <TableCell>
         {
-          applicable_rescorings.length > 0 && (
+          applicableRescorings.length > 0 && (
             expanded ? <KeyboardArrowUpIcon fontSize='small'/> : <KeyboardArrowDownIcon fontSize='small'/>
           )
         }
@@ -1337,87 +1496,106 @@ const RescoringRow = ({
     />
   </>
 }
-RescoringRow.displayName = 'RescoringRow'
-RescoringRow.propTypes = {
-  rescoring: PropTypes.object.isRequired,
-  setRescorings: PropTypes.func.isRequired,
-  selectedRescorings: PropTypes.arrayOf(PropTypes.object).isRequired,
-  setSelectedRescorings: PropTypes.func.isRequired,
-  type: PropTypes.string.isRequired,
-  editRescoring: PropTypes.func.isRequired,
-  fetchComplianceData: PropTypes.func.isRequired,
-  fetchComplianceSummary: PropTypes.func,
+RescoringContentTableRow.displayName = 'RescoringContentTableRow'
+RescoringContentTableRow.propTypes = {
   ocmRepo: PropTypes.string,
-  rescoringFeature: PropTypes.object,
+  rescoring: PropTypes.object.isRequired,
+  editRescoring: PropTypes.func.isRequired,
+  selectedRescorings: PropTypes.arrayOf(PropTypes.object).isRequired,
+  selectRescoring: PropTypes.func.isRequired,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
   scanConfig: PropTypes.object,
+  setRescorings: PropTypes.func.isRequired,
+  fetchComplianceData: PropTypes.func.isRequired,
+  fetchComplianceSummary: PropTypes.func.isRequired,
+  rescoringFeature: PropTypes.object.isRequired,
+  severityCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
-const RescoringDiff = ({
+const RescoringContent = ({
+  ocmRepo,
   rescorings,
   setRescorings,
+  editRescoring,
   selectedRescorings,
   setSelectedRescorings,
-  type,
-  editRescoring,
-  fetchComplianceData,
-  fetchComplianceSummary,
-  ocmRepo,
-  rescoringFeature,
   sprints,
   scanConfig,
+  fetchComplianceData,
+  fetchComplianceSummary,
+  rescoringFeature,
+  rescoringsLoading,
+  severityCfgs,
 }) => {
   const theme = useTheme()
   const context = React.useContext(ConfigContext)
 
-  const [page, setPage] = React.useState(0)
-  const [rowsPerPage, setRowsPerPage] = React.useState(25)
+  const orderDirections = React.useMemo(() => {
+    return {
+      ASCENDING: 'asc',
+      DESCENDING: 'desc',
+    }
+  }, [])
 
-  const orderDirections = {
-    ASCENDING: 'asc',
-    DESCENDING: 'desc',
-  }
-  const orderAttributes = {
-    PACKAGE: 'package',
-    FINDING: 'finding',
-    SPRINT: 'sprint',
-    CURRENT: 'current',
-    RESCORED: 'rescored',
-  }
+  const orderAttributes = React.useMemo(() => {
+    return {
+      SUBJECT: 'subject',
+      FINDING: 'finding',
+      SPRINT: 'sprint',
+      CURRENT: 'current',
+      RESCORED: 'rescored',
+    }
+  }, [])
 
   const [order, setOrder] = React.useState(orderDirections.ASCENDING)
-  const [orderBy, setOrderBy] = React.useState(orderAttributes.PACKAGE)
-
-  const allSelected = () => {
-    if (!rescorings) return false
-    return rescorings.every((rescoring) => {
-      return selectedRescorings.map((r) => rescoringIdentity(r)).includes(rescoringIdentity(rescoring))
-    })
-  }
-
-  const handleSort = (orderBy) => {
-    setOrder(order === orderDirections.ASCENDING ? orderDirections.DESCENDING : orderDirections.ASCENDING)
-    setOrderBy(orderBy)
-  }
+  const [orderBy, setOrderBy] = React.useState(orderAttributes.SPRINT)
 
   const sortData = (data, comparator) => {
     return data.sort(comparator)
   }
 
-  const getAccessMethod = () => {
-    if (orderBy === orderAttributes.PACKAGE) return (r) => r.finding.package_name
-    if (orderBy === orderAttributes.FINDING) return (r) => {
-      if (type === artefactMetadataTypes.LICENSE) {
-        return r.finding.license.name
-      } else if (type === artefactMetadataTypes.VULNERABILITY) {
-        return parseInt(r.finding.cve.replace(/\D/g,'')) // sort numbers rather than strings
-      }
+  const handleSort = React.useCallback((desired) => {
+    setOrder(order === orderDirections.ASCENDING ? orderDirections.DESCENDING : orderDirections.ASCENDING)
+    setOrderBy(desired)
+  }, [order, orderDirections])
+
+  const selectRescoring = React.useCallback((rescoring) => {
+    const isSelected = () => {
+      return selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))
     }
-    if (orderBy === orderAttributes.SPRINT) return (r) => r.sprint ? new Date(r.sprint.end_date) : new Date(-1)
-    if (orderBy === orderAttributes.CURRENT) return (r) => findSeverityCfgByName({name: rescoringProposalSeverity(r)}).value
-    if (orderBy === orderAttributes.RESCORED) return (r) => findSeverityCfgByName({name: r.severity}).value
-  }
+
+    const select = () => {
+      setSelectedRescorings((prev) => [
+        ...prev,
+        rescoring,
+      ])
+    }
+
+    const unselect = () => {
+      setSelectedRescorings((prev) => prev.filter((r) => rescoringIdentity(r) !== rescoringIdentity(rescoring)))
+    }
+
+    return isSelected() ? unselect() : select()
+  }, [selectedRescorings, setSelectedRescorings])
+
+  const clearSelectedRescorings = React.useCallback(() => {
+    setSelectedRescorings([])
+  }, [setSelectedRescorings])
+
+  const selectAllRescorings = React.useCallback(() => {
+    setSelectedRescorings(rescorings)
+  }, [rescorings, setSelectedRescorings])
+
+  const allSelected = React.useCallback(() => {
+    if (!rescorings) return false
+    return rescorings.every((rescoring) => {
+      return selectedRescorings.map((r) => rescoringIdentity(r)).includes(rescoringIdentity(rescoring))
+    })
+  }, [rescorings, selectedRescorings])
+
+  const [page, setPage] = React.useState(0)
+  const [rowsPerPage, setRowsPerPage] = React.useState(25)
 
   const descendingComparator = (l, r) => {
     if (r < l) return -1
@@ -1425,22 +1603,55 @@ const RescoringDiff = ({
     return 0
   }
 
-  const getComparator = () => {
-    const accessOrderByProperty = getAccessMethod()
-    return order === orderDirections.DESCENDING
-      ? (l, r) => descendingComparator(accessOrderByProperty(l), accessOrderByProperty(r))
-      : (l, r) => -descendingComparator(accessOrderByProperty(l), accessOrderByProperty(r))
+  const accessMethod = (rescoring, desired) => {
+    const rescoringType = rescoring.finding_type
+
+    const bdbaFinding = (rescoring) => {
+      const suffix = () => {
+        if (rescoringType === artefactMetadataTypes.LICENSE) {
+          return rescoring.finding.license.name
+        } else if (rescoringType === artefactMetadataTypes.VULNERABILITY) {
+          return rescoring.finding.cve
+        }
+      }
+
+      return `${rescoring.finding_type}_${suffix()}`
+    }
+
+    const bdbaAccesses = {
+      [orderAttributes.SUBJECT]: rescoring.finding.package_name,
+      [orderAttributes.FINDING]: bdbaFinding(rescoring),
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(-1),
+      [orderAttributes.CURRENT]: findSeverityCfgByName({name: rescoringProposalSeverity(rescoring)}).value,
+      [orderAttributes.RESCORED]: findSeverityCfgByName({name: rescoring.severity}).value,
+      [orderAttributes.TYPE]: rescoring.finding_type,
+    }
+
+    const malwareAccess = {
+      [orderAttributes.SUBJECT]: rescoring.finding.filename,
+      [orderAttributes.FINDING]: `${artefactMetadataTypes.FINDING_MALWARE}_${rescoring.finding.malware}`,
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(-1),
+      [orderAttributes.CURRENT]: findSeverityCfgByName({name: rescoringProposalSeverity(rescoring)}).value,
+      [orderAttributes.RESCORED]: findSeverityCfgByName({name: rescoring.severity}).value,
+      [orderAttributes.TYPE]: rescoring.finding_type,
+    }
+
+    if (
+      rescoringType === artefactMetadataTypes.VULNERABILITY
+      || rescoringType === artefactMetadataTypes.LICENSE
+    ) {
+      return bdbaAccesses[desired]
+    } else if (rescoringType === artefactMetadataTypes.FINDING_MALWARE) {
+      return malwareAccess[desired]
+    }
+
   }
 
-  const loadingRowsCount = 25
-
-  React.useEffect(() => {
-    const calculateMaxPage = () => {
-      if (!rescorings) return 0
-      return parseInt((rescorings.length - 1) / rowsPerPage)
-    }
-    if (page > calculateMaxPage()) setPage(calculateMaxPage())
-  }, [rescorings, page, rowsPerPage])
+  const getComparator = (desired) => {
+    return order === orderDirections.DESCENDING
+      ? (l, r) => descendingComparator(accessMethod(l, desired), accessMethod(r, desired))
+      : (l, r) => -descendingComparator(accessMethod(l, desired), accessMethod(r, desired))
+  }
 
   const handleChangePage = (e, newPage) => {
     setPage(newPage)
@@ -1451,134 +1662,41 @@ const RescoringDiff = ({
     setPage(0)
   }
 
-  const headerBackground = alpha(theme.palette.common.black, context.prefersDarkMode ? 0.3 : 0.07)
-
   return <Paper sx={{ background: alpha(theme.palette.common.black, context.prefersDarkMode ? 0.3 : 0.03) }}>
     <TableContainer>
       <Table sx={{ tableLayout: 'fixed' }} stickyHeader>
-        <TableHead>
-          <TableRow>
-            <TableCell
-              width='50vw'
-              onClick={() => {
-                if (allSelected()) {
-                  setSelectedRescorings((prev) => [
-                    ...prev.filter((rescoring) => !rescorings.map((r) => rescoringIdentity(r)).includes(rescoringIdentity(rescoring)))
-                  ])
-                  return
-                }
-                setSelectedRescorings((prev) => [
-                  ...prev,
-                  ...rescorings.filter((rescoring) => !selectedRescorings.map((r) => rescoringIdentity(r)).includes(rescoringIdentity(rescoring)))
-                ])
-              }}
-              sx={{
-                '&:hover': {
-                  cursor: 'pointer',
-                },
-                background: headerBackground,
-              }}
-            >
-              <Checkbox checked={allSelected()}/>
-            </TableCell>
-            <TableCell width='100vw' sx={{ background: headerBackground }}>
-              <TableSortLabel
-                onClick={() => handleSort(orderAttributes.PACKAGE)}
-                active={orderBy === orderAttributes.PACKAGE}
-                direction={order}
-              >
-                Package
-              </TableSortLabel>
-            </TableCell>
-            <TableCell width='140vw' sx={{ background: headerBackground }}>
-              <TableSortLabel
-                onClick={() => handleSort(orderAttributes.FINDING)}
-                active={orderBy === orderAttributes.FINDING}
-                direction={order}
-              >
-                {
-                  type === artefactMetadataTypes.LICENSE ? <Typography variant='inherit'>
-                    License
-                  </Typography> : (rescoringFeature?.cve_severity_url ? <Tooltip
-                    title={<Typography variant='inherit'>
-                      See <Link
-                        href={rescoringFeature.cve_severity_url}
-                        target='_blank'
-                        sx={{
-                          color: 'orange'
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {' docs '}
-                      </Link> for more information about the calculation of the severity based on the CVSS v3 score.
-                      The severity is used to determine the maximum processing times.
-                    </Typography>}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <Typography variant='inherit'>CVE</Typography>
-                      <HelpOutlineIcon sx={{ height: '1rem' }}/>
-                    </div>
-                  </Tooltip> : <Typography variant='inherit'>CVE</Typography>)
-                }
-              </TableSortLabel>
-            </TableCell>
-            {
-              sprints.length > 0 && <TableCell width='140vw' align='center' sx={{ background: headerBackground }}>
-                <TableSortLabel
-                  onClick={() => handleSort(orderAttributes.SPRINT)}
-                  active={orderBy === orderAttributes.SPRINT}
-                  direction={order}
-                >
-                  Due Date
-                </TableSortLabel>
-              </TableCell>
-            }
-            <TableCell width='70vw' align='right' sx={{ background: headerBackground }}>
-              <TableSortLabel
-                onClick={() => handleSort(orderAttributes.CURRENT)}
-                active={orderBy === orderAttributes.CURRENT}
-                direction={order}
-              >
-                Current
-              </TableSortLabel>
-            </TableCell>
-            <TableCell width='40vw' sx={{ background: headerBackground }}/>
-            <TableCell width='120vw' sx={{ background: headerBackground }}>
-              <TableSortLabel
-                onClick={() => handleSort(orderAttributes.RESCORED)}
-                active={orderBy === orderAttributes.RESCORED}
-                direction={order}
-              >
-                Rescored
-              </TableSortLabel>
-            </TableCell>
-            <TableCell width='220vw' sx={{ background: headerBackground }}>
-              Comment
-            </TableCell>
-            <TableCell width='50vw' sx={{ background: headerBackground }}/>
-          </TableRow>
-        </TableHead>
+        <RescoringContentTableHeader
+          handleSort={handleSort}
+          order={order}
+          orderAttributes={orderAttributes}
+          orderBy={orderBy}
+          allSelected={allSelected}
+          selectAllRescorings={selectAllRescorings}
+          clearSelectedRescorings={clearSelectedRescorings}
+          sprints={sprints}
+          rescoringsLoading={rescoringsLoading}
+        />
         <TableBody>
           {
-            !rescorings ? [...Array(loadingRowsCount).keys()].map((e) => <RescoringRowLoading
+            rescoringsLoading ? [...Array(25).keys()].map((e) => <RescoringRowLoading
               key={e}
               sprintsIsAvailable={sprints.length > 0}
-            />) : sortData([...rescorings], getComparator())
+            />) : sortData([...rescorings], getComparator(orderBy))
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((rescoring, idx) => <RescoringRow
-                key={`${rescoringIdentity(rescoring)}${idx}`}
-                rescoring={rescoring}
-                setRescorings={setRescorings}
-                selectedRescorings={selectedRescorings}
-                setSelectedRescorings={setSelectedRescorings}
-                type={type}
-                editRescoring={editRescoring}
-                fetchComplianceData={fetchComplianceData}
-                fetchComplianceSummary={fetchComplianceSummary}
+              .map((rescoring) => <RescoringContentTableRow
+                key={rescoringIdentity(rescoring)}
                 ocmRepo={ocmRepo}
-                rescoringFeature={rescoringFeature}
+                rescoring={rescoring}
+                editRescoring={editRescoring}
+                selectedRescorings={selectedRescorings}
+                selectRescoring={selectRescoring}
                 sprints={sprints}
                 scanConfig={scanConfig}
+                setRescorings={setRescorings}
+                fetchComplianceData={fetchComplianceData}
+                fetchComplianceSummary={fetchComplianceSummary}
+                rescoringFeature={rescoringFeature}
+                severityCfgs={severityCfgs}
               />)
           }
         </TableBody>
@@ -1595,90 +1713,139 @@ const RescoringDiff = ({
     />
   </Paper>
 }
-RescoringDiff.displayName = 'RescoringDiff'
-RescoringDiff.propTypes = {
+RescoringContent.displayName = 'RescoringContent'
+RescoringContent.propTypes = {
+  ocmRepo: PropTypes.string,
   rescorings: PropTypes.arrayOf(PropTypes.object),
   setRescorings: PropTypes.func.isRequired,
+  editRescoring: PropTypes.func.isRequired,
   selectedRescorings: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedRescorings: PropTypes.func.isRequired,
-  type: PropTypes.string.isRequired,
-  editRescoring: PropTypes.func.isRequired,
-  fetchComplianceData: PropTypes.func.isRequired,
-  fetchComplianceSummary: PropTypes.func,
-  ocmRepo: PropTypes.string,
-  rescoringFeature: PropTypes.object,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
   scanConfig: PropTypes.object,
+  fetchComplianceData: PropTypes.func.isRequired,
+  fetchComplianceSummary: PropTypes.func.isRequired,
+  rescoringFeature: PropTypes.object,
+  rescoringsLoading: PropTypes.bool.isRequired,
+  severityCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
-const RescoringDiffGroup = ({
-  rescorings,
-  setRescorings,
-  selectedRescorings,
-  setSelectedRescorings,
-  type,
-  editRescoring,
-  fetchComplianceData,
-  fetchComplianceSummary,
-  ocmRepo,
-  defaultExpanded,
-  title,
-  rescoringFeature,
+const RescoringContentTableHeader = ({
+  handleSort,
+  order,
+  orderAttributes,
+  orderBy,
+  allSelected,
+  clearSelectedRescorings,
+  selectAllRescorings,
   sprints,
-  scanConfig,
+  rescoringsLoading,
 }) => {
-  const [expanded, setExpanded] = React.useState(defaultExpanded)
+  const theme = useTheme()
+  const context = React.useContext(ConfigContext)
+  const headerBackground = alpha(theme.palette.common.black, context.prefersDarkMode ? 0.3 : 0.07)
 
-  return <Accordion
-    TransitionProps={{ unmountOnExit: true }}
-    expanded={expanded}
-    onClick={() => setExpanded(!expanded)}
-  >
-    <AccordionSummary expandIcon={<ExpandMoreIcon/>}>
-      <Typography>{title}</Typography>
-    </AccordionSummary>
-    <AccordionDetails onClick={(e) => e.stopPropagation()}>
-      <RescoringDiff
-        rescorings={rescorings}
-        setRescorings={setRescorings}
-        selectedRescorings={selectedRescorings}
-        setSelectedRescorings={setSelectedRescorings}
-        type={type}
-        editRescoring={editRescoring}
-        fetchComplianceData={fetchComplianceData}
-        fetchComplianceSummary={fetchComplianceSummary}
-        ocmRepo={ocmRepo}
-        rescoringFeature={rescoringFeature}
-        sprints={sprints}
-        scanConfig={scanConfig}
-      />
-    </AccordionDetails>
-  </Accordion>
+  return <TableHead>
+    <TableRow>
+      <TableCell
+        width='50vw'
+        onClick={() => {
+          if (allSelected()) {
+            clearSelectedRescorings()
+            return
+          }
+          selectAllRescorings()
+        }}
+        sx={{
+          '&:hover': {
+            cursor: 'pointer',
+          },
+          background: headerBackground,
+        }}
+      >
+        <Checkbox checked={allSelected() && !rescoringsLoading}/>
+      </TableCell>
+      <TableCell width='100vw' sx={{ background: headerBackground }}>
+        <TableSortLabel
+          onClick={() => handleSort(orderAttributes.SUBJECT)}
+          active={orderBy === orderAttributes.SUBJECT}
+          direction={order}
+        >
+          Subject
+        </TableSortLabel>
+      </TableCell>
+      <TableCell width='140vw' sx={{ background: headerBackground }}>
+        <TableSortLabel
+          onClick={() => handleSort(orderAttributes.FINDING)}
+          active={orderBy === orderAttributes.FINDING}
+          direction={order}
+        >
+          <Typography variant='inherit'>Finding</Typography>
+        </TableSortLabel>
+      </TableCell>
+      <TableCell width='20vw' sx={{ background: headerBackground }}>
+        <TableSortLabel
+          onClick={() => handleSort(orderAttributes.TYPE)}
+          active={orderBy === orderAttributes.TYPE}
+          direction={order}
+        >
+          <Typography variant='inherit'>Type</Typography>
+        </TableSortLabel>
+      </TableCell>
+      {
+        sprints.length > 0 && <TableCell width='140vw' align='center' sx={{ background: headerBackground }}>
+          <TableSortLabel
+            onClick={() => handleSort(orderAttributes.SPRINT)}
+            active={orderBy === orderAttributes.SPRINT}
+            direction={order}
+          >
+            Due Date
+          </TableSortLabel>
+        </TableCell>
+      }
+      <TableCell width='70vw' align='right' sx={{ background: headerBackground }}>
+        <TableSortLabel
+          onClick={() => handleSort(orderAttributes.CURRENT)}
+          active={orderBy === orderAttributes.CURRENT}
+          direction={order}
+        >
+          Current
+        </TableSortLabel>
+      </TableCell>
+      <TableCell width='40vw' sx={{ background: headerBackground }}/>
+      <TableCell width='120vw' sx={{ background: headerBackground }}>
+        <TableSortLabel
+          onClick={() => handleSort(orderAttributes.RESCORED)}
+          active={orderBy === orderAttributes.RESCORED}
+          direction={order}
+        >
+          Rescored
+        </TableSortLabel>
+      </TableCell>
+      <TableCell width='200vw' sx={{ background: headerBackground }}>
+        Comment
+      </TableCell>
+      <TableCell width='50vw' sx={{ background: headerBackground }}/>
+    </TableRow>
+  </TableHead>
 }
-RescoringDiffGroup.displayName = 'RescoringDiffGroup'
-RescoringDiffGroup.propTypes = {
-  rescorings: PropTypes.arrayOf(PropTypes.object),
-  setRescorings: PropTypes.func.isRequired,
-  selectedRescorings: PropTypes.arrayOf(PropTypes.object).isRequired,
-  setSelectedRescorings: PropTypes.func.isRequired,
-  type: PropTypes.string.isRequired,
-  editRescoring: PropTypes.func.isRequired,
-  fetchComplianceData: PropTypes.func.isRequired,
-  fetchComplianceSummary: PropTypes.func,
-  ocmRepo: PropTypes.string,
-  defaultExpanded: PropTypes.bool.isRequired,
-  title: PropTypes.string.isRequired,
-  rescoringFeature: PropTypes.object,
+RescoringContentTableHeader.displayName = 'RescoringContentTableHeader'
+RescoringContentTableHeader.propTypes = {
+  handleSort: PropTypes.func.isRequired,
+  order: PropTypes.string.isRequired,
+  orderAttributes: PropTypes.object.isRequired,
+  orderBy: PropTypes.string,
+  allSelected: PropTypes.func.isRequired,
+  clearSelectedRescorings: PropTypes.func.isRequired,
+  selectAllRescorings: PropTypes.func.isRequired,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
-  scanConfig: PropTypes.object,
+  rescoringsLoading: PropTypes.bool.isRequired,
 }
 
 
 const Rescoring = ({
   ocmNodes,
-  ocmRepo,
-  type,
   cveRescoringRuleSet,
   rescorings,
   setRescorings,
@@ -1693,6 +1860,9 @@ const Rescoring = ({
   rescoringFeature,
   sprints,
   scanConfig,
+  setRescoringsLoading,
+  rescoringsLoading,
+  severityCfgs,
 }) => {
   const [isLoading, setIsLoading] = React.useState(false)
   const [isError, setIsError] = React.useState(false)
@@ -1728,7 +1898,11 @@ const Rescoring = ({
               artefactType: ocmNode.artefact.type,
               artefactExtraId: ocmNode.artefact.extraIdentity,
               cveRescoringRuleSetName: cveRescoringRuleSet?.name,
-              types: [type]
+              types: [
+                artefactMetadataTypes.VULNERABILITY,
+                artefactMetadataTypes.LICENSE,
+                artefactMetadataTypes.FINDING_MALWARE,
+              ]
             }),
             ocmNode,
           )
@@ -1750,12 +1924,26 @@ const Rescoring = ({
         )
         setIsError(true)
       }
+      setRescoringsLoading(false)
       setIsLoading(false)
       setShowProgress(false)
       setProgress(0)
     }
     fetchRescorings(ocmNodes)
-  }, [ocmNodes, type, rescorings, setRescorings, setFilteredRescorings, cveRescoringRuleSet, isLoading, setIsLoading, isError, setIsError, setProgress, setShowProgress])
+  }, [
+    ocmNodes,
+    rescorings,
+    setRescorings,
+    setFilteredRescorings,
+    cveRescoringRuleSet,
+    isLoading,
+    setIsLoading,
+    isError,
+    setIsError,
+    setProgress,
+    setShowProgress,
+    setRescoringsLoading,
+  ])
 
   if (isError) return <Box display='flex' justifyContent='center'>
     <Typography display='flex' justifyContent='center' variant='h6'>
@@ -1765,91 +1953,40 @@ const Rescoring = ({
     </Typography>
   </Box>
 
-  if (rescorings?.length === 0) return <Box display='flex' justifyContent='center'>
-    <Typography justifyContent='center' variant='h6'>
-      {
-        `No open findings, good job! ${String.fromCodePoint('0x1F973')}` // "party-face" symbol
-      }
-    </Typography>
+  if (
+    rescorings?.length === 0
+    && !rescoringsLoading
+  ) return <Box display='flex' justifyContent='center'>
+    <Box
+      display='flex'
+      flexDirection='column'
+      alignItems='center'
+      alignContent='center'
+    >
+      <Typography display='flex' justifyContent='center' variant='h6'>
+        No rescorings match your selection
+      </Typography>
+    </Box>
   </Box>
 
-  const findingsWithoutRescoring = rescorings?.filter((rescoring) => {
-    return rescoring.applicable_rescorings.length === 0 && rescoring.finding.severity !== SEVERITIES.NONE
-  })
-  const rescoredFindings = rescorings?.filter((rescoring) => {
-    if (rescoring.applicable_rescorings.length === 0) return false
-    const rescoringsOrderedBySpecificity = orderRescoringsBySpecificity(rescoring.applicable_rescorings)
-    return rescoringsOrderedBySpecificity[0].data.severity !== SEVERITIES.NONE
-  })
-  const resolvedFindings = rescorings?.filter(findingIsResolved)
-
-  const title = findTypedefByName({name: type}).friendlyName
-
-  return <Stack spacing={3}>
-    {
-      (!findingsWithoutRescoring || findingsWithoutRescoring.length > 0) && <RescoringDiffGroup
-        rescorings={findingsWithoutRescoring}
-        setRescorings={setRescorings}
-        selectedRescorings={selectedRescorings}
-        setSelectedRescorings={setSelectedRescorings}
-        type={type}
-        editRescoring={editRescoring}
-        fetchComplianceData={fetchComplianceData}
-        fetchComplianceSummary={fetchComplianceSummary}
-        ocmRepo={ocmRepo}
-        defaultExpanded={true}
-        title={findingsWithoutRescoring
-          ? `${pluralise(title, findingsWithoutRescoring.length)} (${findingsWithoutRescoring.length})`
-          : pluralise(title)
-        }
-        rescoringFeature={rescoringFeature}
-        sprints={sprints}
-        scanConfig={scanConfig}
-      />
-    }
-    {
-      rescoredFindings?.length > 0 && <RescoringDiffGroup
-        rescorings={rescoredFindings}
-        setRescorings={setRescorings}
-        selectedRescorings={selectedRescorings}
-        setSelectedRescorings={setSelectedRescorings}
-        type={type}
-        editRescoring={editRescoring}
-        fetchComplianceData={fetchComplianceData}
-        fetchComplianceSummary={fetchComplianceSummary}
-        ocmRepo={ocmRepo}
-        defaultExpanded={false}
-        title={`Rescored ${pluralise(title, rescoredFindings.length)} (${rescoredFindings.length})`}
-        rescoringFeature={rescoringFeature}
-        sprints={sprints}
-        scanConfig={scanConfig}
-      />
-    }
-    {
-      resolvedFindings?.length > 0 && <RescoringDiffGroup
-        rescorings={resolvedFindings}
-        setRescorings={setRescorings}
-        selectedRescorings={selectedRescorings}
-        setSelectedRescorings={setSelectedRescorings}
-        type={type}
-        editRescoring={editRescoring}
-        fetchComplianceData={fetchComplianceData}
-        fetchComplianceSummary={fetchComplianceSummary}
-        ocmRepo={ocmRepo}
-        defaultExpanded={false}
-        title={`Resolved ${pluralise(title, resolvedFindings.length)} (${resolvedFindings.length})`}
-        rescoringFeature={rescoringFeature}
-        sprints={sprints}
-        scanConfig={scanConfig}
-      />
-    }
-  </Stack>
+  return <RescoringContent
+    rescorings={rescorings}
+    setRescorings={setRescorings}
+    editRescoring={editRescoring}
+    selectedRescorings={selectedRescorings}
+    setSelectedRescorings={setSelectedRescorings}
+    sprints={sprints}
+    scanConfig={scanConfig}
+    fetchComplianceData={fetchComplianceData}
+    fetchComplianceSummary={fetchComplianceSummary}
+    rescoringFeature={rescoringFeature}
+    rescoringsLoading={rescoringsLoading}
+    severityCfgs={severityCfgs}
+  />
 }
 Rescoring.displayName = 'Rescoring'
 Rescoring.propTypes = {
   ocmNodes: PropTypes.arrayOf(PropTypes.instanceOf(OcmNode)).isRequired,
-  ocmRepo: PropTypes.string,
-  type: PropTypes.string.isRequired,
   cveRescoringRuleSet: PropTypes.object,
   rescorings: PropTypes.array,
   setRescorings: PropTypes.func.isRequired,
@@ -1864,12 +2001,14 @@ Rescoring.propTypes = {
   rescoringFeature: PropTypes.object,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
   scanConfig: PropTypes.object,
+  setRescoringsLoading: PropTypes.func.isRequired,
+  rescoringsLoading: PropTypes.bool.isRequired,
+  severityCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
 const Rescore = ({
   rescorings,
-  type,
   handleClose,
   setShowProgress,
   scope,
@@ -1877,7 +2016,7 @@ const Rescore = ({
   fetchComplianceSummary,
 }) => {
   const [isLoading, setIsLoading] = React.useState(false)
-  const title = findTypedefByName({name: type}).friendlyName
+  const title = 'Rescoring'
 
   const serialiseRescoring = React.useCallback((rescoring) => {
     const artefact = {
@@ -1921,15 +2060,15 @@ const Rescore = ({
     }
 
     const data = {
-      finding: findingForType(type),
-      referenced_type: type,
+      finding: findingForType(rescoring.finding_type),
+      referenced_type: rescoring.finding_type,
       severity: rescoring.severity,
       matching_rules: rescoring.matching_rules,
       comment: rescoring.comment,
     }
 
     return {artefact, meta, data}
-  }, [scope, type])
+  }, [scope])
 
   const token = JSON.parse(localStorage.getItem(TOKEN_KEY))
 
@@ -1964,7 +2103,7 @@ const Rescore = ({
           {
             customRescoringsWithoutComment.map((r, idx) => <Typography key={idx} variant='body2'>
               {
-                `${r.finding.package_name} - ${type === artefactMetadataTypes.LICENSE ? r.finding.license.name : r.finding.cve}`
+                r.finding.finding_type
               }
             </Typography>)
           }
@@ -2065,7 +2204,6 @@ const Rescore = ({
 Rescore.displayName = 'Rescore'
 Rescore.propTypes = {
   rescorings: PropTypes.arrayOf(PropTypes.object),
-  type: PropTypes.string.isRequired,
   handleClose: PropTypes.func.isRequired,
   setShowProgress: PropTypes.func.isRequired,
   scope: PropTypes.string.isRequired,
@@ -2077,7 +2215,6 @@ Rescore.propTypes = {
 const RescoringModal = ({
   ocmNodes,
   ocmRepo,
-  type,
   handleClose,
   fetchComplianceData,
   fetchComplianceSummary,
@@ -2089,12 +2226,14 @@ const RescoringModal = ({
   const searchParamContext = React.useContext(SearchParamContext)
   const [rescoringFeature, setRescoringFeature] = React.useState()
   const [cveRescoringRuleSet, setCveRescoringRuleSet] = React.useState()
-  const [rescorings, setRescorings] = React.useState()
+  const [rescorings, setRescorings] = React.useState([])
+  const [rescoringsLoading, setRescoringsLoading] = React.useState(true)
   const [filteredRescorings, setFilteredRescorings] = React.useState()
   const [selectedRescorings, setSelectedRescorings] = React.useState([])
   const [progress, setProgress] = React.useState(0)
   const [showProgress, setShowProgress] = React.useState(false)
   const [sprints, setSprints] = React.useState([])
+  const [sprintsLoading, setSprintsLoading] = React.useState(true)
   const [selectedSprints, setSelectedSprints] = React.useState(searchParamContext.getAll('sprints').map((sprint) => {
     // since url parameters are interpreted as string, parse it to null again
     if (sprint === 'null') return null
@@ -2102,6 +2241,24 @@ const RescoringModal = ({
   }) ?? [])
 
   const [scope, setScope] = React.useState(scopeOptions.ARTEFACT)
+  const [filters, setFilters] = React.useState({})
+  /**
+   * a filter is a key:value pair whereas key MUST be a unique str identity and value a callback.
+   * the callback must accept a rescoring as single parameter and return true if the rescoring is not
+   * filtered out.
+   *
+   * the filter MUST also consider its base case where no selection is made and MUST return true
+   * in this case.
+   */
+
+  const updateFilter = React.useCallback((id, filter) => {
+    setFilters(prev => {
+      return {
+        ...prev,
+        [id]: filter
+      }
+    })
+  }, [])
 
   const editRescoring = React.useCallback(({
     rescoring,
@@ -2159,10 +2316,11 @@ const RescoringModal = ({
   }, [rescoringFeature, cveRescoringRuleSet])
 
   React.useEffect(() => {
-    if (!rescorings) return
+    if (rescoringsLoading) return
 
     if (!rescorings.some((rescoring) => rescoring.sprint)) {
       setSprints([])
+      setSprintsLoading(false)
       return
     }
 
@@ -2178,26 +2336,8 @@ const RescoringModal = ({
         },
       ]
     })).values()]: []))
-  }, [rescorings, setSprints])
-
-  React.useEffect(() => {
-    if (!rescorings) return
-
-    if (selectedSprints.length === 0) {
-      setFilteredRescorings(rescorings)
-      return
-    }
-
-    setFilteredRescorings(rescorings.filter((rescoring) => {
-      const sprintName = sprintNameForRescoring(rescoring)
-      return selectedSprints.some((sprint) => sprintName === sprint)
-    }))
-  }, [rescorings, selectedSprints])
-
-  const closeInput = (e) => {
-    if (openInput) setOpenInput(false)
-    e.stopPropagation() // stop interaction with background
-  }
+    setSprintsLoading(false)
+  }, [rescorings, setSprints, rescoringsLoading])
 
   const allowedRescorings = filteredRescorings?.filter((rescoring) => {
     return (
@@ -2206,6 +2346,51 @@ const RescoringModal = ({
     )
   })
   const filteredOutRescoringsLength = filteredRescorings ? selectedRescorings.length - allowedRescorings.length : 0
+
+  React.useEffect(() => {
+    setFilteredRescorings(rescorings.filter(rescoring => {
+      for (const filter of Object.values(filters)) {
+        // all filters must match to keep a rescoring
+        if (!filter(rescoring)) return false
+      }
+      return true
+    }))
+  }, [filters, rescorings])
+
+  const closeInput = (e) => {
+    if (openInput) setOpenInput(false)
+    e.stopPropagation() // stop interaction with background
+  }
+
+  // if there are any sprints selected which don't have any
+  // associated findings, remove them from the selection
+  if (selectedSprints.some((sprint) => !sprints.find((s) => sprint === s.name))) {
+    const updatedSprintSelection = selectedSprints.filter((sprint) => sprints.find((s) => sprint === s.name))
+    setSelectedSprints(updatedSprintSelection)
+    searchParamContext.update({'sprints': updatedSprintSelection})
+  }
+
+  const uniqueTypedefs = (rescorings) => {
+    if (rescorings.length === 0) return []
+
+    const typeDefs = new Map()
+
+    rescorings.map((rescoring) => {
+      const typedef = findTypedefByName({name: rescoring.finding_type}) || defaultTypedefForName({name: rescoring.finding_type})
+      typeDefs.set(typedef.name, typedef)
+    })
+
+    return [...typeDefs.values()]
+  }
+
+  const severityCfgs = React.useCallback(() => [
+    findSeverityCfgByName({name: SEVERITIES.NONE}),
+    findSeverityCfgByName({name: SEVERITIES.LOW}),
+    findSeverityCfgByName({name: SEVERITIES.MEDIUM}),
+    findSeverityCfgByName({name: SEVERITIES.HIGH}),
+    findSeverityCfgByName({name: SEVERITIES.CRITICAL}),
+    findSeverityCfgByName({name: SEVERITIES.BLOCKER}),
+  ], [])
 
   return <Dialog
     open
@@ -2228,7 +2413,7 @@ const RescoringModal = ({
     >
       <Grid container>
         {
-          cveRescoringRuleSet && type === artefactMetadataTypes.VULNERABILITY ? <Grid item xs={1}>
+          cveRescoringRuleSet && <Grid item xs={1}>
             {
               openInput ? <VulnerabilityRescoringDrawer
                 open={openInput}
@@ -2245,22 +2430,35 @@ const RescoringModal = ({
                 </Tooltip>
               </Box>
             }
-          </Grid> : <Grid item xs={1}/>
+          </Grid>
         }
         <Grid item xs={10}>
           <RescoringHeader
             ocmNodes={ocmNodes}
-            title={`${findTypedefByName({name: type}).friendlyName} Rescoring`}
+            title={'Rescoring'}
           />
         </Grid>
         <Grid item xs={1}/>
       </Grid>
       <Grid item xs={12}>
-        <Filtering
-          selectedSprints={selectedSprints}
-          setSelectedSprints={setSelectedSprints}
-          sprints={sprints.filter((sprint) => sprint.name !== META_SPRINT_NAMES.RESOLVED)}
-        />
+        <div style={{ padding: '0.3em' }} />
+        <Box
+          display='flex'
+          alignItems='center'
+          justifyContent='center'
+        >
+          <RescoringFilter
+            sprints={sprints.filter((sprint) => sprint.name !== META_SPRINT_NAMES.RESOLVED)}
+            findingTypes={uniqueTypedefs(rescorings)}
+            updateFilter={updateFilter}
+            rescoringsLoading={rescoringsLoading}
+            sprintsLoading={sprintsLoading}
+            severityCfgs={severityCfgs().filter(severityCfg => {
+              // only show relevant severities
+              return rescorings.some(r => rescoringProposalSeverity(r) === severityCfg.name)
+            })}
+          />
+        </Box>
       </Grid>
     </DialogTitle>
     <DialogContent
@@ -2280,7 +2478,6 @@ const RescoringModal = ({
         <Rescoring
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
-          type={type}
           cveRescoringRuleSet={cveRescoringRuleSet}
           rescorings={filteredRescorings}
           setRescorings={setRescorings}
@@ -2295,6 +2492,9 @@ const RescoringModal = ({
           rescoringFeature={rescoringFeature}
           sprints={sprints}
           scanConfig={scanConfig}
+          setRescoringsLoading={setRescoringsLoading}
+          rescoringsLoading={rescoringsLoading}
+          severityCfgs={severityCfgs()}
         />
       </ErrorBoundary>
     </DialogContent>
@@ -2308,6 +2508,23 @@ const RescoringModal = ({
       onClick={closeInput}
     >
       <Grid container alignItems='center' spacing={2}>
+        <Grid item xs={1}>
+          <Box
+            display='flex'
+            justifyContent='left'
+          >
+            {
+              rescoringsLoading ? <Box width='100vw'>
+                <Skeleton/>
+              </Box> : <Typography
+                variant='body1'
+                color='secondary'
+              >
+                {`${filteredRescorings?.length}/${rescorings.length}`}
+              </Typography>
+            }
+          </Box>
+        </Grid>
         <Grid item xs={2}>
           {
             showProgress && <LinearProgressWithLabel value={progress}/>
@@ -2348,7 +2565,6 @@ const RescoringModal = ({
           <Box display='flex' justifyContent='center'>
             <Rescore
               rescorings={allowedRescorings}
-              type={type}
               handleClose={handleClose}
               setShowProgress={setShowProgress}
               scope={scope}
@@ -2369,7 +2585,7 @@ const RescoringModal = ({
             </Tooltip>
           }
         </Grid>
-        <Grid item xs={2}/>
+        <Grid item xs={1}/>
         <Grid item xs={1}>
           <Box display='flex' justifyContent='right'>
             <Button
@@ -2389,7 +2605,6 @@ RescoringModal.displayName = 'RescoringModal'
 RescoringModal.propTypes = {
   ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   ocmRepo: PropTypes.string,
-  type: PropTypes.string.isRequired,
   handleClose: PropTypes.func.isRequired,
   fetchComplianceData: PropTypes.func.isRequired,
   fetchComplianceSummary: PropTypes.func,
