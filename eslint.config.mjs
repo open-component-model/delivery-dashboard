@@ -20,7 +20,6 @@ export default [...fixupConfigRules(compat.extends(
   'plugin:react/recommended',
   'plugin:react-hooks/recommended',
   'plugin:jsx-a11y/recommended',
-  'plugin:import/recommended',
 )), {
   plugins: {
     react: fixupPluginRules(react),
@@ -64,6 +63,5 @@ export default [...fixupConfigRules(compat.extends(
     'no-unreachable': ['warn'],
     'eol-last': ['warn'],
     'jsx-a11y/no-autofocus': ['off'],
-    'import/no-unresolved': ['off'],
   },
 }]
