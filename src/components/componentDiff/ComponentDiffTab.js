@@ -380,7 +380,7 @@ const ComponentVersionSelect = ({
         })
         setVersions(lastVersions)
         setIsLoading(false)
-      } catch (e) {
+      } catch {
         setIsError(true)
       }
     }

@@ -47,7 +47,7 @@ const Title = () => {
         if (mounted) {
           setJoke(temp)
         }
-      } catch (error) {
+      } catch {
         if (mounted) {
           setFetchError(true)
         }

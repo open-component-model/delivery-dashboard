@@ -293,7 +293,7 @@ const TokenTab = ({
       })
       localStorage.setItem(TOKEN_KEY, JSON.stringify(dashboard_jwt))
       dispatchEvent(new Event('token'))
-    } catch (e) {
+    } catch {
       setError(true)
     }
   }

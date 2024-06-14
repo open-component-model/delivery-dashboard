@@ -28,7 +28,6 @@ const updateCache = (requestId, data) => {
 
 
 const API_PREFIX =
-  // eslint-disable-next-line no-undef
   window.REACT_APP_DELIVERY_SERVICE_API_URL ||
   // eslint-disable-next-line no-undef
   process.env.REACT_APP_DELIVERY_SERVICE_API_URL

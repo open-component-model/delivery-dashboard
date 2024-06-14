@@ -93,7 +93,7 @@ const useFetchCompDiff = ({
         setIsLoading(false)
         setIsError(false)
 
-      } catch (error) {
+      } catch {
         setIsLoading(false)
         setIsError(true)
 
