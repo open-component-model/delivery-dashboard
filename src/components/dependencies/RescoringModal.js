@@ -540,44 +540,43 @@ RescoringFilter.propTypes = {
 }
 
 
-const RescoringRowLoading = ({
-  sprintsIsAvailable,
-}) => {
-  return <TableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+const RescoringRowLoading = () => {
+  return <TableRow
+    sx={{
+      '&:last-child td, &:last-child th': { border: 0 },
+      height: '15vh',
+    }}
+  >
     <TableCell width='50vw'/>
+    <TableCell width='90vw'>
+      <Skeleton/>
+    </TableCell>
     <TableCell width='100vw'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='140vw'>
+    <TableCell width='40vw'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='20vw'>
+    <TableCell width='80vw'>
       <Skeleton/>
     </TableCell>
-    {
-      sprintsIsAvailable && <TableCell width='140vw'>
-        <Skeleton/>
-      </TableCell>
-    }
     <TableCell width='70vw'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='40vw'>
+    <TableCell width='50vw' align='center'>
       <TrendingFlatIcon/>
     </TableCell>
-    <TableCell width='120vw'>
+    <TableCell width='70vw'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='220vw'>
+    <TableCell width='200vw'>
       <Skeleton/>
     </TableCell>
     <TableCell width='50vw'/>
   </TableRow>
 }
 RescoringRowLoading.displayName = 'RescoringRowLoading'
-RescoringRowLoading.propTypes = {
-  sprintsIsAvailable: PropTypes.bool.isRequired,
-}
+RescoringRowLoading.propTypes = {}
 
 
 const FilesystemPathsInfo = ({
@@ -1333,7 +1332,10 @@ const RescoringContentTableRow = ({
           setExpanded(!expanded)
         }
       }}
-      sx={applicableRescorings.length > 0 ? { '&:hover': { cursor: 'pointer' } } : {}}
+      sx={{
+        height: '15vh',
+        ...(applicableRescorings.length > 0 ? { '&:hover': { cursor: 'pointer' }} : {})
+      }}
       hover
     >
       <TableCell
@@ -1361,14 +1363,14 @@ const RescoringContentTableRow = ({
           severity={severity}
         />
       </TableCell>
-      <TableCell>
+      <TableCell align='center'>
         <Tooltip title={typedef.friendlyName}>
           <Icon/>
         </Tooltip>
       </TableCell>
-      {
-        sprintInfo && <TableCell align='center'>
-          <Tooltip
+      <TableCell align='center'>
+        {
+          sprintInfo ? <Tooltip
             title={<Typography
               variant='inherit'
               whiteSpace='pre-line'
@@ -1384,9 +1386,9 @@ const RescoringContentTableRow = ({
               color={sprintInfo.color}
               size='small'
             />
-          </Tooltip>
-        </TableCell>
-      }
+          </Tooltip> : <></>
+        }
+      </TableCell>
       <TableCell align='right' sx={{ paddingX: 0 }}>
         <Typography variant='inherit' color={`${currentSeverityCfg.color}.main`}>
           {
@@ -1538,6 +1540,7 @@ const RescoringContent = ({
   rescoringFeature,
   rescoringsLoading,
   severityCfgs,
+  sprintsLoading,
 }) => {
   const theme = useTheme()
   const context = React.useContext(ConfigContext)
@@ -1686,12 +1689,12 @@ const RescoringContent = ({
           clearSelectedRescorings={clearSelectedRescorings}
           sprints={sprints}
           rescoringsLoading={rescoringsLoading}
+          sprintsLoading={sprintsLoading}
         />
         <TableBody>
           {
             rescoringsLoading ? [...Array(25).keys()].map((e) => <RescoringRowLoading
               key={e}
-              sprintsIsAvailable={sprints.length > 0}
             />) : sortData([...rescorings], getComparator(orderBy))
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((rescoring) => <RescoringContentTableRow
@@ -1739,6 +1742,49 @@ RescoringContent.propTypes = {
   rescoringFeature: PropTypes.object,
   rescoringsLoading: PropTypes.bool.isRequired,
   severityCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
+  sprintsLoading: PropTypes.bool.isRequired,
+}
+
+
+const SprintHeader = ({
+  sprintsLoading,
+  sprints,
+  headerBackground,
+  onSort,
+  active,
+  direction,
+}) => {
+
+  if (sprintsLoading) return <TableCell width='80vw' align='center' sx={{ background: headerBackground }}>
+    <Skeleton/>
+  </TableCell>
+
+  // rather display empty cell than re-order table if no sprints are provided
+  if (
+    !sprints
+    || sprints.length === 0
+  ) return <TableCell width='80vw' align='center' sx={{ background: headerBackground }}>
+    <></>
+  </TableCell>
+
+  return <TableCell width='80vw' align='center' sx={{ background: headerBackground }}>
+    <TableSortLabel
+      onClick={onSort}
+      active={active}
+      direction={direction}
+    >
+      Due Date
+    </TableSortLabel>
+  </TableCell>
+}
+SprintHeader.displayName = 'SprintHeader'
+SprintHeader.propTypes = {
+  sprintsLoading: PropTypes.bool.isRequired,
+  sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
+  headerBackground: PropTypes.string.isRequired,
+  onSort: PropTypes.func.isRequired,
+  active: PropTypes.bool.isRequired,
+  direction: PropTypes.string.isRequired,
 }
 
 
@@ -1752,6 +1798,7 @@ const RescoringContentTableHeader = ({
   selectAllRescorings,
   sprints,
   rescoringsLoading,
+  sprintsLoading,
 }) => {
   const theme = useTheme()
   const context = React.useContext(ConfigContext)
@@ -1777,7 +1824,7 @@ const RescoringContentTableHeader = ({
       >
         <Checkbox checked={allSelected() && !rescoringsLoading}/>
       </TableCell>
-      <TableCell width='100vw' sx={{ background: headerBackground }}>
+      <TableCell width='90vw' sx={{ background: headerBackground }}>
         <TableSortLabel
           onClick={() => handleSort(orderAttributes.SUBJECT)}
           active={orderBy === orderAttributes.SUBJECT}
@@ -1786,7 +1833,7 @@ const RescoringContentTableHeader = ({
           Subject
         </TableSortLabel>
       </TableCell>
-      <TableCell width='140vw' sx={{ background: headerBackground }}>
+      <TableCell width='100vw' sx={{ background: headerBackground }}>
         <TableSortLabel
           onClick={() => handleSort(orderAttributes.FINDING)}
           active={orderBy === orderAttributes.FINDING}
@@ -1795,7 +1842,7 @@ const RescoringContentTableHeader = ({
           <Typography variant='inherit'>Finding</Typography>
         </TableSortLabel>
       </TableCell>
-      <TableCell width='20vw' sx={{ background: headerBackground }}>
+      <TableCell width='40vw' sx={{ background: headerBackground }} align='center'>
         <TableSortLabel
           onClick={() => handleSort(orderAttributes.TYPE)}
           active={orderBy === orderAttributes.TYPE}
@@ -1804,17 +1851,14 @@ const RescoringContentTableHeader = ({
           <Typography variant='inherit'>Type</Typography>
         </TableSortLabel>
       </TableCell>
-      {
-        sprints.length > 0 && <TableCell width='140vw' align='center' sx={{ background: headerBackground }}>
-          <TableSortLabel
-            onClick={() => handleSort(orderAttributes.SPRINT)}
-            active={orderBy === orderAttributes.SPRINT}
-            direction={order}
-          >
-            Due Date
-          </TableSortLabel>
-        </TableCell>
-      }
+      <SprintHeader
+        sprints={sprints}
+        sprintsLoading={sprintsLoading}
+        headerBackground={headerBackground}
+        onSort={() => handleSort(orderAttributes.SPRINT)}
+        active={orderBy === orderAttributes.SPRINT}
+        direction={order}
+      />
       <TableCell width='70vw' align='right' sx={{ background: headerBackground }}>
         <TableSortLabel
           onClick={() => handleSort(orderAttributes.CURRENT)}
@@ -1824,8 +1868,8 @@ const RescoringContentTableHeader = ({
           Current
         </TableSortLabel>
       </TableCell>
-      <TableCell width='40vw' sx={{ background: headerBackground }}/>
-      <TableCell width='120vw' sx={{ background: headerBackground }}>
+      <TableCell width='50vw' sx={{ background: headerBackground }}/>
+      <TableCell width='70vw' sx={{ background: headerBackground }}>
         <TableSortLabel
           onClick={() => handleSort(orderAttributes.RESCORED)}
           active={orderBy === orderAttributes.RESCORED}
@@ -1852,6 +1896,7 @@ RescoringContentTableHeader.propTypes = {
   selectAllRescorings: PropTypes.func.isRequired,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
   rescoringsLoading: PropTypes.bool.isRequired,
+  sprintsLoading: PropTypes.bool.isRequired,
 }
 
 
@@ -1874,6 +1919,7 @@ const Rescoring = ({
   setRescoringsLoading,
   rescoringsLoading,
   severityCfgs,
+  sprintsLoading,
 }) => {
   const [isLoading, setIsLoading] = React.useState(false)
   const [isError, setIsError] = React.useState(false)
@@ -1993,6 +2039,7 @@ const Rescoring = ({
     rescoringFeature={rescoringFeature}
     rescoringsLoading={rescoringsLoading}
     severityCfgs={severityCfgs}
+    sprintsLoading={sprintsLoading}
   />
 }
 Rescoring.displayName = 'Rescoring'
@@ -2015,6 +2062,7 @@ Rescoring.propTypes = {
   setRescoringsLoading: PropTypes.func.isRequired,
   rescoringsLoading: PropTypes.bool.isRequired,
   severityCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
+  sprintsLoading: PropTypes.bool.isRequired,
 }
 
 
@@ -2502,6 +2550,7 @@ const RescoringModal = ({
           fetchComplianceSummary={fetchComplianceSummary}
           rescoringFeature={rescoringFeature}
           sprints={sprints}
+          sprintsLoading={sprintsLoading}
           scanConfig={scanConfig}
           setRescoringsLoading={setRescoringsLoading}
           rescoringsLoading={rescoringsLoading}
