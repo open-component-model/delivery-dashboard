@@ -180,6 +180,16 @@ export const mostSpecificRescoring = (rescorings) => {
   return orderRescoringsBySpecificity(rescorings)[0]
 }
 
+export const rescoringProposalSeverity = (rescoringProposal) => {
+  const applicableRescorings = rescoringProposal.applicable_rescorings
+
+  if (applicableRescorings.length === 0) {
+    return rescoringProposal.finding.severity
+  }
+
+  return mostSpecificRescoring(applicableRescorings).data.severity
+}
+
 export const artefactMetadatumSeverity = (artefactMetadatum) => {
   if (!artefactMetadatum) {
     return findSeverityCfgByName({name: SEVERITIES.UNKNOWN})

@@ -87,6 +87,7 @@ import {
   normaliseObject,
   orderRescoringsBySpecificity,
   pluralise,
+  rescoringProposalSeverity,
   sprintNameForRescoring,
   trimLongString,
 } from '../../util'
@@ -142,17 +143,6 @@ const rescoringIdentity = (rescoring) => {
   }
 
   return `${rescoring.ocmNode.identity()}_${rescoring.finding_type}_${typeSpecific()}`
-}
-
-
-const rescoringProposalSeverity = (rescoringProposal) => {
-  const applicableRescorings = rescoringProposal.applicable_rescorings
-
-  if (applicableRescorings.length === 0) {
-    return rescoringProposal.finding.severity
-  }
-
-  return mostSpecificRescoring(applicableRescorings).data.severity
 }
 
 
