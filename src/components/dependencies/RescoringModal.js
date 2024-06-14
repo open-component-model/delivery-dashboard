@@ -1478,9 +1478,20 @@ const RescoringContentTableRow = ({
       </TableCell>
       <TableCell>
         {
-          applicableRescorings.length > 0 && (
-            expanded ? <KeyboardArrowUpIcon fontSize='small'/> : <KeyboardArrowDownIcon fontSize='small'/>
-          )
+          applicableRescorings.length > 0 && <Tooltip
+            title='Show Rescorings'
+          >
+            <span>
+              {
+                (
+                  applicableRescorings.length > 0
+                  && expanded
+                )
+                  ? <KeyboardArrowUpIcon fontSize='small'/>
+                  : <KeyboardArrowDownIcon fontSize='small'/>
+              }
+            </span>
+          </Tooltip>
         }
       </TableCell>
     </TableRow>
