@@ -6,7 +6,7 @@ src_dir="${1:-"$(readlink -f "$(dirname "${0}")/..")"}"
 echo 'Running eslint for all javascript modules..'
 echo ''
 
-if eslint --resolve-plugins-relative-to $(npm root -g) . \
+if eslint . \
     --max-warnings 0 \
     ${src_dir}; then
     echo 'eslint succeeded'
