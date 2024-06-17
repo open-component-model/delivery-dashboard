@@ -37,6 +37,10 @@ import {
   TextField,
   Tooltip,
   Typography,
+  Switch,
+  FormGroup,
+  FormControlLabel,
+  FormLabel,
 } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { useTheme } from '@emotion/react'
@@ -486,7 +490,11 @@ const RescoringFilter = ({
   rescoringsLoading,
   sprintsLoading,
   severityCfgs,
+  toggleRescored,
+  rescorings,
 }) => {
+  const countRescored = rescorings.filter(rescoring => rescoring.applicable_rescorings.length !== 0).length
+
   return <Stack direction='column' spacing={5}>
     <Stack direction='row' spacing={5}>
       <RescoringFilterOption
@@ -526,6 +534,30 @@ const RescoringFilter = ({
         optionNameCallback={(sprint) => sprint.displayName}
         title='Due Date'
       />
+      <Divider
+        orientation='vertical'
+        flexItem
+      />
+      <Box
+        display='flex'
+        alignItems='center'
+        justifyContent='center'
+      >
+        <FormGroup>
+          <FormLabel>
+            Hide findings
+          </FormLabel>
+          <FormControlLabel
+            control={
+              <Switch
+                onChange={(e, s) => toggleRescored(e, s)}
+                disabled={rescoringsLoading}
+              />
+            }
+            label={`with rescorings ${rescoringsLoading ? '' : `(${countRescored})`}`}
+          />
+        </FormGroup>
+      </Box>
     </Stack>
   </Stack>
 }
@@ -537,6 +569,8 @@ RescoringFilter.propTypes = {
   rescoringsLoading: PropTypes.bool.isRequired,
   sprintsLoading: PropTypes.bool.isRequired,
   severityCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
+  toggleRescored: PropTypes.func.isRequired,
+  rescorings: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -1478,7 +1512,7 @@ const RescoringContentTableRow = ({
           multiline
         />
       </TableCell>
-      <TableCell>
+      <TableCell align='center'>
         {
           applicableRescorings.length > 0 && <Tooltip
             title='Show Rescorings'
@@ -2451,6 +2485,13 @@ const RescoringModal = ({
     findSeverityCfgByName({name: SEVERITIES.BLOCKER}),
   ], [])
 
+  const toggleRescored = React.useCallback((event, toggled) => {
+    updateFilter('toggleRescored', (rescoring) => {
+      if (!toggled) return true
+      return rescoring.applicable_rescorings.length === 0
+    })
+  }, [updateFilter] )
+
   return <Dialog
     open
     onClose={handleClose}
@@ -2516,6 +2557,8 @@ const RescoringModal = ({
               // only show relevant severities
               return rescorings.some(r => rescoringProposalSeverity(r) === severityCfg.name)
             })}
+            toggleRescored={toggleRescored}
+            rescorings={rescorings}
           />
         </Box>
       </Grid>
