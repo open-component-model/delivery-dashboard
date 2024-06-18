@@ -381,11 +381,40 @@ RescoringHeader.propTypes = {
 }
 
 
+const FilterCount = ({
+  count,
+}) => {
+  const theme = useTheme()
+
+  return <div style={{
+    background: theme.bomButton.color === 'white' ? 'black' : 'white',
+    marginBottom: '1rem',
+    marginRight: '-0.5rem',
+    borderRadius: '50%',
+    width: '1.3rem',
+    height: '1.3rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderStyle: 'solid',
+    borderWidth: '0.1rem',
+  }}>
+    <Typography variant='caption' color={theme.bomButton.color}>
+      {count}
+    </Typography>
+  </div>
+}
+FilterCount.displayName = 'FilterCount'
+FilterCount.propTypes = {
+  count: PropTypes.number.isRequired,
+}
+
 
 const RescoringFilterOption = ({
   updateFilterCallback,
   isLoading,
   filterCallback,
+  countCallback,
   options,
   optionIdCallback,
   optionNameCallback,
@@ -427,6 +456,8 @@ const RescoringFilterOption = ({
     >
       {
         isLoading ? <Loading/> : options.map((option) => {
+          const count = countCallback(option)
+
           const select = (current, target) => {
             setSelected([...current, target])
           }
@@ -461,7 +492,9 @@ const RescoringFilterOption = ({
                 }
                 color={colorCallback(option)}
                 size={'small'}
+                deleteIcon={count ? <FilterCount count={count}/> : <></>}
                 onClick={() => onToggle(selected, optionIdCallback(option))}
+                onDelete={() => onToggle(selected, optionIdCallback(option))}
               />
             }
           </li>
@@ -475,6 +508,7 @@ RescoringFilterOption.propTypes = {
   updateFilterCallback: PropTypes.func.isRequired,
   isLoading: PropTypes.bool.isRequired,
   filterCallback: PropTypes.func.isRequired,
+  countCallback: PropTypes.func.isRequired,
   colorCallback: PropTypes.func.isRequired,
   options: PropTypes.arrayOf(PropTypes.object).isRequired,
   optionIdCallback: PropTypes.func.isRequired,
@@ -501,6 +535,7 @@ const RescoringFilter = ({
         updateFilterCallback={React.useCallback((callback) => updateFilter('severity', callback), [updateFilter])}
         isLoading={rescoringsLoading}
         filterCallback={React.useCallback((selected, rescoring) => selected.some(s => s === rescoringProposalSeverity(rescoring)), [])}
+        countCallback={(severityCfg) => rescorings.filter(rescoring => rescoringProposalSeverity(rescoring) === severityCfg.name).length}
         colorCallback={(severityCfg) => severityCfg.color}
         options={severityCfgs}
         optionIdCallback={(severityCfg) => severityCfg.name}
@@ -515,6 +550,7 @@ const RescoringFilter = ({
         updateFilterCallback={React.useCallback((callback) => updateFilter('sprint', callback), [updateFilter])}
         isLoading={rescoringsLoading}
         filterCallback={React.useCallback((selected, rescoring) => selected.some(s => s === rescoring.finding_type), [])}
+        countCallback={(metadataType) => rescorings.filter(rescoring => rescoring.finding_type === metadataType.name).length}
         options={findingTypes}
         optionIdCallback={(metadataType) => metadataType.name}
         optionNameCallback={(metadataType) => metadataType.friendlyName}
