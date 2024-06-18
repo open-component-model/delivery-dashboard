@@ -2550,22 +2550,26 @@ const RescoringModal = ({
     >
       <Grid container>
         {
-          cveRescoringRuleSet && <Grid item xs={1}>
+          <Grid item xs={1}>
             {
-              openInput ? <VulnerabilityRescoringDrawer
-                open={openInput}
-                handleClose={() => setOpenInput(false)}
-                cveRescoringRuleSet={cveRescoringRuleSet}
-                setCveRescoringRuleSet={setCveRescoringRuleSet}
-                rescoringFeature={rescoringFeature}
-                ocmNodes={ocmNodes}
-              /> : <Box paddingTop={1}>
-                <Tooltip title='Open rescoring rules'>
-                  <IconButton onClick={() => setOpenInput(true)}>
-                    <ChevronRightIcon/>
-                  </IconButton>
-                </Tooltip>
-              </Box>
+              cveRescoringRuleSet && <>
+                {
+                  openInput ? <VulnerabilityRescoringDrawer
+                    open={openInput}
+                    handleClose={() => setOpenInput(false)}
+                    cveRescoringRuleSet={cveRescoringRuleSet}
+                    setCveRescoringRuleSet={setCveRescoringRuleSet}
+                    rescoringFeature={rescoringFeature}
+                    ocmNodes={ocmNodes}
+                  /> : <Box paddingTop={1}>
+                    <Tooltip title='Open rescoring rules'>
+                      <IconButton onClick={() => setOpenInput(true)}>
+                        <ChevronRightIcon/>
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                }
+              </>
             }
           </Grid>
         }
