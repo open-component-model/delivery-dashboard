@@ -126,20 +126,21 @@ const patchRescoringProposals = (rescoringProposals, ocmNode) => {
 }
 
 
-const rescoringIdentity = (rescoring) => {
+const typeSpecificRescoringIdentity = (rescoring) => {
   const finding = rescoring.finding
 
-  const typeSpecific = () => {
-    if (finding.cve) {
-      return `${finding.package_name}_${finding.cve}`
-    } else if (finding.license) {
-      return `${finding.package_name}_${finding.license.name}`
-    } else if (finding.virus_name) {
-      return `${finding.virus_name}_${finding.content_digest}_${finding.filename}_${finding.layer_digest}`
-    }
+  if (finding.cve) {
+    return `${finding.package_name}_${finding.cve}`
+  } else if (finding.license) {
+    return `${finding.package_name}_${finding.license.name}`
+  } else if (finding.malware) {
+    return `${finding.malware}_${finding.content_digest}_${finding.filename}`
   }
+}
 
-  return `${rescoring.ocmNode.identity()}_${rescoring.finding_type}_${typeSpecific()}`
+
+const rescoringIdentity = (rescoring) => {
+  return `${rescoring.ocmNode.identity()}_${rescoring.finding_type}_${typeSpecificRescoringIdentity(rescoring)}`
 }
 
 
@@ -2232,7 +2233,7 @@ const Rescore = ({
           {
             customRescoringsWithoutComment.map((r, idx) => <Typography key={idx} variant='body2'>
               {
-                r.finding.finding_type
+                typeSpecificRescoringIdentity(r)
               }
             </Typography>)
           }
