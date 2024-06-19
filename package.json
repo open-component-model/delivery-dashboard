@@ -11,7 +11,7 @@
     "@mui/lab": "^5.0.0-alpha.170",
     "@mui/material": "^5.15.20",
     "@mui/x-charts": "^7.7.0",
-    "@mui/x-data-grid": "^7.6.2",
+    "@mui/x-data-grid": "^7.7.0",
     "@uiw/codemirror-extensions-langs": "^4.22.2",
     "@uiw/codemirror-theme-bbedit": "^4.22.1",
     "@uiw/codemirror-theme-vscode": "^4.22.1",
