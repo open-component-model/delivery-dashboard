@@ -2146,7 +2146,6 @@ const Rescore = ({
   fetchComplianceSummary,
 }) => {
   const [isLoading, setIsLoading] = React.useState(false)
-  const title = 'Rescoring'
 
   const serialiseRescoring = React.useCallback((rescoring) => {
     const artefact = {
@@ -2217,7 +2216,7 @@ const Rescore = ({
     disabled
     fullWidth
   >
-    {`Apply ${title} Rescoring`}
+    Apply Rescoring
   </Button>
 
   const customRescoringsWithoutComment = rescorings.filter((rescoring) => {
@@ -2249,7 +2248,7 @@ const Rescore = ({
         fullWidth
       >
         {
-          `Apply ${title} Rescoring (${rescorings.length})`
+          `Apply Rescoring (${rescorings.length})`
         }
       </Button>
     </div>
@@ -2278,7 +2277,7 @@ const Rescore = ({
           }
         } catch (error) {
           enqueueSnackbar(
-            `${title} rescoring could not be applied`,
+            'rescoring could not be applied',
             {
               ...errorSnackbarProps,
               details: error.toString(),
@@ -2327,7 +2326,7 @@ const Rescore = ({
     }}
   >
     {
-      `Apply ${title} Rescoring (${rescorings.length})`
+      `Apply Rescoring (${rescorings.length})`
     }
   </Button>
 }
