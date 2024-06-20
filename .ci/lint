@@ -8,6 +8,7 @@ echo ''
 
 if eslint . \
     --max-warnings 0 \
+    -c "${src_dir}/eslint.config.mjs" \
     ${src_dir}; then
     echo 'eslint succeeded'
     exit 0
