@@ -48,7 +48,6 @@ const FeatureDependent = ({
         })
       })
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [featureRegistrationContext])
 
   if (Object.keys(features).length !== requiredFeatures.length) {
