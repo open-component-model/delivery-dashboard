@@ -210,7 +210,7 @@ const GolangChip = ({
 }) => {
   if (!versions?.length > 0) return null
 
-  let hasNoNullVersion = versions.find((e) => {
+  const hasNoNullVersion = versions.find((e) => {
     if (e === undefined) return false
     return true
   })

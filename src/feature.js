@@ -47,7 +47,7 @@ const FeatureProvider = () => {
     }
 
     const triggerRerender = (feature) => {
-      for (let onFeatureStateChangeCallback of featureContext[feature.name] || []) {
+      for (const onFeatureStateChangeCallback of featureContext[feature.name] || []) {
         onFeatureStateChangeCallback({'feature': {
           ...feature,
           isAvailable: feature.state === featureStates.AVAILABLE,
@@ -57,8 +57,8 @@ const FeatureProvider = () => {
     }
 
     const callCallbacks = () => {
-      for (let feature of allFeatures) {
-        for (let onFeatureStateChangeCallback of featureContext[feature.name] || []) {
+      for (const feature of allFeatures) {
+        for (const onFeatureStateChangeCallback of featureContext[feature.name] || []) {
           onFeatureStateChangeCallback({'feature': {
             ...feature,
             isAvailable: feature.state === featureStates.AVAILABLE,

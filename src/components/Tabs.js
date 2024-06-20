@@ -114,8 +114,7 @@ export const ComponentTabs = ({
     yield tabConfig.DORA
   }
 
-  let tabs = []
-  for (let tab of iterTabs()) tabs.push(tab)
+  const tabs = [...iterTabs()]
 
   return <div>
     <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>

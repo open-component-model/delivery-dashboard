@@ -513,7 +513,7 @@ export const normaliseObject = (obj) => {
   const sortedKeys = Object.keys(obj).sort()
   const sortedObj = {}
 
-  for (let key of sortedKeys) {
+  for (const key of sortedKeys) {
     const value = obj[key]
 
     if (typeof value === 'object' && value !== null) {

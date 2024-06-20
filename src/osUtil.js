@@ -29,7 +29,7 @@ const determineOsBranch = (os, branches) => {
   if (!branches) return null
 
   let res
-  for (let candidate of iterOsBranchnameCandidates(os)) {
+  for (const candidate of iterOsBranchnameCandidates(os)) {
     res = branches.find((branch) => candidate === branch.name)
     if (res) return res
   }
