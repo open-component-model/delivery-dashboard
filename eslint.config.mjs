@@ -10,6 +10,7 @@ export default [
   reactRecommended,
   {
     rules: {
+      'prefer-const': 'error',
       indent: ['error', 2, {
         SwitchCase: 1,
       }],
