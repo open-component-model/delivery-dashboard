@@ -246,6 +246,14 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
         || rescoring.data.finding.package_name !== finding.data.package_name
       )
     ) return false
+    if (
+      finding.meta.type === artefactMetadataTypes.FINDING_MALWARE
+      && (
+        rescoring.data.finding.malware !== finding.data.finding.malware
+        || rescoring.data.finding.content_digest !== finding.data.finding.content_digest
+        || rescoring.data.finding.filename !== finding.data.finding.filename
+      )
+    ) return false
 
     return true
   })
