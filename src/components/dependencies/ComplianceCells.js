@@ -297,7 +297,7 @@ const ComplianceCell = ({
           severity={getMaxSeverity(licenseFindings)}
           lastUpdateDate={getLatestUpdateTimestamp(bdbaFindings).toLocaleString()}
           reportUrl={getReportUrl(bdbaFindings)}
-          scanConfigs={scanConfigs}
+          scanConfig={singleScanCfgOrNull({scanCfgs: scanConfigs, complianceToolName: COMPLIANCE_TOOLS.BDBA})}
           fetchComplianceData={fetchComplianceData}
           fetchComplianceSummary={fetchComplianceSummary}
         />
