@@ -58,7 +58,12 @@ import {
   trimLongString,
 } from '../../util'
 import CopyOnClickChip from '../util/CopyOnClickChip'
-import { errorSnackbarProps, SEVERITIES, TOKEN_KEY } from '../../consts'
+import {
+  ARTEFACT_KIND,
+  errorSnackbarProps,
+  SEVERITIES,
+  TOKEN_KEY,
+} from '../../consts'
 import { OcmNode, OcmNodeDetails } from '../../ocm/iter'
 import { RescoringModal } from '../dependencies/RescoringModal'
 import { sanitiseArtefactExtraId } from '../../ocm/util'
@@ -1099,12 +1104,12 @@ const ComplianceTab = ({
       ...component.resources.map(resource => new OcmNode(
         [component],
         resource,
-        'resource'
+        ARTEFACT_KIND.RESOURCE,
       )),
       ...component.sources.map(source => new OcmNode(
         [component],
         source,
-        'source'
+        ARTEFACT_KIND.SOURCE,
       )),
     ]
   }, [])

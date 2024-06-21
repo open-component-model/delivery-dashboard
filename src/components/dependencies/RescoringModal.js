@@ -63,6 +63,7 @@ import {
 } from '../../App'
 import { rescore } from '../../api'
 import {
+  ARTEFACT_KIND,
   copyNotificationCfg,
   errorSnackbarProps,
   features,
@@ -2151,7 +2152,7 @@ const Rescore = ({
     const artefact = {
       component_name: [scopeOptions.COMPONENT, scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? rescoring.ocmNode.component.name : null,
       component_version: scopeOptions.SINGLE === scope ? rescoring.ocmNode.component.version : null,
-      artefact_kind: 'resource',
+      artefact_kind: ARTEFACT_KIND.RESOURCE,
       artefact: {
         artefact_name: [scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? rescoring.ocmNode.artefact.name : null,
         artefact_version: scopeOptions.SINGLE === scope ? rescoring.ocmNode.artefact.version : null,

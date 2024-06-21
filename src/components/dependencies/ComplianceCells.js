@@ -41,7 +41,12 @@ import {
 import DockerLogo from '../../res/docker-icon.svg'
 import { artefactMetadataTypes, datasources, findTypedefByName } from '../../ocm/model'
 import { artefactMetadataFilter } from './../../cnudie'
-import { COMPLIANCE_TOOLS, SEVERITIES, TOKEN_KEY } from '../../consts'
+import {
+  ARTEFACT_KIND,
+  COMPLIANCE_TOOLS,
+  SEVERITIES,
+  TOKEN_KEY,
+} from '../../consts'
 import { RescoringModal } from './RescoringModal'
 import { OcmNode } from '../../ocm/iter'
 import TriggerComplianceToolButton from './../util/TriggerComplianceToolButton'
@@ -284,7 +289,7 @@ const ComplianceCell = ({
         scanConfigs={scanConfigs}
       />
       {
-        artefact.kind === 'resource' && <BDBACell
+        artefact.kind === ARTEFACT_KIND.RESOURCE && <BDBACell
           component={component}
           artefact={artefact}
           ocmRepo={ocmRepo}
@@ -304,8 +309,8 @@ const ComplianceCell = ({
         timestamp={getLatestUpdateTimestamp(structureInfos).toLocaleString()}
       />
       {
-        artefact.kind === 'resource' && <MalwareFindingCell
-          ocmNode={new OcmNode([component], artefact, 'resource')}
+        artefact.kind === ARTEFACT_KIND.RESOURCE && <MalwareFindingCell
+          ocmNode={new OcmNode([component], artefact, ARTEFACT_KIND.RESOURCE)}
           ocmRepo={ocmRepo}
           metadataTypedef={findTypedefByName({name: artefactMetadataTypes.FINDING_MALWARE})}
           scanConfig={singleScanCfgOrNull({scanCfgs: scanConfigs, complianceToolName: COMPLIANCE_TOOLS.CLAMAV})}
@@ -316,7 +321,7 @@ const ComplianceCell = ({
         />
       }
       {
-        artefact.kind === 'resource' && <OsCell
+        artefact.kind === ARTEFACT_KIND.RESOURCE && <OsCell
           severity={artefactMetadatumSeverity(osData)}
           timestamp={osData?.meta.creation_date}
           msg={evaluateResourceBranch(osData).reason}
@@ -324,14 +329,14 @@ const ComplianceCell = ({
         />
       }
       {
-        artefact.kind === 'source' && <CodecheckCell
+        artefact.kind === ARTEFACT_KIND.SOURCE && <CodecheckCell
           data={codecheckData?.data}
           severity={artefactMetadatumSeverity(codecheckData)}
           timestamp={codecheckData?.meta.creation_date}
         />
       }
       {
-        artefact.kind === 'resource' && <BDBACell
+        artefact.kind === ARTEFACT_KIND.RESOURCE && <BDBACell
           component={component}
           artefact={artefact}
           ocmRepo={ocmRepo}
@@ -715,7 +720,7 @@ const BDBACell = ({
     }
   }
 
-  const ocmNode = new OcmNode([component], artefact, 'resource')
+  const ocmNode = new OcmNode([component], artefact, ARTEFACT_KIND.RESOURCE)
   const title = findTypedefByName({name: type}).friendlyName
 
   if (!reportUrl) return <Tooltip

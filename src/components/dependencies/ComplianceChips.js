@@ -26,7 +26,7 @@ import { OcmNode } from './../../ocm/iter'
 import { defaultTypedefForName, findTypedefByName } from '../../ocm/model'
 import { parseRelaxedSemver } from '../../osUtil'
 import { findSeverityCfgByName } from '../../util'
-import { COMPLIANCE_TOOLS, SEVERITIES } from './../../consts'
+import { ARTEFACT_KIND, COMPLIANCE_TOOLS, SEVERITIES } from './../../consts'
 import TriggerComplianceToolButton from './../util/TriggerComplianceToolButton'
 
 
@@ -308,7 +308,7 @@ const IssueChip = ({
     title={
       <List>
         <TriggerComplianceToolButton
-          ocmNode={new OcmNode([component], artefact, 'resource')}
+          ocmNode={new OcmNode([component], artefact, ARTEFACT_KIND.RESOURCE)}
           cfgName={scanConfig.name}
           service={COMPLIANCE_TOOLS.ISSUE_REPLICATOR}
         />

@@ -53,7 +53,7 @@ import {
 import ExtraWideTooltip from '../util/ExtraWideTooltip'
 import FeatureDependent from '../util/FeatureDependent'
 import ComplianceToolPopover from './../util/ComplianceToolsPopover'
-import { errorSnackbarProps, features } from '../../consts'
+import { ARTEFACT_KIND, errorSnackbarProps, features } from '../../consts'
 import { artefactMetadataTypes, MetadataViewerPopover } from '../../ocm/model'
 import { ComplianceCell, ArtefactCell, IconCell } from './ComplianceCells'
 import {
@@ -658,7 +658,7 @@ const Artefacts = ({
   }).map((resource) => {
     return {
       ...resource,
-      kind: 'resource',
+      kind: ARTEFACT_KIND.RESOURCE,
     }
   })
 
@@ -673,7 +673,7 @@ const Artefacts = ({
   }).map((source) => {
     return {
       ...source,
-      kind: 'source',
+      kind: ARTEFACT_KIND.SOURCE,
     }
   })
 

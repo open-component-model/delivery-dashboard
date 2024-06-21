@@ -188,6 +188,14 @@ export const PRIORITIES = {
   },
 }
 
+export const ARTEFACT_KIND = {
+  ARTEFACT: 'artefact',
+  RESOURCE: 'resource',
+  RUNTIME: 'runtime',
+  SOURCE: 'source',
+}
+Object.freeze(ARTEFACT_KIND)
+
 export const SEVERITIES = {
   UNKNOWN: 'UNKNOWN',
   NONE: 'NONE',

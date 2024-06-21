@@ -52,7 +52,12 @@ import {
   pluralise,
   trimLongString,
 } from './../../util'
-import { COMPLIANCE_TOOLS, PRIORITIES, TOKEN_KEY } from './../../consts'
+import {
+  ARTEFACT_KIND,
+  COMPLIANCE_TOOLS,
+  PRIORITIES,
+  TOKEN_KEY,
+} from './../../consts'
 import { triggerComplianceTool } from './TriggerComplianceToolButton'
 import { OcmNode, OcmNodeDetails } from './../../ocm/iter'
 import CopyOnClickChip from './CopyOnClickChip'
@@ -555,7 +560,7 @@ const TriggerComplianceTool = ({
   const { enqueueSnackbar } = useSnackbar()
 
   const filteredOcmNodes = selectedOcmNodes.filter((ocmNode) => {
-    if (service === 'bdba' && ocmNode.artefactKind !== 'resource') return false
+    if (service === 'bdba' && ocmNode.artefactKind !== ARTEFACT_KIND.RESOURCE) return false
     return true
   })
 
@@ -678,14 +683,14 @@ const ComplianceToolPopover = ({
           return new OcmNode(
             [component],
             resource,
-            'resource',
+            ARTEFACT_KIND.RESOURCE,
           )
         }) : []),
         ...([COMPLIANCE_TOOLS.ISSUE_REPLICATOR].includes(service) ? component.sources.map((source) => {
           return new OcmNode(
             [component],
             source,
-            'source',
+            ARTEFACT_KIND.SOURCE,
           )
         }): []),
       ].filter((node) => {
