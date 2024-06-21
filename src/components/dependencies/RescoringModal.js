@@ -1025,7 +1025,7 @@ const ApplicableRescorings = ({
   }
 
   return <TableRow>
-    <TableCell sx={{ padding: 0, border: 'none' }} colSpan={sprintsIsAvailable ? 10 : 9}>
+    <TableCell sx={{ padding: 0, border: 'none' }} colSpan={10}>
       <Collapse in={expanded} unmountOnExit>
         <Card sx={{ paddingY: '1rem' }}>
           <Typography sx={{ paddingLeft: '1rem' }}>Applicable Rescorings</Typography>
