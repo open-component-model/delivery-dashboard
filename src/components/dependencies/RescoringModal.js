@@ -972,7 +972,6 @@ const ApplicableRescorings = ({
   isAuthenticated,
   expanded,
   rescoringFeature,
-  sprintsIsAvailable,
 }) => {
   if (rescoring.applicable_rescorings.length === 0) {
     // if all applicable rescorings were deleted, don't show collapse anymore
@@ -1577,7 +1576,6 @@ const RescoringContentTableRow = ({
       isAuthenticated={isAuthenticated}
       expanded={expanded}
       rescoringFeature={rescoringFeature}
-      sprintsIsAvailable={sprints.length > 0}
     />
   </>
 }
