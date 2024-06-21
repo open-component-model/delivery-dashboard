@@ -611,6 +611,17 @@ const MalwareFindingCell = ({
     setMountRescoring(false)
   }
 
+  if (scanConfig) {
+    // if artefact type filter is set, don't show bdba cell for types that are filtered out
+    const artefactTypes = scanConfig.config.clamav.artefact_types
+      ? scanConfig.config.clamav.artefact_types
+      : scanConfig.config.defaults.artefact_types
+
+    if (artefactTypes && !artefactTypes.some((type) => type === ocmNode.artefact.type)) {
+      return null
+    }
+  }
+
   const title = metadataTypedef.friendlyName
 
   const lastScanTimestamp = (lastScan) => {
