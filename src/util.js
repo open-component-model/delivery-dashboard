@@ -439,11 +439,14 @@ export const worstSeverityByType = (
   type,
   complianceSummary,
 ) => {
-  return Object.values(complianceSummary).map(e => e.entries).map(entries => {
-    return entries.find(entry => {
-      return entry.type === type
-    })
-  }).reduce((worst, current) => {
+  const forType =  Object.values(complianceSummary)
+    .map(e => e.entries)
+    .map(entries => entries.find(entry => entry.type === type))
+    .filter(e => e !== undefined)
+
+  if (forType.length === 0) return null
+
+  return forType.reduce((worst, current) => {
     if (!worst) return current
 
     const worstSeverity = findSeverityCfgByName({ name: worst.severity })

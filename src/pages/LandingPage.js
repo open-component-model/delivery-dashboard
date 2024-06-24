@@ -1157,21 +1157,23 @@ const ComponentCompliance = ({ component }) => {
     return <Chip label='FetchError' variant='outlined' color='warning' />
   }
 
-  const worstVulnerability = worstSeverityByType(artefactMetadataTypes.VULNERABILITY, complianceSummary.complianceSummary)
-  const worstOsInformation = worstSeverityByType(artefactMetadataTypes.OS_IDS, complianceSummary.complianceSummary)
-  const worstMalware = worstSeverityByType(artefactMetadataTypes.FINDING_MALWARE, complianceSummary.complianceSummary)
-  const worstLicenses = worstSeverityByType(artefactMetadataTypes.LICENSE, complianceSummary.complianceSummary)
-  const worstCodeChecks = worstSeverityByType(artefactMetadataTypes.CODECHECKS_AGGREGATED, complianceSummary.complianceSummary)
+  function* iterSummaries(complianceSummary) {
+    const worstVulnerability = worstSeverityByType(artefactMetadataTypes.VULNERABILITY, complianceSummary.complianceSummary)
+    const worstOsInformation = worstSeverityByType(artefactMetadataTypes.OS_IDS, complianceSummary.complianceSummary)
+    const worstMalware = worstSeverityByType(artefactMetadataTypes.FINDING_MALWARE, complianceSummary.complianceSummary)
+    const worstLicenses = worstSeverityByType(artefactMetadataTypes.LICENSE, complianceSummary.complianceSummary)
+    const worstCodeChecks = worstSeverityByType(artefactMetadataTypes.CODECHECKS_AGGREGATED, complianceSummary.complianceSummary)  
+
+    if (worstVulnerability) yield worstVulnerability
+    if (worstOsInformation) yield worstOsInformation
+    if (worstMalware) yield worstMalware
+    if (worstLicenses) yield worstLicenses
+    if (worstCodeChecks) yield worstCodeChecks
+  }
 
   return <ComponentChip
     componentSummary={{
-      entries: [
-        worstVulnerability,
-        worstOsInformation,
-        worstMalware,
-        worstLicenses,
-        worstCodeChecks,
-      ]
+      entries: [...iterSummaries(complianceSummary)]
     }}
   />
 }
