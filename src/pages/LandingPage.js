@@ -1159,7 +1159,7 @@ const ComponentCompliance = ({ component }) => {
 
   const worstVulnerability = worstSeverityByType(artefactMetadataTypes.VULNERABILITY, complianceSummary.complianceSummary)
   const worstOsInformation = worstSeverityByType(artefactMetadataTypes.OS_IDS, complianceSummary.complianceSummary)
-  const worstMalware = worstSeverityByType(artefactMetadataTypes.MALWARE, complianceSummary.complianceSummary)
+  const worstMalware = worstSeverityByType(artefactMetadataTypes.FINDING_MALWARE, complianceSummary.complianceSummary)
   const worstLicenses = worstSeverityByType(artefactMetadataTypes.LICENSE, complianceSummary.complianceSummary)
   const worstCodeChecks = worstSeverityByType(artefactMetadataTypes.CODECHECKS_AGGREGATED, complianceSummary.complianceSummary)
 
