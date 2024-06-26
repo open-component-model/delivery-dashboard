@@ -844,7 +844,7 @@ const ComponentHeader = ({
               <ReleaseSucceededIcon releaseSucceeded={releaseSucceeded} />
             </Box>
             {
-              specialComponentFeature && <Box
+              specialComponentFeature?.releasePipelineUrl && <Box
                 display='flex'
                 justifyContent='center'
                 alignItems='center'
@@ -854,7 +854,7 @@ const ComponentHeader = ({
                 >
                   <IconButton
                     component='a'
-                    href={specialComponentFeature?.releasePipelineUrl}
+                    href={specialComponentFeature.releasePipelineUrl}
                     target='_blank'
                   >
                     <LaunchIcon/>
