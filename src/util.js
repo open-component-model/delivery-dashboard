@@ -114,7 +114,7 @@ export const useDebounce = (value, delay) => {
 }
 
 export const trimLongString = (str, len = 17) => {
-  if (str.length > len) {
+  if (str?.length > len) {
     return `${str.substring(0, len)}..`
   }
   return str
