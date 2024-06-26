@@ -33,7 +33,7 @@ import TriggerComplianceToolButton from './../util/TriggerComplianceToolButton'
 const ComponentChip = ({ componentSummary }) => {
   if (!componentSummary) return <Skeleton/>
 
-  const mostCriticalSeverity = componentSummary.entries.reduce((element,max) => {
+  const mostCriticalSeverity = componentSummary.entries.reduce((max, element) => {
     if (findSeverityCfgByName({name: element.severity}).value > findSeverityCfgByName({name: max.severity}).value) {
       return element
     } else {
