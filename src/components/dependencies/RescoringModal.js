@@ -1217,6 +1217,31 @@ Subject.propTypes = {
 }
 
 
+const TruncatedTextWithTooltip = ({
+  text,
+  maxLength,
+  typographyProps,
+}) => {
+  if (text.length <= maxLength) return <Typography {...typographyProps}>
+    {text}
+  </Typography>
+
+  return <Tooltip
+    title={text}
+  >
+    <Typography {...typographyProps}>
+      {text.substring(0, maxLength)}...
+    </Typography>
+  </Tooltip>
+}
+TruncatedTextWithTooltip.displayName = 'TruncatedTextWithTooltip'
+TruncatedTextWithTooltip.propTypes = {
+  text: PropTypes.string.isRequired,
+  maxLength: PropTypes.string.isRequired,
+  typographyProps: PropTypes.object.isRequired,
+}
+
+
 const Finding = ({
   rescoring,
 }) => {
@@ -1267,7 +1292,14 @@ const Finding = ({
 
   } else if (rescoring.finding_type === artefactMetadataTypes.FINDING_MALWARE) {
     return <Stack spacing={0.5}>
-      <Typography variant='inherit' marginRight='0.4rem'>{finding.malware}</Typography>
+      <TruncatedTextWithTooltip
+        text={finding.malware}
+        maxLength={24}
+        typographyProps={{
+          variant: 'inherit',
+          marginRight: '0.4rem',
+        }}
+      />
       <div style={{ display: 'flex' }}>
         <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
         <Typography variant='inherit' color={`${findSeverityCfgByName({name: finding.severity}).color}.main`}>
