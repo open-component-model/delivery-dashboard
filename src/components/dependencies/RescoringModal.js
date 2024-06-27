@@ -1417,6 +1417,9 @@ const RescoringContentTableRow = ({
           rescoring,
           comment,
         })
+        if (!selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))) {
+          selectRescoring(rescoring)
+        }
       }, 300)
     )
   }
