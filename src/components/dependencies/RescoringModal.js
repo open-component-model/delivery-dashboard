@@ -1219,7 +1219,6 @@ Subject.propTypes = {
 
 const Finding = ({
   rescoring,
-  severity,
 }) => {
   const finding = rescoring.finding
 
@@ -1271,8 +1270,8 @@ const Finding = ({
       <Typography variant='inherit' marginRight='0.4rem'>{finding.malware}</Typography>
       <div style={{ display: 'flex' }}>
         <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
-        <Typography variant='inherit' color={`${findSeverityCfgByName({name: severity}).color}.main`}>
-          {severity}
+        <Typography variant='inherit' color={`${findSeverityCfgByName({name: finding.severity}).color}.main`}>
+          {finding.severity}
         </Typography>
         <MalwareExtraInfo
           contentDigest={finding.content_digest}
@@ -1301,8 +1300,8 @@ const Finding = ({
       </div>
       <div style={{ display: 'flex' }}>
         <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
-        <Typography variant='inherit' color={`${findSeverityCfgByName({name: severity}).color}.main`}>
-          {severity}
+        <Typography variant='inherit' color={`${findSeverityCfgByName({name: finding.severity}).color}.main`}>
+          {finding.severity}
         </Typography>
       </div>
       <Typography variant='inherit' marginRight='0.4rem'>{finding.malware}</Typography>
@@ -1312,7 +1311,6 @@ const Finding = ({
 Finding.displayName = 'Finding'
 Finding.propTypes = {
   rescoring: PropTypes.object.isRequired,
-  severity: PropTypes.string.isRequired,
 }
 
 
@@ -1427,12 +1425,7 @@ const RescoringContentTableRow = ({
         />
       </TableCell>
       <TableCell>
-        <Finding
-          rescoring={rescoring}
-          ocmNode={ocmNode}
-          ocmRepo={ocmRepo}
-          severity={severity}
-        />
+        <Finding rescoring={rescoring}/>
       </TableCell>
       <TableCell align='center'>
         <Tooltip title={typedef.friendlyName}>
