@@ -1197,7 +1197,7 @@ const Subject = ({
         <Typography variant='inherit'>{finding.package_name}</Typography>
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
-      <Typography variant='inherit' whiteSpace='pre-line'>{finding.package_versions}</Typography>
+      <Typography variant='inherit' whiteSpace='pre-line'>{finding.package_versions.sort().join('\n')}</Typography>
     </Stack>
 
   } else if (rescoring.finding_type === artefactMetadataTypes.FINDING_MALWARE) {
