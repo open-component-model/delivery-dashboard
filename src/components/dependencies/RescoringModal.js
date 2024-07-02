@@ -511,7 +511,7 @@ RescoringFilterOption.propTypes = {
   isLoading: PropTypes.bool.isRequired,
   filterCallback: PropTypes.func.isRequired,
   countCallback: PropTypes.func.isRequired,
-  colorCallback: PropTypes.func.isRequired,
+  colorCallback: PropTypes.func,
   options: PropTypes.arrayOf(PropTypes.object).isRequired,
   optionIdCallback: PropTypes.func.isRequired,
   optionNameCallback: PropTypes.func.isRequired,
