@@ -1733,7 +1733,7 @@ const RescoringContent = ({
     const bdbaAccesses = {
       [orderAttributes.SUBJECT]: rescoring.finding.package_name,
       [orderAttributes.FINDING]: bdbaFinding(rescoring),
-      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(-1),
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000), // maximum date according to https://262.ecma-international.org/11.0/#sec-time-values-and-time-range
       [orderAttributes.CURRENT]: findSeverityCfgByName({name: rescoringProposalSeverity(rescoring)}).value,
       [orderAttributes.RESCORED]: findSeverityCfgByName({name: rescoring.severity}).value,
       [orderAttributes.TYPE]: rescoring.finding_type,
@@ -1742,7 +1742,7 @@ const RescoringContent = ({
     const malwareAccess = {
       [orderAttributes.SUBJECT]: rescoring.finding.filename,
       [orderAttributes.FINDING]: `${artefactMetadataTypes.FINDING_MALWARE}_${rescoring.finding.malware}`,
-      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(-1),
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
       [orderAttributes.CURRENT]: findSeverityCfgByName({name: rescoringProposalSeverity(rescoring)}).value,
       [orderAttributes.RESCORED]: findSeverityCfgByName({name: rescoring.severity}).value,
       [orderAttributes.TYPE]: rescoring.finding_type,

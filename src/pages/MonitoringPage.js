@@ -254,7 +254,7 @@ const Backlog = ({
 }) => {
   const {cfgName} = cfgNameState
   const {priority} = priorityState
-  
+
   const [refreshBacklogItems, setRefreshBacklogItems] = React.useState({})
   const [backlogItems, backlogItemsIsLoading, backlogItemsIsError, setBacklogItems] = useFetchBacklogItems({
     service: service,

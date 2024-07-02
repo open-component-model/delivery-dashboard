@@ -317,7 +317,7 @@ export const formatAndSortSprints = (sprints) => {
 
     const now = new Date(new Date().setHours(0, 0, 0, 0))
     const endDate = new Date(sprint.end_date)
-    const timeDeltaDays = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    const timeDeltaDays = Math.round((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
     const displayName = () => {
       if (timeDeltaDays === 0) return 'Today'
