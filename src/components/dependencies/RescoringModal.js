@@ -1121,7 +1121,6 @@ ApplicableRescorings.propTypes = {
   isAuthenticated: PropTypes.bool.isRequired,
   expanded: PropTypes.bool.isRequired,
   rescoringFeature: PropTypes.object,
-  sprintsIsAvailable: PropTypes.bool.isRequired,
 }
 
 
@@ -1618,7 +1617,7 @@ RescoringContentTableRow.propTypes = {
   scanConfig: PropTypes.object,
   setRescorings: PropTypes.func.isRequired,
   fetchComplianceData: PropTypes.func.isRequired,
-  fetchComplianceSummary: PropTypes.func.isRequired,
+  fetchComplianceSummary: PropTypes.func,
   rescoringFeature: PropTypes.object.isRequired,
   severityCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
