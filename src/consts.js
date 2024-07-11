@@ -207,6 +207,7 @@ export const SEVERITIES = {
   BLOCKER: 'BLOCKER',
 }
 Object.freeze(SEVERITIES)
+export const REPORTING_MINIMUM_SEVERITY = SEVERITIES.MEDIUM
 
 export const META_RESCORING_RULES = {
   BDBA_TRIAGE: 'bdba-triage',

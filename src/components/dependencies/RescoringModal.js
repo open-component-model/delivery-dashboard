@@ -983,10 +983,11 @@ const ApplicableRescorings = ({
       await rescore.delete({
         id: applicableRescoring.id,
       })
-      fetchComplianceData()
       if (fetchComplianceSummary) {
         // function is not defined when invoked from compliance tab
         fetchComplianceSummary(false)
+      } else {
+        fetchComplianceData(false)
       }
     } catch (error) {
       enqueueSnackbar(
@@ -1116,7 +1117,7 @@ ApplicableRescorings.displayName = 'ApplicableRescorings'
 ApplicableRescorings.propTypes = {
   rescoring: PropTypes.object.isRequired,
   setRescorings: PropTypes.func.isRequired,
-  fetchComplianceData: PropTypes.func.isRequired,
+  fetchComplianceData: PropTypes.func,
   fetchComplianceSummary: PropTypes.func,
   isAuthenticated: PropTypes.bool.isRequired,
   expanded: PropTypes.bool.isRequired,
@@ -1616,7 +1617,7 @@ RescoringContentTableRow.propTypes = {
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
   scanConfig: PropTypes.object,
   setRescorings: PropTypes.func.isRequired,
-  fetchComplianceData: PropTypes.func.isRequired,
+  fetchComplianceData: PropTypes.func,
   fetchComplianceSummary: PropTypes.func,
   rescoringFeature: PropTypes.object.isRequired,
   severityCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
@@ -1834,8 +1835,8 @@ RescoringContent.propTypes = {
   setSelectedRescorings: PropTypes.func.isRequired,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
   scanConfig: PropTypes.object,
-  fetchComplianceData: PropTypes.func.isRequired,
-  fetchComplianceSummary: PropTypes.func.isRequired,
+  fetchComplianceData: PropTypes.func,
+  fetchComplianceSummary: PropTypes.func,
   rescoringFeature: PropTypes.object,
   rescoringsLoading: PropTypes.bool.isRequired,
   severityCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
@@ -2151,7 +2152,7 @@ Rescoring.propTypes = {
   editRescoring: PropTypes.func.isRequired,
   setProgress: PropTypes.func.isRequired,
   setShowProgress: PropTypes.func.isRequired,
-  fetchComplianceData: PropTypes.func.isRequired,
+  fetchComplianceData: PropTypes.func,
   fetchComplianceSummary: PropTypes.func,
   rescoringFeature: PropTypes.object,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
@@ -2331,10 +2332,11 @@ const Rescore = ({
         setIsLoading(false)
 
         if (lenSerialisedRescorings > 0) {
-          fetchComplianceData()
           if (fetchComplianceSummary) {
             // function is not defined when invoked from compliance tab
             fetchComplianceSummary(false)
+          } else {
+            fetchComplianceData(false)
           }
           handleClose()
         }
@@ -2362,7 +2364,7 @@ Rescore.propTypes = {
   handleClose: PropTypes.func.isRequired,
   setShowProgress: PropTypes.func.isRequired,
   scope: PropTypes.string.isRequired,
-  fetchComplianceData: PropTypes.func.isRequired,
+  fetchComplianceData: PropTypes.func,
   fetchComplianceSummary: PropTypes.func,
 }
 
@@ -2775,7 +2777,7 @@ RescoringModal.propTypes = {
   ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   ocmRepo: PropTypes.string,
   handleClose: PropTypes.func.isRequired,
-  fetchComplianceData: PropTypes.func.isRequired,
+  fetchComplianceData: PropTypes.func,
   fetchComplianceSummary: PropTypes.func,
   scanConfig: PropTypes.object,
 }
