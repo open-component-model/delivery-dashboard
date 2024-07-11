@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import urljoin from 'url-join'
 
 import { addMetadata } from './complianceData'
-import { appendPresentParams } from './util'
+import { appendPresentParams, normaliseObject } from './util'
 import { TOKEN_KEY } from './consts'
 
 
@@ -313,20 +313,23 @@ const componentsComplianceSummary = async ({
 
 
 const artefactsQueryMetadata = async ({
-  components,
+  artefacts,
   types,
   referenced_types,
+  enableCache,
 }) => {
   const url = new URL(routes.artefacts.queryMetadata)
   types?.map((type) => appendPresentParams(url, {type}))
   referenced_types?.map((referenced_type) => appendPresentParams(url, {referenced_type}))
 
-  const _components = components.map((component) => {
-    return {
-      componentName: component.name,
-      componentVersion: component.version,
-    }
-  })
+  const entries = {
+    entries: artefacts,
+  }
+
+  const requestId = `artefactsQueryMetadata:${JSON.stringify(normaliseObject(entries))}:${types}:${referenced_types}`
+  if (enableCache && serveFromCache(requestId)) {
+    return serveFromCache(requestId)
+  }
 
   const artefactMetadata = await _toJson(
     withAuth(url, {
@@ -334,13 +337,13 @@ const artefactsQueryMetadata = async ({
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        components: _components,
-      }),
+      body: JSON.stringify(entries),
     })
   )
 
-  return await Promise.all(artefactMetadata.map(addMetadata))
+  const metadata = await Promise.all(artefactMetadata.map(addMetadata))
+  updateCache(requestId, metadata)
+  return metadata
 }
 
 /**

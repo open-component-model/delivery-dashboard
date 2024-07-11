@@ -719,21 +719,23 @@ const MetadataViewerPopover = ({
   })
 
   const components = [{
-    name: componentName,
-    version: componentVersion,
+    component_name: componentName,
+    component_version: componentVersion,
   }]
   const types = Object.values(artefactMetadataTypes).filter((type) => ![
     artefactMetadataTypes.ARTEFACT_SCAN_INFO,
     artefactMetadataTypes.RESCORINGS,
   ].includes(type))
   const [findings, findingsLoading, findingsError] = useFetchQueryMetadata({
-    components,
-    types,
+    artefacts: components,
+    types: types,
+    enableCache: true,
   })
   const [rescorings, rescoringsLoading, rescoringsError] = useFetchQueryMetadata({
-    components: components,
+    artefacts: components,
     types: [artefactMetadataTypes.RESCORINGS],
     referenced_types: types,
+    enableCache: true,
   })
 
   const [selectedSeverities, setSelectedSeverities] = React.useState([])
