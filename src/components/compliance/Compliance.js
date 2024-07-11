@@ -870,16 +870,24 @@ const Artefacts = ({
   const [isError, setIsError] = React.useState(false)
   const [scanConfigs] = useFetchScanConfigurations()
 
-  const fetchQueryMetadata = React.useCallback(async () => {
+  const fetchQueryMetadata = React.useCallback(async (enableCache) => {
     try {
+      const artefacts = components.map((component) => {
+        return {
+          component_name: component.name,
+          component_version: component.version,
+        }
+      })
       const findings = await artefactsQueryMetadata({
-        components: components,
+        artefacts: artefacts,
         types: [type],
+        enableCache: enableCache,
       })
       const rescorings = await artefactsQueryMetadata({
-        components: components,
+        artefacts: artefacts,
         types: [artefactMetadataTypes.RESCORINGS],
         referenced_types: [type],
+        enableCache: enableCache,
       })
 
       setArtefactMetadata(mixupFindingsWithRescorings(findings, rescorings))
@@ -898,7 +906,7 @@ const Artefacts = ({
   }, [components, type, enqueueSnackbar])
 
   React.useEffect(() => {
-    fetchQueryMetadata()
+    fetchQueryMetadata(true)
   }, [fetchQueryMetadata])
 
   React.useEffect(() => {
