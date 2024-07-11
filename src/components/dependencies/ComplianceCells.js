@@ -6,7 +6,6 @@ import {
   Avatar,
   Box,
   Chip,
-  CircularProgress,
   Divider,
   Grid,
   Link,
@@ -14,6 +13,7 @@ import {
   ListItemAvatar,
   ListItemText,
   ListItemButton,
+  Skeleton,
   Typography,
   Tooltip,
   TableCell,
@@ -37,6 +37,7 @@ import {
   artefactMetadatumSeverity,
   capitalise,
   findSeverityCfgByName,
+  normaliseObject,
 } from '../../util'
 import DockerLogo from '../../res/docker-icon.svg'
 import { artefactMetadataTypes, datasources, findTypedefByName } from '../../ocm/model'
@@ -61,7 +62,7 @@ const OsCell = ({
   osInfo,
 }) => {
   if (!osInfo) return <Tooltip
-    title={<Typography variant='inherit'>Last scan: Not scanned yet</Typography>}
+    title={<Typography variant='inherit'>No last scan</Typography>}
   >
     <Grid item>
       <Chip
@@ -203,7 +204,7 @@ IconCell.propTypes = {
 
 
 const findLastScan = (complianceData, datasource) => {
-  return complianceData.find((d) => {
+  return complianceData?.find((d) => {
     return (
       d.meta.type === artefactMetadataTypes.ARTEFACT_SCAN_INFO
       && d.meta.datasource === datasource
@@ -212,64 +213,64 @@ const findLastScan = (complianceData, datasource) => {
 }
 
 
+const lastScanTimestampStr = (lastScan) => {
+  if (!lastScan) return 'No last scan'
+  return `Last scan: ${new Date(lastScan.meta.last_update).toLocaleString()}`
+}
+
+
 const ComplianceCell = ({
   component,
   artefact,
   ocmRepo,
-  compliance,
-  fetchComplianceData,
+  complianceSummaryFetchDetails,
+  complianceDataFetchDetails,
   fetchComplianceSummary,
   scanConfigs,
-  isLoading,
-  isError,
 }) => {
-  if (isError) {
-    return <TableCell>
-      <Stack direction='row-reverse' spacing={2}>
-        <Alert severity='error'>Unable to fetch Compliance Data</Alert>
-      </Stack>
-    </TableCell>
-  }
-  if (isLoading) {
-    return <TableCell>
-      <Stack direction='row-reverse' spacing={2}>
-        <CircularProgress color='inherit' size={20}/>
-      </Stack>
-    </TableCell>
+  const {complianceSummary, isSummaryLoading, isSummaryError} = complianceSummaryFetchDetails
+  const {complianceData, isDataLoading, isDataError} = complianceDataFetchDetails
+
+  const componentSummary = complianceSummary?.complianceSummary.find((componentSummary) => {
+    return (
+      componentSummary.componentId.name === component.name
+      && componentSummary.componentId.version === component.version
+    )
+  })
+
+  const artefactSummary = componentSummary?.artefacts.find((artefactSummary) => {
+    return (
+      artefactSummary.artefact.artefact_kind === artefact.kind
+      && artefactSummary.artefact.artefact.artefact_name === artefact.name
+      && artefactSummary.artefact.artefact.artefact_version == artefact.version
+      && artefactSummary.artefact.artefact.artefact_type == artefact.type
+      && JSON.stringify(normaliseObject(artefactSummary.artefact.artefact.artefact_extra_id))
+        === JSON.stringify(normaliseObject(artefact.extraIdentity))
+    )
+  })
+
+  if (isSummaryError || isDataError || (!isSummaryLoading && !artefactSummary)) return <TableCell>
+    <Alert severity='error'>Unable to fetch Compliance Data</Alert>
+  </TableCell>
+
+  const getMaxSeverity = (type) => {
+    if (!artefactSummary) return findSeverityCfgByName({name: SEVERITIES.UNKNOWN})
+    const entry = artefactSummary.entries.find((summary) => summary.type === type)
+    return findSeverityCfgByName({name: entry.severity})
   }
 
-  const getMaxSeverity = (findings) => {
-    return findings.reduce((prevSeverity, curFinding) => {
-      const curSeverity = artefactMetadatumSeverity(curFinding)
-      return curSeverity.value > prevSeverity.value ? curSeverity : prevSeverity
-    }, findSeverityCfgByName({name: SEVERITIES.CLEAN}))
-  }
-  const getLatestUpdateTimestamp = (findings) => {
-    return findings.reduce((prevDate, curFinding) => {
-      const curDate = new Date(curFinding.meta.last_update)
-      if (!prevDate || curDate.getTime() > prevDate.getTime()) {
-        return curDate
-      }
-      return prevDate
-    }, new Date(0))
-  }
-  const getReportUrl = (findings) => {
-    return findings.find((finding) => finding.data.report_url)?.data.report_url
-  }
-
-  const complianceFiltered = compliance.filter(artefactMetadataFilter({
+  const complianceFiltered = complianceData?.filter(artefactMetadataFilter({
+    artefactKind: artefact.kind,
     artefactName: artefact.name,
     artefactVersion: artefact.version,
+    artefactType: artefact.type,
   }))
 
-  const bdbaFindings = complianceFiltered.filter((d) => d.meta.datasource === 'bdba')
-  const structureInfos = bdbaFindings.filter((d) => d.meta.type === artefactMetadataTypes.STRUCTURE_INFO)
-  const licenseFindings = bdbaFindings.filter((d) => d.meta.type === artefactMetadataTypes.LICENSE)
-  const vulnerabilities = bdbaFindings.filter((d) => d.meta.type === artefactMetadataTypes.VULNERABILITY)
-  const osData = complianceFiltered.find((d) => d.meta.type === artefactMetadataTypes.OS_IDS)
-  const codecheckData = complianceFiltered.find((d) => d.meta.type === artefactMetadataTypes.CODECHECKS_AGGREGATED)
+  const structureInfos = complianceFiltered?.filter((d) => d.meta.type === artefactMetadataTypes.STRUCTURE_INFO)
+  const osData = complianceFiltered?.find((d) => d.meta.type === artefactMetadataTypes.OS_IDS)
+  const codecheckData = complianceFiltered?.find((d) => d.meta.type === artefactMetadataTypes.CODECHECKS_AGGREGATED)
 
-  const malwareFindings = complianceFiltered.filter((d) => d.meta.type === artefactMetadataTypes.FINDING_MALWARE)
+  const lastBdbaScan = findLastScan(complianceFiltered, datasources.BDBA)
   const lastMalwareScan = findLastScan(complianceFiltered, datasources.CLAMAV)
 
   const singleScanCfgOrNull = ({
@@ -294,30 +295,31 @@ const ComplianceCell = ({
           artefact={artefact}
           ocmRepo={ocmRepo}
           type={artefactMetadataTypes.LICENSE}
-          severity={getMaxSeverity(licenseFindings)}
-          lastUpdateDate={getLatestUpdateTimestamp(bdbaFindings).toLocaleString()}
-          reportUrl={getReportUrl(bdbaFindings)}
+          severity={getMaxSeverity(artefactMetadataTypes.LICENSE)}
+          lastScan={lastBdbaScan}
           scanConfig={singleScanCfgOrNull({scanCfgs: scanConfigs, complianceToolName: COMPLIANCE_TOOLS.BDBA})}
-          fetchComplianceData={fetchComplianceData}
           fetchComplianceSummary={fetchComplianceSummary}
+          isLoading={isDataLoading}
         />
       }
-      <GolangChip
-        versions={structureInfos.filter((structureInfo) => {
-          return structureInfo.data.package_name === 'golang-runtime'
-        }).map((structureInfo) => structureInfo.data.package_version)}
-        timestamp={getLatestUpdateTimestamp(structureInfos).toLocaleString()}
-      />
+      {
+        artefact.kind === ARTEFACT_KIND.RESOURCE && <GolangChip
+          versions={structureInfos?.filter((structureInfo) => {
+            return structureInfo.data.package_name === 'golang-runtime'
+          }).map((structureInfo) => structureInfo.data.package_version)}
+          timestamp={lastScanTimestampStr(lastBdbaScan)}
+        />
+      }
       {
         artefact.kind === ARTEFACT_KIND.RESOURCE && <MalwareFindingCell
           ocmNode={new OcmNode([component], artefact, ARTEFACT_KIND.RESOURCE)}
           ocmRepo={ocmRepo}
           metadataTypedef={findTypedefByName({name: artefactMetadataTypes.FINDING_MALWARE})}
           scanConfig={singleScanCfgOrNull({scanCfgs: scanConfigs, complianceToolName: COMPLIANCE_TOOLS.CLAMAV})}
-          fetchComplianceData={fetchComplianceData}
           fetchComplianceSummary={fetchComplianceSummary}
           lastScan={lastMalwareScan}
-          severity={getMaxSeverity(malwareFindings)}
+          severity={getMaxSeverity(artefactMetadataTypes.FINDING_MALWARE)}
+          isLoading={isDataLoading}
         />
       }
       {
@@ -341,12 +343,11 @@ const ComplianceCell = ({
           artefact={artefact}
           ocmRepo={ocmRepo}
           type={artefactMetadataTypes.VULNERABILITY}
-          severity={getMaxSeverity(vulnerabilities)}
-          lastUpdateDate={getLatestUpdateTimestamp(bdbaFindings).toLocaleString()}
-          reportUrl={getReportUrl(bdbaFindings)}
+          severity={getMaxSeverity(artefactMetadataTypes.VULNERABILITY)}
+          lastScan={lastBdbaScan}
           scanConfig={singleScanCfgOrNull({scanCfgs: scanConfigs, complianceToolName: COMPLIANCE_TOOLS.BDBA})}
-          fetchComplianceData={fetchComplianceData}
           fetchComplianceSummary={fetchComplianceSummary}
+          isLoading={isDataLoading}
         />
       }
     </Grid>
@@ -357,12 +358,10 @@ ComplianceCell.propTypes = {
   component: PropTypes.object.isRequired,
   artefact: PropTypes.object.isRequired,
   ocmRepo: PropTypes.string,
-  compliance: PropTypes.arrayOf(PropTypes.object),
-  fetchComplianceData: PropTypes.func.isRequired,
+  complianceSummaryFetchDetails: PropTypes.object.isRequired,
+  complianceDataFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
   scanConfigs: PropTypes.arrayOf(PropTypes.object),
-  isLoading: PropTypes.bool,
-  isError: PropTypes.bool,
 }
 
 
@@ -483,7 +482,7 @@ const CodecheckCell = ({
   timestamp,
 }) => {
   if (severity.name === findSeverityCfgByName({name: SEVERITIES.UNKNOWN}).name) return <Tooltip
-    title={<Typography variant='inherit'>Last scan: Not scanned yet</Typography>}
+    title={<Typography variant='inherit'>No last scan</Typography>}
   >
     <Grid item>
       <Chip
@@ -576,6 +575,7 @@ const BDBAButton = ({
     component='a'
     href={reportUrl}
     target='_blank'
+    divider
   >
     <ListItemAvatar>
       <Avatar>
@@ -600,10 +600,10 @@ const MalwareFindingCell = ({
   ocmRepo,
   metadataTypedef,
   scanConfig,
-  fetchComplianceData,
   fetchComplianceSummary,
   lastScan,
   severity,
+  isLoading,
 }) => {
   const [mountRescoring, setMountRescoring] = React.useState(false)
 
@@ -624,18 +624,12 @@ const MalwareFindingCell = ({
 
   const title = metadataTypedef.friendlyName
 
-  const lastScanTimestamp = (lastScan) => {
-    if (!lastScan) return null
-    return new Date(lastScan.meta.last_update).toLocaleString()
-  }
-
   return <Grid item onClick={(e) => e.stopPropagation()}>
     {
       mountRescoring && <RescoringModal
         ocmNodes={[ocmNode]}
         ocmRepo={ocmRepo}
         handleClose={handleRescoringClose}
-        fetchComplianceData={fetchComplianceData}
         fetchComplianceSummary={fetchComplianceSummary}
         scanConfig={scanConfig}
       />
@@ -656,22 +650,22 @@ const MalwareFindingCell = ({
               title={'Rescoring'}
             />
           </List>
-          <Typography variant='inherit'>
-            {
-              lastScan
-                ? `Last scan: ${lastScanTimestamp(lastScan)}`
-                : 'No last scan'
-            }
-          </Typography>
+          {
+            isLoading ? <Skeleton/> : <Typography variant='inherit'>
+              {
+                lastScanTimestampStr(lastScan)
+              }
+            </Typography>
+          }
         </Stack>
       }
     >
       {
-        lastScan ? <Chip
+        lastScan || isLoading ? <Chip
           color={severity.color}
           label={severity.name === SEVERITIES.CLEAN
-            ? `No ${title}`
-            : `${title} found`
+            ? `No ${title} Findings`
+            : `${title} ${capitalise(severity.name)}`
           }
           variant='outlined'
           size='small'
@@ -682,7 +676,7 @@ const MalwareFindingCell = ({
           label={`No ${title} Scan`}
           variant='outlined'
           size='small'
-          icon={scanConfig && <UnfoldMoreIcon/>}
+          icon={<UnfoldMoreIcon/>}
           clickable={false}
         />
       }
@@ -697,8 +691,8 @@ MalwareFindingCell.propTypes = {
   severity: PropTypes.object.isRequired,
   lastScan: PropTypes.object,
   scanConfig: PropTypes.object,
-  fetchComplianceData: PropTypes.func.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
+  isLoading: PropTypes.bool.isRequired,
 }
 
 
@@ -708,11 +702,10 @@ const BDBACell = ({
   ocmRepo,
   type,
   severity,
-  lastUpdateDate,
-  reportUrl,
+  lastScan,
   scanConfig,
-  fetchComplianceData,
   fetchComplianceSummary,
+  isLoading,
 }) => {
   const [mountRescoring, setMountRescoring] = React.useState(false)
 
@@ -733,41 +726,14 @@ const BDBACell = ({
 
   const ocmNode = new OcmNode([component], artefact, ARTEFACT_KIND.RESOURCE)
   const title = findTypedefByName({name: type}).friendlyName
-
-  if (!reportUrl) return <Tooltip
-    title={
-      <Stack>
-        {
-          scanConfig && <TriggerComplianceToolButton
-            ocmNode={ocmNode}
-            cfgName={scanConfig.name}
-            service={COMPLIANCE_TOOLS.BDBA}
-          />
-        }
-        <Typography variant='inherit'>Last scan: Not scanned yet</Typography>
-      </Stack>
-    }
-  >
-    <Grid item>
-      <Chip
-        color='default'
-        label={`No ${title} Scan`}
-        variant='outlined'
-        size='small'
-        icon={scanConfig && <UnfoldMoreIcon/>}
-        clickable={false}
-      />
-    </Grid>
-  </Tooltip>
+  const reportUrl = lastScan?.data.report_url
 
   return <Grid item onClick={(e) => e.stopPropagation()}>
     {
       mountRescoring && <RescoringModal
         ocmNodes={[ocmNode]}
         ocmRepo={ocmRepo}
-        type={type}
         handleClose={handleRescoringClose}
-        fetchComplianceData={fetchComplianceData}
         fetchComplianceSummary={fetchComplianceSummary}
         scanConfig={scanConfig}
       />
@@ -787,26 +753,40 @@ const BDBACell = ({
               setMountRescoring={setMountRescoring}
               title={'Rescoring'}
             />
-            <BDBAButton reportUrl={reportUrl}/>
+            {
+              reportUrl && <BDBAButton reportUrl={reportUrl}/>
+            }
           </List>
-          <Divider/>
-          <Typography variant='inherit'>
-            {`Last scan: ${lastUpdateDate}`}
-          </Typography>
+          {
+            isLoading ? <Skeleton/> : <Typography variant='inherit'>
+              {
+                lastScanTimestampStr(lastScan)
+              }
+            </Typography>
+          }
         </Stack>
       }
     >
-      <Chip
-        color={severity.color}
-        label={severity.name === SEVERITIES.CLEAN
-          ? `No ${title} Findings`
-          : `${title} ${capitalise(severity.name)}`
-        }
-        variant='outlined'
-        size='small'
-        icon={<UnfoldMoreIcon/>}
-        clickable={false}
-      />
+      {
+        lastScan || isLoading ? <Chip
+          color={severity.color}
+          label={severity.name === SEVERITIES.CLEAN
+            ? `No ${title} Findings`
+            : `${title} ${capitalise(severity.name)}`
+          }
+          variant='outlined'
+          size='small'
+          icon={<UnfoldMoreIcon/>}
+          clickable={false}
+        /> : <Chip
+          color='default'
+          label={`No ${title} Scan`}
+          variant='outlined'
+          size='small'
+          icon={<UnfoldMoreIcon/>}
+          clickable={false}
+        />
+      }
     </Tooltip>
   </Grid>
 }
@@ -817,11 +797,10 @@ BDBACell.propTypes = {
   ocmRepo: PropTypes.string,
   type: PropTypes.string.isRequired,
   severity: PropTypes.object.isRequired,
-  lastUpdateDate: PropTypes.string.isRequired,
-  reportUrl: PropTypes.string,
+  lastScan: PropTypes.object,
   scanConfig: PropTypes.object,
-  fetchComplianceData: PropTypes.func.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
+  isLoading: PropTypes.bool.isRequired,
 }
 
 

@@ -25,13 +25,11 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import LaunchIcon from '@mui/icons-material/Launch'
 import SearchIcon from '@mui/icons-material/Search'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
-import { useSnackbar } from 'notistack'
 
 import { FeatureRegistrationContext, SearchParamContext } from '../../App'
 import { Component, Components } from './Component'
 import {
   DEPENDENT_COMPONENT,
-  errorSnackbarProps,
   features,
 } from '../../consts'
 import {
@@ -333,8 +331,6 @@ const FetchComponentRefsTab = React.memo(({
   searchQuery,
   setComponentRefs,
 }) => {
-  const { enqueueSnackbar } = useSnackbar()
-
   const [componentRefs, isRefsLoading, isRefsError, refsError] = useFetchBom(
     component,
     ocmRepo,
@@ -345,37 +341,6 @@ const FetchComponentRefsTab = React.memo(({
     if (!componentRefs) return
     setComponentRefs(componentRefs.componentDependencies)
   }, [componentRefs, setComponentRefs])
-
-  const [complianceSummary, setComplianceSummary] = React.useState()
-  const [isSummaryLoading, setIsSummaryLoading] = React.useState(true)
-  const [isSummaryError, setIsSummaryError] = React.useState(false)
-
-  const fetchComplianceSummary = React.useCallback(async (enableCache) => {
-    try {
-      const _complianceSummary = await components.complianceSummary({
-        componentName: component.name,
-        componentVersion: component.version,
-        enableCache: enableCache,
-      })
-
-      setComplianceSummary(_complianceSummary)
-      setIsSummaryLoading(false)
-      setIsSummaryError(false)
-    } catch (error) {
-      setIsSummaryLoading(false)
-      setIsSummaryError(true)
-
-      enqueueSnackbar('Unable to fetch compliance summary', {
-        ...errorSnackbarProps,
-        details: error.toString(),
-        onRetry: () => fetchComplianceSummary(enableCache),
-      })
-    }
-  }, [component, enqueueSnackbar])
-
-  React.useEffect(() => {
-    fetchComplianceSummary(false)
-  }, [fetchComplianceSummary])
 
   if (isRefsError) return <Alert severity='error'>
     Component Dependencies could not be resolved.
@@ -390,12 +355,6 @@ const FetchComponentRefsTab = React.memo(({
     component={component}
     ocmRepo={ocmRepo}
     componentRefs={componentRefs.componentDependencies}
-    complianceSummaryFetchDetails={{
-      complianceSummary,
-      isSummaryLoading,
-      isSummaryError,
-      fetchComplianceSummary,
-    }}
     searchQuery={searchQuery}
   />
 })
@@ -475,7 +434,6 @@ export const FetchDependenciesTab = React.memo(({
   component,
   ocmRepo,
   componentRefs,
-  complianceSummaryFetchDetails,
   searchQuery,
 }) => {
   const compareComponentsByName = (a, b) => {
@@ -525,24 +483,14 @@ export const FetchDependenciesTab = React.memo(({
     })
   }
 
-  const {complianceSummary, isSummaryLoading, isSummaryError, fetchComplianceSummary} = complianceSummaryFetchDetails
-
   const len = filteredBom().length
   const half = Math.ceil(len / 2)
   const left = filteredBom().slice(0, half)
   const right = filteredBom().slice(half, len)
 
-  const cdComplianceSummary = complianceSummary?.complianceSummary.find((componentSummary) =>
-    componentSummary.componentId.name === component.name && componentSummary.componentId.version === component.version
-  ) || {}
-
   return <Box>
     <Component
       component={component}
-      complianceSummary={cdComplianceSummary}
-      fetchComplianceSummary={fetchComplianceSummary}
-      isSummaryLoading={isSummaryLoading}
-      isSummaryError={isSummaryError}
       ocmRepo={ocmRepo}
       isParentComponent={true}
     />
@@ -558,10 +506,6 @@ export const FetchDependenciesTab = React.memo(({
           components={left}
           isComponentsLoading={isComponentsLoading}
           isComponentsError={isComponentsError}
-          complianceSummary={complianceSummary?.complianceSummary}
-          fetchComplianceSummary={fetchComplianceSummary}
-          isSummaryError={isSummaryError}
-          isSummaryLoading={isSummaryLoading}
           ocmRepo={ocmRepo}
         />
       </Box>
@@ -572,10 +516,6 @@ export const FetchDependenciesTab = React.memo(({
           components={right}
           isComponentsLoading={isComponentsLoading}
           isComponentsError={isComponentsError}
-          complianceSummary={complianceSummary?.complianceSummary}
-          fetchComplianceSummary={fetchComplianceSummary}
-          isSummaryError={isSummaryError}
-          isSummaryLoading={isSummaryLoading}
           ocmRepo={ocmRepo}
         />
       </Box>
@@ -587,7 +527,6 @@ FetchDependenciesTab.propTypes = {
   component: PropTypes.object.isRequired,
   ocmRepo: PropTypes.string,
   componentRefs: PropTypes.arrayOf(PropTypes.object).isRequired,
-  complianceSummaryFetchDetails: PropTypes.object.isRequired,
   searchQuery: PropTypes.string,
 }
 

@@ -7,7 +7,6 @@ import {
   Box,
   Button,
   capitalize,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -1149,20 +1148,12 @@ const ComponentCompliance = ({ component }) => {
     enableCache: true,
   })
 
-  if (isSummaryLoading) {
-    return <Skeleton />
-  }
-
-  if (isSummaryError) {
-    return <Chip label='FetchError' variant='outlined' color='warning' />
-  }
-
   function* iterSummaries(complianceSummary) {
     const worstVulnerability = worstSeverityByType(artefactMetadataTypes.VULNERABILITY, complianceSummary.complianceSummary)
     const worstOsInformation = worstSeverityByType(artefactMetadataTypes.OS_IDS, complianceSummary.complianceSummary)
     const worstMalware = worstSeverityByType(artefactMetadataTypes.FINDING_MALWARE, complianceSummary.complianceSummary)
     const worstLicenses = worstSeverityByType(artefactMetadataTypes.LICENSE, complianceSummary.complianceSummary)
-    const worstCodeChecks = worstSeverityByType(artefactMetadataTypes.CODECHECKS_AGGREGATED, complianceSummary.complianceSummary)  
+    const worstCodeChecks = worstSeverityByType(artefactMetadataTypes.CODECHECKS_AGGREGATED, complianceSummary.complianceSummary)
 
     if (worstVulnerability) yield worstVulnerability
     if (worstOsInformation) yield worstOsInformation
@@ -1171,9 +1162,22 @@ const ComponentCompliance = ({ component }) => {
     if (worstCodeChecks) yield worstCodeChecks
   }
 
+  const componentSummary = {
+    complianceSummary: [{
+      componentId: {
+        name: component.name,
+        version: component.version,
+      },
+      entries: complianceSummary ? [...iterSummaries(complianceSummary)] : [],
+    }],
+  }
+
   return <ComponentChip
-    componentSummary={{
-      entries: [...iterSummaries(complianceSummary)]
+    component={component}
+    complianceSummaryFetchDetails={{
+      complianceSummary: componentSummary,
+      isSummaryLoading: isSummaryLoading,
+      isSummaryError: isSummaryError,
     }}
   />
 }

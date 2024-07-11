@@ -26,12 +26,35 @@ import { OcmNode } from './../../ocm/iter'
 import { defaultTypedefForName, findTypedefByName } from '../../ocm/model'
 import { parseRelaxedSemver } from '../../osUtil'
 import { findSeverityCfgByName } from '../../util'
-import { ARTEFACT_KIND, COMPLIANCE_TOOLS, SEVERITIES } from './../../consts'
+import {
+  ARTEFACT_KIND,
+  COMPLIANCE_TOOLS,
+  REPORTING_MINIMUM_SEVERITY,
+  SEVERITIES,
+} from './../../consts'
 import TriggerComplianceToolButton from './../util/TriggerComplianceToolButton'
 
 
-const ComponentChip = ({ componentSummary }) => {
-  if (!componentSummary) return <Skeleton/>
+const ComponentChip = ({
+  component,
+  complianceSummaryFetchDetails,
+}) => {
+  const {complianceSummary, isSummaryLoading, isSummaryError} = complianceSummaryFetchDetails
+
+  if (isSummaryError) return <Chip
+    label='FetchError'
+    variant='outlined'
+    color='warning'
+  />
+
+  if (isSummaryLoading) return <Skeleton/>
+
+  const componentSummary = complianceSummary.complianceSummary.find((componentSummary) => {
+    return (
+      componentSummary.componentId.name === component.name
+      && componentSummary.componentId.version === component.version
+    )
+  })
 
   const mostCriticalSeverity = componentSummary.entries.reduce((max, element) => {
     if (findSeverityCfgByName({name: element.severity}).value > findSeverityCfgByName({name: max.severity}).value) {
@@ -81,8 +104,8 @@ const ComponentChip = ({ componentSummary }) => {
     summaries: PropTypes.array.isRequired,
   }
 
-  // only low and more severe
-  if (!(findSeverityCfgByName({name : mostCriticalSeverity.severity}).value >= findSeverityCfgByName({name: SEVERITIES.MEDIUM}).value)) return null
+  // only medium and more severe
+  if (!(findSeverityCfgByName({name : mostCriticalSeverity.severity}).value >= findSeverityCfgByName({name: REPORTING_MINIMUM_SEVERITY}).value)) return null
 
   componentSummary.entries.sort((left, right) => {
     const leftCfg = findSeverityCfgByName({name: left.severity})
@@ -111,7 +134,8 @@ const ComponentChip = ({ componentSummary }) => {
 }
 ComponentChip.displayName = 'ComponentChip'
 ComponentChip.propTypes = {
-  componentSummary: PropTypes.object,
+  component: PropTypes.object.isRequired,
+  complianceSummaryFetchDetails: PropTypes.object.isRequired,
 }
 
 /**
@@ -257,7 +281,7 @@ const GolangChip = ({
         }
         <Divider/>
         <Typography variant='inherit'>
-          {`Last scan: ${timestamp}`}
+          {timestamp}
         </Typography>
       </Stack>
     }

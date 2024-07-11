@@ -8,7 +8,6 @@ import {
   AccordionSummary,
   Alert,
   Box,
-  Chip,
   CircularProgress,
   Divider,
   Grid,
@@ -18,7 +17,6 @@ import {
   ListItemButton,
   ListItemText,
   Popover,
-  Skeleton,
   Stack,
   Table,
   TableBody,
@@ -35,17 +33,15 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 import PublishedWithChangesIcon from '@mui/icons-material/PublishedWithChanges'
 import SearchIcon from '@mui/icons-material/Search'
-import { useSnackbar } from 'notistack'
 
 import { FeatureRegistrationContext, SearchParamContext } from '../../App'
-import { artefactsQueryMetadata } from './../../api'
+import { components } from './../../api'
 import { generateArtefactID } from '../../cnudie'
 import { ComponentChip } from './ComplianceChips'
 import { Responsibles } from './Responsibles'
 import {
   componentPathQuery,
   enhanceComponentRefFromPath,
-  mixupFindingsWithRescorings,
   trimComponentName,
   trimLongString,
   updatePathFromComponentRef,
@@ -53,12 +49,13 @@ import {
 import ExtraWideTooltip from '../util/ExtraWideTooltip'
 import FeatureDependent from '../util/FeatureDependent'
 import ComplianceToolPopover from './../util/ComplianceToolsPopover'
-import { ARTEFACT_KIND, errorSnackbarProps, features } from '../../consts'
+import { ARTEFACT_KIND, features } from '../../consts'
 import { artefactMetadataTypes, MetadataViewerPopover } from '../../ocm/model'
 import { ComplianceCell, ArtefactCell, IconCell } from './ComplianceCells'
 import {
   useFetchComponentResponsibles,
   useFetchScanConfigurations,
+  useFetchQueryMetadata,
 } from '../../api/useFetch'
 import { registerCallbackHandler } from '../../feature'
 import CopyOnClickChip from '../util/CopyOnClickChip'
@@ -214,10 +211,6 @@ const Component = React.memo(
     component,
     isComponentLoading,
     isComponentError,
-    complianceSummary,
-    fetchComplianceSummary,
-    isSummaryLoading,
-    isSummaryError,
     ocmRepo,
     isParentComponent,
   }) => {
@@ -228,19 +221,33 @@ const Component = React.memo(
 
     const [expanded, setExpanded] = React.useState(Boolean(isParentComponent && Boolean(searchParamContext.get('rootExpanded'))))
 
-    let componentComplianceStatus
-    if (isSummaryError) {
-      componentComplianceStatus = <Chip label='FetchError' variant='outlined' color='warning'/>
-    } else if (isSummaryLoading) {
-      componentComplianceStatus = <Box
-        display='flex'
-        justifyContent='center'
-      >
-        <Skeleton sx={{width: '50%'}}/>
-      </Box>
-    } else {
-      componentComplianceStatus = <ComponentChip componentSummary={complianceSummary}/>
-    }
+    const [complianceSummary, setComplianceSummary] = React.useState()
+    const [isSummaryLoading, setIsSummaryLoading] = React.useState(true)
+    const [isSummaryError, setIsSummaryError] = React.useState(false)
+
+    const complianceSummaryFetchDetails = {complianceSummary, isSummaryLoading, isSummaryError}
+
+    const fetchComplianceSummary = React.useCallback(async (enableCache) => {
+      try {
+        const _complianceSummary = await components.complianceSummary({
+          componentName: component.name,
+          componentVersion: component.version,
+          recursionDepth: 0,
+          enableCache: enableCache,
+        })
+
+        setComplianceSummary(_complianceSummary)
+        setIsSummaryLoading(false)
+        setIsSummaryError(false)
+      } catch {
+        setIsSummaryLoading(false)
+        setIsSummaryError(true)
+      }
+    }, [component])
+
+    React.useEffect(() => {
+      fetchComplianceSummary(true)
+    }, [fetchComplianceSummary])
 
     return <Box
       sx={{
@@ -310,7 +317,10 @@ const Component = React.memo(
               childrenIfFeatureUnavailable={<Grid item xs={isParentComponent ? 1 : 2}/>}
             >
               <Grid item xs={isParentComponent ? 1 : 2}>
-                {componentComplianceStatus}
+                <ComponentChip
+                  component={component}
+                  complianceSummaryFetchDetails={complianceSummaryFetchDetails}
+                />
               </Grid>
             </FeatureDependent>
             <Grid item xs={isParentComponent ? 0.5 : 1}>
@@ -328,6 +338,7 @@ const Component = React.memo(
             isComponentLoading={isComponentLoading}
             isComponentError={isComponentError}
             ocmRepo={ocmRepo}
+            complianceSummaryFetchDetails={complianceSummaryFetchDetails}
             fetchComplianceSummary={fetchComplianceSummary}
           />
         </AccordionDetails>
@@ -340,10 +351,6 @@ Component.propTypes = {
   component: PropTypes.object.isRequired,
   isComponentLoading: PropTypes.bool,
   isComponentError: PropTypes.bool,
-  complianceSummary: PropTypes.object,
-  fetchComplianceSummary: PropTypes.func.isRequired,
-  isSummaryLoading: PropTypes.bool,
-  isSummaryError: PropTypes.bool,
   ocmRepo: PropTypes.string,
   isParentComponent: PropTypes.bool,
 }
@@ -425,56 +432,15 @@ const ComponentDetails = React.memo(
     isComponentLoading,
     isComponentError,
     ocmRepo,
+    complianceSummaryFetchDetails,
     fetchComplianceSummary,
   }) => {
-    const { enqueueSnackbar } = useSnackbar()
-
-    const [scanConfigs, scanConfigsIsLoading, scanConfigsIsError] = useFetchScanConfigurations()
+    const [scanConfigs] = useFetchScanConfigurations()
     const [responsibleData, isResponsibleDataLoading, isResponsibleDataError] = useFetchComponentResponsibles({
       componentName: component.name,
       componentVersion: component.version,
       ocmRepo: ocmRepo,
     })
-
-    const [complianceData, setComplianceData] = React.useState()
-    const [isComplianceDataLoading, setIsComplianceDataLoading] = React.useState(true)
-    const [isComplianceDataError, setIsComplianceDataError] = React.useState(false)
-
-    const fetchComplianceData = React.useCallback(async () => {
-      try {
-        const components = [{
-          name: component.name,
-          version: component.version,
-        }]
-        const types = Object.values(artefactMetadataTypes).filter((type) => type !== artefactMetadataTypes.RESCORINGS)
-        const findings = await artefactsQueryMetadata({
-          components,
-          types,
-        })
-        const rescorings = await artefactsQueryMetadata({
-          components: components,
-          types: [artefactMetadataTypes.RESCORINGS],
-          referenced_types: types,
-        })
-
-        setComplianceData(mixupFindingsWithRescorings(findings, rescorings))
-        setIsComplianceDataLoading(false)
-        setIsComplianceDataError(false)
-      } catch (error) {
-        setIsComplianceDataLoading(false)
-        setIsComplianceDataError(true)
-
-        enqueueSnackbar('Unable to fetch compliance data', {
-          ...errorSnackbarProps,
-          details: error.toString(),
-          onRetry: () => fetchComplianceData(),
-        })
-      }
-    }, [component, enqueueSnackbar])
-
-    React.useEffect(() => {
-      fetchComplianceData()
-    }, [fetchComplianceData])
 
     if (isComponentError) {
       return <Alert severity='error'>Unable to fetch Component</Alert>
@@ -485,12 +451,9 @@ const ComponentDetails = React.memo(
         isComponentLoading ? <CircularProgress color='inherit' size={20}/> : <Artefacts
           component={component}
           ocmRepo={ocmRepo}
-          compliance={complianceData}
-          fetchComplianceData={fetchComplianceData}
+          complianceSummaryFetchDetails={complianceSummaryFetchDetails}
           fetchComplianceSummary={fetchComplianceSummary}
           scanConfigs={scanConfigs}
-          isLoading={scanConfigsIsLoading || isComplianceDataLoading}
-          isError={scanConfigsIsError || isComplianceDataError}
         />
       }
       <ComponentReferencedBy component={component} ocmRepo={ocmRepo}/>
@@ -516,6 +479,7 @@ ComponentDetails.propTypes = {
   isComponentLoading: PropTypes.bool,
   isComponentError: PropTypes.bool,
   ocmRepo: PropTypes.string,
+  complianceSummaryFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
 }
 
@@ -523,34 +487,17 @@ const Components = ({
   components,
   isComponentsLoading,
   isComponentsError,
-  complianceSummary,
-  fetchComplianceSummary,
-  isSummaryLoading,
-  isSummaryError,
   ocmRepo,
 }) => {
   return <Box>
     {
-      components.map((component, idx) => {
-        const componentSummary = complianceSummary
-          ? complianceSummary.find((componentSummary) => {
-            if (componentSummary.componentId.name === component.name && componentSummary.componentId.version === component.version) return true
-            return false
-          })
-          : {}
-
-        return <Component
-          component={component}
-          isComponentLoading={isComponentsLoading}
-          isComponentError={isComponentsError}
-          key={idx}
-          complianceSummary={componentSummary}
-          fetchComplianceSummary={fetchComplianceSummary}
-          isSummaryLoading={isSummaryLoading}
-          isSummaryError={isSummaryError}
-          ocmRepo={ocmRepo}
-        />
-      })
+      components.map((component, idx) => <Component
+        key={idx}
+        component={component}
+        isComponentLoading={isComponentsLoading}
+        isComponentError={isComponentsError}
+        ocmRepo={ocmRepo}
+      />)
     }
   </Box>
 }
@@ -559,10 +506,6 @@ Components.propTypes = {
   components: PropTypes.arrayOf(PropTypes.object),
   isComponentsLoading: PropTypes.bool,
   isComponentsError: PropTypes.bool,
-  complianceSummary: PropTypes.arrayOf(PropTypes.object),
-  fetchComplianceSummary: PropTypes.func.isRequired,
-  isSummaryLoading: PropTypes.bool,
-  isSummaryError: PropTypes.bool,
   ocmRepo: PropTypes.string,
 }
 
@@ -572,12 +515,10 @@ const ArtefactDetails = ({
   artefacts,
   ocmRepo,
   title,
-  compliance,
-  fetchComplianceData,
+  complianceSummaryFetchDetails,
+  complianceDataFetchDetails,
   fetchComplianceSummary,
   scanConfigs,
-  isLoading,
-  isError,
 }) => {
   if (artefacts.length === 0) return null
 
@@ -604,14 +545,12 @@ const ArtefactDetails = ({
               return <ArtefactTableRow
                 key={generateArtefactID(artefact)}
                 component={component}
-                ocmRepo={ocmRepo}
                 artefact={artefact}
-                compliance={compliance}
-                fetchComplianceData={fetchComplianceData}
+                ocmRepo={ocmRepo}
+                complianceSummaryFetchDetails={complianceSummaryFetchDetails}
+                complianceDataFetchDetails={complianceDataFetchDetails}
                 fetchComplianceSummary={fetchComplianceSummary}
                 scanConfigs={scanConfigs}
-                isLoading={isLoading}
-                isError={isError}
               />
             })
           }
@@ -626,25 +565,36 @@ ArtefactDetails.propTypes = {
   artefacts: PropTypes.arrayOf(PropTypes.object).isRequired,
   ocmRepo: PropTypes.string,
   title: PropTypes.string.isRequired,
-  compliance: PropTypes.arrayOf(PropTypes.object),
-  fetchComplianceData: PropTypes.func.isRequired,
+  complianceSummaryFetchDetails: PropTypes.object.isRequired,
+  complianceDataFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
   scanConfigs: PropTypes.arrayOf(PropTypes.object),
-  isLoading: PropTypes.bool,
-  isError: PropTypes.bool,
 }
 
 
 const Artefacts = ({
   component,
   ocmRepo,
-  compliance,
-  fetchComplianceData,
+  complianceSummaryFetchDetails,
   fetchComplianceSummary,
   scanConfigs,
-  isLoading,
-  isError,
 }) => {
+  const [complianceData, isDataLoading, isDataError] = useFetchQueryMetadata({
+    artefacts: [{
+      component_name: component.name,
+      component_version: component.version,
+    }],
+    types: [
+      artefactMetadataTypes.ARTEFACT_SCAN_INFO,
+      artefactMetadataTypes.CODECHECKS_AGGREGATED,
+      artefactMetadataTypes.OS_IDS,
+      artefactMetadataTypes.STRUCTURE_INFO,
+    ],
+    enableCache: true,
+  })
+
+  const complianceDataFetchDetails = {complianceData, isDataLoading, isDataError}
+
   const resources = component.resources.sort((left, right) => {
     const ltype = left.type
     const rtype = right.type
@@ -683,24 +633,20 @@ const Artefacts = ({
       artefacts={resources}
       ocmRepo={ocmRepo}
       title={'Resources'}
-      compliance={compliance}
-      fetchComplianceData={fetchComplianceData}
+      complianceSummaryFetchDetails={complianceSummaryFetchDetails}
+      complianceDataFetchDetails={complianceDataFetchDetails}
       fetchComplianceSummary={fetchComplianceSummary}
       scanConfigs={scanConfigs}
-      isLoading={isLoading}
-      isError={isError}
     />
     <ArtefactDetails
       component={component}
       artefacts={sources}
       ocmRepo={ocmRepo}
       title={'Sources'}
-      compliance={compliance}
-      fetchComplianceData={fetchComplianceData}
+      complianceSummaryFetchDetails={complianceSummaryFetchDetails}
+      complianceDataFetchDetails={complianceDataFetchDetails}
       fetchComplianceSummary={fetchComplianceSummary}
       scanConfigs={scanConfigs}
-      isLoading={isLoading}
-      isError={isError}
     />
     <ComponentReferences
       component={component}
@@ -712,12 +658,9 @@ Artefacts.displayName = 'Artefacts'
 Artefacts.propTypes = {
   component: PropTypes.object.isRequired,
   ocmRepo: PropTypes.string,
-  compliance: PropTypes.arrayOf(PropTypes.object),
-  fetchComplianceData: PropTypes.func.isRequired,
+  complianceSummaryFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
   scanConfigs: PropTypes.arrayOf(PropTypes.object),
-  isLoading: PropTypes.bool,
-  isError: PropTypes.bool,
 }
 
 
@@ -725,12 +668,10 @@ const ArtefactTableRow = ({
   component,
   artefact,
   ocmRepo,
-  compliance,
-  fetchComplianceData,
+  complianceSummaryFetchDetails,
+  complianceDataFetchDetails,
   fetchComplianceSummary,
   scanConfigs,
-  isLoading,
-  isError,
 }) => {
   return <TableRow
     key={generateArtefactID(artefact)}
@@ -743,12 +684,10 @@ const ArtefactTableRow = ({
         component={component}
         artefact={artefact}
         ocmRepo={ocmRepo}
-        compliance={compliance}
-        fetchComplianceData={fetchComplianceData}
+        complianceSummaryFetchDetails={complianceSummaryFetchDetails}
+        complianceDataFetchDetails={complianceDataFetchDetails}
         fetchComplianceSummary={fetchComplianceSummary}
         scanConfigs={scanConfigs}
-        isLoading={isLoading}
-        isError={isError}
       />
     </FeatureDependent>
   </TableRow>
@@ -758,12 +697,10 @@ ArtefactTableRow.propTypes = {
   component: PropTypes.object,
   artefact: PropTypes.object,
   ocmRepo: PropTypes.string,
-  compliance: PropTypes.arrayOf(PropTypes.object),
-  fetchComplianceData: PropTypes.func.isRequired,
+  complianceSummaryFetchDetails: PropTypes.object.isRequired,
+  complianceDataFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
   scanConfigs: PropTypes.arrayOf(PropTypes.object),
-  isLoading: PropTypes.bool,
-  isError: PropTypes.bool,
 }
 
 
