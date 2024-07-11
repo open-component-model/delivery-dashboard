@@ -870,12 +870,12 @@ const ApplicableRescoringsRow = ({
   const [isConfirmDeletion, setIsConfirmDeletion] = React.useState(false)
 
   const componentName = applicableRescoring.artefact.component_name
-  const componentVersion = applicableRescoring.artefact.component_version
   const artefactName = applicableRescoring.artefact.artefact.artefact_name
+  const artefactVersion = applicableRescoring.artefact.artefact.artefact_version
 
   const scope = !componentName ? scopeOptions.GLOBAL
     : (!artefactName ? scopeOptions.COMPONENT
-      : (!componentVersion ? scopeOptions.ARTEFACT
+      : (!artefactVersion ? scopeOptions.ARTEFACT
         : scopeOptions.SINGLE
       )
     )
