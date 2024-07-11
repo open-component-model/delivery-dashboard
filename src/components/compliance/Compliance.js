@@ -342,7 +342,7 @@ const findArtefactMetadatumForOcmNode = (ocmNode, artefactMetadata) => {
       [
         {
           name: am.artefact.component_name,
-          version: am.artefact.component_version,
+          version: am.artefact.component_version ?? ocmNode.component.version,
         },
       ],
       {

@@ -217,6 +217,7 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
     ) return false
     if (
       rescoring.artefact.component_version
+      && finding.artefact.component_version
       && rescoring.artefact.component_version !== finding.artefact.component_version
     ) return false
     if (
@@ -439,7 +440,7 @@ export const worstSeverityByType = (
   type,
   complianceSummary,
 ) => {
-  const forType =  Object.values(complianceSummary)
+  const forType = Object.values(complianceSummary)
     .map(e => e.entries)
     .map(entries => entries.find(entry => entry.type === type))
     .filter(e => e !== undefined)
