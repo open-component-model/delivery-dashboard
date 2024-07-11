@@ -157,6 +157,7 @@ const useFetchComplianceSummary = ({
   componentName,
   componentVersion,
   ocmRepo,
+  recursionDepth,
   enableCache,
 }) => {
   const [complianceSummary, setComplianceSummary] = React.useState()
@@ -180,12 +181,13 @@ const useFetchComplianceSummary = ({
   React.useEffect(() => {
     let mounted = true
 
-    const fetchComplianceSummary = async ({componentName, componentVersion, ocmRepo, enableCache}) => {
+    const fetchComplianceSummary = async ({componentName, componentVersion, ocmRepo, recursionDepth, enableCache}) => {
       try {
         const _complianceSummary = await components.complianceSummary({
           componentName,
           componentVersion,
           ocmRepo,
+          recursionDepth,
           enableCache,
         })
 
@@ -204,17 +206,17 @@ const useFetchComplianceSummary = ({
           {
             ...errorSnackbarProps,
             details: error.toString(),
-            onRetry: () => fetchComplianceSummary({componentName, componentVersion, ocmRepo, enableCache}),
+            onRetry: () => fetchComplianceSummary({componentName, componentVersion, ocmRepo, recursionDepth, enableCache}),
           }
         )
       }
     }
     if (isAvailable)
-      fetchComplianceSummary({componentName, componentVersion, ocmRepo, enableCache})
+      fetchComplianceSummary({componentName, componentVersion, ocmRepo, recursionDepth, enableCache})
     return () => {
       mounted = false
     }
-  }, [enqueueSnackbar, componentName, componentVersion, ocmRepo, enableCache, isAvailable])
+  }, [enqueueSnackbar, componentName, componentVersion, ocmRepo, recursionDepth, enableCache, isAvailable])
 
   return [complianceSummary, isLoading, isError]
 }
