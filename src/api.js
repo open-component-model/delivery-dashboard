@@ -282,6 +282,7 @@ const componentsComplianceSummary = async ({
   componentName,
   componentVersion,
   ocmRepo,
+  recursionDepth,
   enableCache,
 }) => {
   const url = new URL(routes.components.complianceSummary())
@@ -289,9 +290,10 @@ const componentsComplianceSummary = async ({
     component_name: componentName,
     version: componentVersion,
     ocm_repo_url: ocmRepo,
+    recursion_depth: recursionDepth,
   })
 
-  const requestId = `componentsComplianceSummary:${componentName}:${componentVersion}:${ocmRepo}`
+  const requestId = `componentsComplianceSummary:${componentName}:${componentVersion}:${ocmRepo}:${recursionDepth}`
   if (enableCache && serveFromCache(requestId)) {
     return serveFromCache(requestId)
   }
