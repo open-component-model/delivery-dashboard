@@ -56,94 +56,96 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
 
 
 const OsCell = ({
+  osData,
   severity,
-  timestamp,
-  msg,
-  osInfo,
+  isLoading,
 }) => {
-  if (!osInfo) return <Tooltip
-    title={<Typography variant='inherit'>No last scan</Typography>}
-  >
-    <Grid item>
-      <Chip
-        color='default'
-        label='No OS Info'
-        variant='outlined'
-        size='small'
-        clickable={false}
-      />
-    </Grid>
-  </Tooltip>
+  const osInfo = osData?.data.os_info
+  const emptyOsId = Object.values(osInfo ?? {}).every(e => e === null)
+  const msg = evaluateResourceBranch(osData).reason
 
-  const emptyOsId = Object.values(osInfo).every(e => e === null)
-
-  if (emptyOsId) return <Tooltip
-    title={
-      <Typography
-        variant='inherit'
-        sx={{
-          whiteSpace: 'pre-wrap',
-          maxWidth: 'none',
-        }}
-      >
-        Unable to determine an OS, thus probably a scratch image.
-      </Typography>
-    }
-    placement='top-start'
-    describeChild
-  >
-    <Grid item>
-      <Chip
-        label='Scratch Image'
-        variant='outlined'
-        color='default'
-        size='small'
-      />
-    </Grid>
-  </Tooltip>
-
-  const localeDateTime = new Date(timestamp).toLocaleString()
   return <Tooltip
     title={
-      <Stack direction='column' spacing={1}>
-        <Stack direction={'column'} spacing={1}>
-          <Typography variant='inherit'>
-            {msg}
+      <Stack>
+        {
+          osInfo && <>
+            <List>
+              {
+                emptyOsId ? <Typography
+                  variant='inherit'
+                  sx={{
+                    whiteSpace: 'pre-wrap',
+                    maxWidth: 'none',
+                  }}
+                >
+                  Unable to determine an OS, thus probably a scratch image.
+                </Typography> : <>
+                  <Typography variant='inherit'>
+                    {msg}
+                  </Typography>
+                  <Divider/>
+                  <Typography
+                    variant='inherit'
+                    sx={{
+                      whiteSpace: 'pre-wrap',
+                      maxWidth: 'none',
+                    }}
+                  >
+                    {JSON.stringify(osInfo, null, 2)}
+                  </Typography>
+                </>
+              }
+            </List>
+            <Divider/>
+          </>
+        }
+        {
+          isLoading ? <Skeleton sx={{ width: '10rem' }}/> : <Typography variant='inherit'>
+            {
+              lastScanTimestampStr(osData)
+            }
           </Typography>
-          <Divider/>
-          <Typography
-            variant='inherit'
-            sx={{
-              whiteSpace: 'pre-wrap',
-              maxWidth: 'none',
-            }}
-          >
-            {JSON.stringify(osInfo, null, 2)}
-          </Typography>
-        </Stack>
-        <Divider/>
-        <Typography variant='inherit'>
-          {`Last scan: ${localeDateTime}`}
-        </Typography>
+        }
       </Stack>
     }
   >
     <Grid item>
-      <Chip
-        color={severity.color}
-        label={`${osInfo.ID} ${osInfo.VERSION_ID}`}
-        variant='outlined'
-        size='small'
-      />
+      {
+        osInfo ? (
+          emptyOsId ? <Chip
+            label='Scratch Image'
+            color='default'
+            variant='outlined'
+            size='small'
+          /> : <Chip
+            label={`${osInfo.ID} ${osInfo.VERSION_ID}`}
+            color={severity.color}
+            variant='outlined'
+            size='small'
+          />
+        ) : (
+          isLoading ? <Chip
+            label={`OS Info ${capitalise(severity.name)}`}
+            color={severity.color}
+            variant='outlined'
+            size='small'
+          /> : <Chip
+            color='default'
+            label='No OS Info'
+            variant='outlined'
+            size='small'
+            clickable={false}
+          />
+        )
+      }
     </Grid>
   </Tooltip>
 }
 OsCell.displayName = 'OsCell'
 OsCell.propTypes = {
+  osData: PropTypes.object,
   severity: PropTypes.object.isRequired,
-  timestamp: PropTypes.string,
-  msg: PropTypes.string,
-  osInfo: PropTypes.object,
+  isLoading: PropTypes.bool.isRequired,
 }
 
 
@@ -215,7 +217,7 @@ const findLastScan = (complianceData, datasource) => {
 
 const lastScanTimestampStr = (lastScan) => {
   if (!lastScan) return 'No last scan'
-  return `Last scan: ${new Date(lastScan.meta.last_update).toLocaleString()}`
+  return `Last scan: ${new Date(lastScan.meta.last_update ?? lastScan.meta.creation_date).toLocaleString()}`
 }
 
 
@@ -324,10 +326,9 @@ const ComplianceCell = ({
       }
       {
         artefact.kind === ARTEFACT_KIND.RESOURCE && <OsCell
-          severity={artefactMetadatumSeverity(osData)}
-          timestamp={osData?.meta.creation_date}
-          msg={evaluateResourceBranch(osData).reason}
-          osInfo={osData?.data.os_info}
+          osData={osData}
+          severity={getMaxSeverity(artefactMetadataTypes.OS_IDS)}
+          isLoading={isDataLoading}
         />
       }
       {
