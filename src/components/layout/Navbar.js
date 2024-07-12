@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { useNavigate } from 'react-router-dom'
 
 import {
   Box,
@@ -231,9 +232,22 @@ ServiceListEntry.propTypes = {
 const ServiceList = () => {
   const [services, isLoading, isError] = useFetchServiceExtensions()
   const [open, setOpen] = React.useState(true)
+  const navigate = useNavigate()
 
-  const handleClick = () => {
+  const handleToggleClick = (event) => {
+    event.stopPropagation()
     setOpen(!open)
+  }
+
+  const handleToggleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.stopPropagation()
+      setOpen(!open)
+    }
+  }
+
+  const handleNavigationClick = () => {
+    navigate(`${SERVICES_PATH}`)
   }
 
   if (isLoading || isError || !services) {
@@ -241,9 +255,21 @@ const ServiceList = () => {
   }
 
   return <List component='nav'>
-    <ListItemButton onClick={handleClick} href={`#${SERVICES_PATH}`}>
+    <ListItemButton onClick={handleNavigationClick}>
       <ListItemText primary='Extensions'/>
-      {open ? <ExpandLess/> : <ExpandMore/>}
+      <div
+        role='button'
+        tabIndex={0}
+        onClick={handleToggleClick}
+        onKeyDown={handleToggleKeyDown}
+        style={{ 
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        {open ? <ExpandLess/> : <ExpandMore/>}
+      </div>
     </ListItemButton>
     <Collapse in={open} timeout='auto' unmountOnExit>
       <List disablePadding>
