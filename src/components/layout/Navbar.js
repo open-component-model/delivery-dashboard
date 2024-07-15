@@ -247,7 +247,7 @@ const ServiceList = () => {
   }
 
   const handleNavigationClick = () => {
-    navigate(`${SERVICES_PATH}`)
+    navigate(SERVICES_PATH)
   }
 
   if (isLoading || isError || !services) {
