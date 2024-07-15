@@ -45,6 +45,7 @@ import { artefactMetadataFilter } from './../../cnudie'
 import {
   ARTEFACT_KIND,
   COMPLIANCE_TOOLS,
+  PACKAGES,
   SEVERITIES,
   TOKEN_KEY,
 } from '../../consts'
@@ -307,7 +308,7 @@ const ComplianceCell = ({
       {
         artefact.kind === ARTEFACT_KIND.RESOURCE && <GolangChip
           versions={structureInfos?.filter((structureInfo) => {
-            return structureInfo.data.package_name === 'golang-runtime'
+            return structureInfo.data.package_name === PACKAGES.GOLANG
           }).map((structureInfo) => structureInfo.data.package_version)}
           timestamp={lastScanTimestampStr(lastBdbaScan)}
         />
