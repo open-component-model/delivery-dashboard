@@ -492,7 +492,7 @@ const Components = ({
   return <Box>
     {
       components.map((component, idx) => <Component
-        key={idx}
+        key={`${component.name}:${component.version}:${idx}`}
         component={component}
         isComponentLoading={isComponentsLoading}
         isComponentError={isComponentsError}
