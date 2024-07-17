@@ -8,7 +8,7 @@
     "@emotion/styled": "^11.10.4",
     "@mui/icons-material": "^5.16.0",
     "@mui/lab": "^5.0.0-alpha.170",
-    "@mui/material": "^5.16.0",
+    "@mui/material": "^5.16.4",
     "@mui/x-charts": "^7.8.0",
     "@mui/x-data-grid": "^7.10.0",
     "@uiw/codemirror-extensions-langs": "^4.22.2",
