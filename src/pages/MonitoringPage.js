@@ -751,7 +751,7 @@ const BacklogItemRow = ({
       <Typography variant='inherit'>{backlogItem.spec.artefact.component_name}</Typography>
     </TableCell>
     <TableCell sx={{width: '15vw', textAlign: 'center'}}>
-      <CopyOnClickChip
+      {backlogItem.spec.artefact.component_version && <CopyOnClickChip
         value={backlogItem.spec.artefact.component_version}
         label={trimLongString(backlogItem.spec.artefact.component_version, 12)}
         chipProps={{
@@ -759,12 +759,13 @@ const BacklogItemRow = ({
           title: backlogItem.spec.artefact.component_version,
         }}
       />
+      }
     </TableCell>
     <TableCell sx={{width: '20vw'}}>
       <Typography variant='inherit'>{backlogItem.spec.artefact.artefact.artefact_name}</Typography>
     </TableCell>
     <TableCell sx={{width: '15vw', textAlign: 'center'}}>
-      <CopyOnClickChip
+      {backlogItem.spec.artefact.artefact.artefact_version && <CopyOnClickChip
         value={backlogItem.spec.artefact.artefact.artefact_version}
         label={trimLongString(backlogItem.spec.artefact.artefact.artefact_version, 12)}
         chipProps={{
@@ -772,6 +773,7 @@ const BacklogItemRow = ({
           title: backlogItem.spec.artefact.artefact.artefact_version,
         }}
       />
+      }
     </TableCell>
     <TableCell sx={{width: '10vw', textAlign: 'center'}}>
       <FormControl variant='standard'>
