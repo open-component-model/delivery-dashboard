@@ -23,8 +23,7 @@ delivery-dashboard:
           inject_effective_version: True
         publish:
           dockerimages:
-            delivery-dashboard-image:
-              registry: ocm-ci-opensource
+            delivery-dashboard:
               image: europe-docker.pkg.dev/gardener-project/releases/delivery-gear/delivery-dashboard
               dockerfile: Dockerfile
               tag_as_latest: True
