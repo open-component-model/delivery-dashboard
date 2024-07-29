@@ -30,7 +30,7 @@ delivery-dashboard:
           helmcharts:
           - name: delivery-dashboard
             dir: charts/delivery-dashboard
-            registry: europe-docker.pkg.dev/gardener-project/snapshots/charts/ocm-gear
+            registry: europe-docker.pkg.dev/gardener-project/releases/charts/ocm-gear
             mappings:
             - ref: ocm-resource:delivery-dashboard.repository
               attribute: image.repository
