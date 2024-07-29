@@ -28,6 +28,15 @@ delivery-dashboard:
               image: europe-docker.pkg.dev/gardener-project/releases/delivery-gear/delivery-dashboard
               dockerfile: Dockerfile
               tag_as_latest: True
+          helmcharts:
+          - name: delivery-dashboard
+            dir: charts/delivery-dashboard
+            registry: europe-docker.pkg.dev/gardener-project/snapshots/charts/ocm-gear
+            mappings:
+            - ref: ocm-resource:delivery-dashboard.repository
+              attribute: image.repository
+            - ref: ocm-resource:delivery-dashboard.tag
+              attribute: image.tag
         release:
           nextversion: bump_minor
           release_notes_policy: disabled
