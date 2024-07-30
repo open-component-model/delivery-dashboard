@@ -3,15 +3,14 @@ delivery-dashboard:
     check-steps: &check-steps
       steps:
         lint:
-          registry: ocm-ci-opensource
-          image: europe-docker.pkg.dev/gardener-project/releases/delivery-gear/delivery-dashboard-linter:latest
+          image: europe-docker.pkg.dev/gardener-project/releases/ocm-gear/delivery-dashboard-linter:latest
           execute: lint
 
   base_definition:
     traits:
       version: ~
       component_descriptor:
-        component_name: ocm.software/delivery-gear/delivery-dashboard
+        component_name: ocm.software/ocm-gear/delivery-dashboard
         ocm_repository: europe-docker.pkg.dev/gardener-project/releases
 
   jobs:
@@ -24,7 +23,7 @@ delivery-dashboard:
         publish:
           dockerimages:
             delivery-dashboard:
-              image: europe-docker.pkg.dev/gardener-project/releases/delivery-gear/delivery-dashboard
+              image: europe-docker.pkg.dev/gardener-project/releases/ocm-gear/delivery-dashboard
               dockerfile: Dockerfile
               tag_as_latest: True
           helmcharts:
