@@ -119,7 +119,7 @@ const OsCell = ({
             variant='outlined'
             size='small'
           /> : <Chip
-            label={`${osInfo.ID} ${osInfo.VERSION_ID}`}
+            label={`${osInfo.ID} ${osInfo.VERSION_ID ?? ''}`}
             color={severity.color}
             variant='outlined'
             size='small'

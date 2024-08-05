@@ -27,6 +27,7 @@ function* iterOsBranchnameCandidates(version) {
  */
 const determineOsBranch = (os, branches) => {
   if (!branches) return null
+  if (!os) return null
 
   let res
   for (const candidate of iterOsBranchnameCandidates(os)) {
