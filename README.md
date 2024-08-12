@@ -2,6 +2,9 @@
 
 [![REUSE status](https://api.reuse.software/badge/github.com/open-component-model/delivery-dashboard)](https://api.reuse.software/info/github.com/open-component-model/delivery-dashboard)
 
+![tests](https://concourse.ci.gardener.cloud/api/v1/teams/ocm/pipelines/delivery-dashboard-master/jobs/master-head-update-job/badge?title=tests)
+![release](https://concourse.ci.gardener.cloud/api/v1/teams/ocm/pipelines/delivery-dashboard-master/jobs/master-manual-release-job/badge?title=build)
+
 This repository os used for developing the `Delivery Dashboard`, which is part of the OCM
 (Delivery) Gear. It is run against the `Delivery Service` as backing API and displays delivery
 metadata for OCM-based deliveries.
