@@ -972,6 +972,7 @@ const ApplicableRescorings = ({
   isAuthenticated,
   expanded,
   rescoringFeature,
+  scanConfig,
 }) => {
   if (rescoring.applicable_rescorings.length === 0) {
     // if all applicable rescorings were deleted, don't show collapse anymore
@@ -982,6 +983,7 @@ const ApplicableRescorings = ({
     try {
       await rescore.delete({
         id: applicableRescoring.id,
+        scanConfigName: scanConfig?.name,
       })
       if (fetchComplianceSummary) {
         // function is not defined when invoked from compliance tab
@@ -1122,6 +1124,7 @@ ApplicableRescorings.propTypes = {
   isAuthenticated: PropTypes.bool.isRequired,
   expanded: PropTypes.bool.isRequired,
   rescoringFeature: PropTypes.object,
+  scanConfig: PropTypes.object,
 }
 
 
@@ -1604,6 +1607,7 @@ const RescoringContentTableRow = ({
       isAuthenticated={isAuthenticated}
       expanded={expanded}
       rescoringFeature={rescoringFeature}
+      scanConfig={scanConfig}
     />
   </>
 }
@@ -2057,7 +2061,8 @@ const Rescoring = ({
                 artefactMetadataTypes.VULNERABILITY,
                 artefactMetadataTypes.LICENSE,
                 artefactMetadataTypes.FINDING_MALWARE,
-              ]
+              ],
+              scanConfigName: scanConfig?.name,
             }),
             ocmNode,
           )
@@ -2171,6 +2176,7 @@ const Rescore = ({
   scope,
   fetchComplianceData,
   fetchComplianceSummary,
+  scanConfig,
 }) => {
   const [isLoading, setIsLoading] = React.useState(false)
 
@@ -2300,6 +2306,7 @@ const Rescore = ({
               rescorings: {
                 entries: serialisedRescorings,
               },
+              scanConfigName: scanConfig?.name,
             })
           }
         } catch (error) {
@@ -2366,6 +2373,7 @@ Rescore.propTypes = {
   scope: PropTypes.string.isRequired,
   fetchComplianceData: PropTypes.func,
   fetchComplianceSummary: PropTypes.func,
+  scanConfig: PropTypes.object,
 }
 
 
@@ -2741,6 +2749,7 @@ const RescoringModal = ({
               scope={scope}
               fetchComplianceData={fetchComplianceData}
               fetchComplianceSummary={fetchComplianceSummary}
+              scanConfig={scanConfig}
             />
           </Box>
         </Grid>

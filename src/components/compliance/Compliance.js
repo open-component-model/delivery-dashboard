@@ -39,6 +39,7 @@ import SendIcon from '@mui/icons-material/Send'
 import { useSnackbar } from 'notistack'
 import { useTheme } from '@emotion/react'
 
+import { SearchParamContext } from '../../App'
 import { artefactsQueryMetadata } from '../../api'
 import { useFetchBom, useFetchScanConfigurations } from '../../api/useFetch'
 import {
@@ -865,10 +866,16 @@ const Artefacts = ({
 }) => {
   const { enqueueSnackbar } = useSnackbar()
 
+  const searchParamContext = React.useContext(SearchParamContext)
+  const scanConfigName = searchParamContext.get('scanConfigName')
   const [artefactMetadata, setArtefactMetadata] = React.useState()
   const [isLoading, setIsLoading] = React.useState(true)
   const [isError, setIsError] = React.useState(false)
   const [scanConfigs] = useFetchScanConfigurations()
+
+  const scanConfig = scanConfigName
+    ? scanConfigs?.find((scanConfig) => scanConfig.name === scanConfigName)
+    : scanConfigs?.length === 1 ? scanConfigs[0] : null
 
   const fetchQueryMetadata = React.useCallback(async (enableCache) => {
     try {
@@ -967,7 +974,7 @@ const Artefacts = ({
         type={type}
         handleClose={() => setMountRescoring(false)}
         fetchComplianceData={fetchQueryMetadata}
-        scanConfig={scanConfigs?.length === 1 ? scanConfigs[0] : null}
+        scanConfig={scanConfig}
       />
     }
     <Header

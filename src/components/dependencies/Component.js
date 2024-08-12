@@ -435,12 +435,18 @@ const ComponentDetails = React.memo(
     complianceSummaryFetchDetails,
     fetchComplianceSummary,
   }) => {
+    const searchParamContext = React.useContext(SearchParamContext)
+    const scanConfigName = searchParamContext.get('scanConfigName')
     const [scanConfigs] = useFetchScanConfigurations()
     const [responsibleData, isResponsibleDataLoading, isResponsibleDataError] = useFetchComponentResponsibles({
       componentName: component.name,
       componentVersion: component.version,
       ocmRepo: ocmRepo,
     })
+
+    const scanConfig = scanConfigName
+      ? scanConfigs?.find((scanConfig) => scanConfig.name === scanConfigName)
+      : scanConfigs?.length === 1 ? scanConfigs[0] : null
 
     if (isComponentError) {
       return <Alert severity='error'>Unable to fetch Component</Alert>
@@ -453,7 +459,7 @@ const ComponentDetails = React.memo(
           ocmRepo={ocmRepo}
           complianceSummaryFetchDetails={complianceSummaryFetchDetails}
           fetchComplianceSummary={fetchComplianceSummary}
-          scanConfigs={scanConfigs}
+          scanConfig={scanConfig}
         />
       }
       <ComponentReferencedBy component={component} ocmRepo={ocmRepo}/>
@@ -518,7 +524,7 @@ const ArtefactDetails = ({
   complianceSummaryFetchDetails,
   complianceDataFetchDetails,
   fetchComplianceSummary,
-  scanConfigs,
+  scanConfig,
 }) => {
   if (artefacts.length === 0) return null
 
@@ -550,7 +556,7 @@ const ArtefactDetails = ({
                 complianceSummaryFetchDetails={complianceSummaryFetchDetails}
                 complianceDataFetchDetails={complianceDataFetchDetails}
                 fetchComplianceSummary={fetchComplianceSummary}
-                scanConfigs={scanConfigs}
+                scanConfig={scanConfig}
               />
             })
           }
@@ -568,7 +574,7 @@ ArtefactDetails.propTypes = {
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   complianceDataFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-  scanConfigs: PropTypes.arrayOf(PropTypes.object),
+  scanConfig: PropTypes.object,
 }
 
 
@@ -577,7 +583,7 @@ const Artefacts = ({
   ocmRepo,
   complianceSummaryFetchDetails,
   fetchComplianceSummary,
-  scanConfigs,
+  scanConfig,
 }) => {
   const [complianceData, isDataLoading, isDataError] = useFetchQueryMetadata({
     artefacts: [{
@@ -636,7 +642,7 @@ const Artefacts = ({
       complianceSummaryFetchDetails={complianceSummaryFetchDetails}
       complianceDataFetchDetails={complianceDataFetchDetails}
       fetchComplianceSummary={fetchComplianceSummary}
-      scanConfigs={scanConfigs}
+      scanConfig={scanConfig}
     />
     <ArtefactDetails
       component={component}
@@ -646,7 +652,7 @@ const Artefacts = ({
       complianceSummaryFetchDetails={complianceSummaryFetchDetails}
       complianceDataFetchDetails={complianceDataFetchDetails}
       fetchComplianceSummary={fetchComplianceSummary}
-      scanConfigs={scanConfigs}
+      scanConfig={scanConfig}
     />
     <ComponentReferences
       component={component}
@@ -660,7 +666,7 @@ Artefacts.propTypes = {
   ocmRepo: PropTypes.string,
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-  scanConfigs: PropTypes.arrayOf(PropTypes.object),
+  scanConfig: PropTypes.object,
 }
 
 
@@ -671,7 +677,7 @@ const ArtefactTableRow = ({
   complianceSummaryFetchDetails,
   complianceDataFetchDetails,
   fetchComplianceSummary,
-  scanConfigs,
+  scanConfig,
 }) => {
   return <TableRow
     key={generateArtefactID(artefact)}
@@ -687,7 +693,7 @@ const ArtefactTableRow = ({
         complianceSummaryFetchDetails={complianceSummaryFetchDetails}
         complianceDataFetchDetails={complianceDataFetchDetails}
         fetchComplianceSummary={fetchComplianceSummary}
-        scanConfigs={scanConfigs}
+        scanConfig={scanConfig}
       />
     </FeatureDependent>
   </TableRow>
@@ -700,7 +706,7 @@ ArtefactTableRow.propTypes = {
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   complianceDataFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-  scanConfigs: PropTypes.arrayOf(PropTypes.object),
+  scanConfig: PropTypes.object,
 }
 
 
