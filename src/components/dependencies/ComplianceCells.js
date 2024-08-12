@@ -229,7 +229,7 @@ const ComplianceCell = ({
   complianceSummaryFetchDetails,
   complianceDataFetchDetails,
   fetchComplianceSummary,
-  scanConfigs,
+  scanConfig,
 }) => {
   const {complianceSummary, isSummaryLoading, isSummaryError} = complianceSummaryFetchDetails
   const {complianceData, isDataLoading, isDataError} = complianceDataFetchDetails
@@ -276,21 +276,12 @@ const ComplianceCell = ({
   const lastBdbaScan = findLastScan(complianceFiltered, datasources.BDBA)
   const lastMalwareScan = findLastScan(complianceFiltered, datasources.CLAMAV)
 
-  const singleScanCfgOrNull = ({
-    scanCfgs,
-    complianceToolName,
-  }) => {
-    // only show the "shortcut" rescan button iff there is _one_ scan config and this scan config includes
-    // a certain configuration (otherwise, we're not able to determine the correct configs (i.e. bdba groups))
-    return scanCfgs?.length === 1 && complianceToolName in scanCfgs[0].config ? scanCfgs[0] : null
-  }
-
   return <TableCell>
     <Grid container direction='row-reverse' spacing={1}>
       <IssueChip
         component={component}
         artefact={artefact}
-        scanConfigs={scanConfigs}
+        scanConfig={scanConfig?.config && COMPLIANCE_TOOLS.ISSUE_REPLICATOR in scanConfig.config ? scanConfig : null}
       />
       {
         artefact.kind === ARTEFACT_KIND.RESOURCE && <BDBACell
@@ -300,7 +291,7 @@ const ComplianceCell = ({
           type={artefactMetadataTypes.LICENSE}
           severity={getMaxSeverity(artefactMetadataTypes.LICENSE)}
           lastScan={lastBdbaScan}
-          scanConfig={singleScanCfgOrNull({scanCfgs: scanConfigs, complianceToolName: COMPLIANCE_TOOLS.BDBA})}
+          scanConfig={scanConfig?.config && COMPLIANCE_TOOLS.BDBA in scanConfig.config ? scanConfig : null}
           fetchComplianceSummary={fetchComplianceSummary}
           isLoading={isDataLoading}
         />
@@ -318,7 +309,7 @@ const ComplianceCell = ({
           ocmNode={new OcmNode([component], artefact, ARTEFACT_KIND.RESOURCE)}
           ocmRepo={ocmRepo}
           metadataTypedef={findTypedefByName({name: artefactMetadataTypes.FINDING_MALWARE})}
-          scanConfig={singleScanCfgOrNull({scanCfgs: scanConfigs, complianceToolName: COMPLIANCE_TOOLS.CLAMAV})}
+          scanConfig={scanConfig?.config && COMPLIANCE_TOOLS.CLAMAV in scanConfig.config ? scanConfig : null}
           fetchComplianceSummary={fetchComplianceSummary}
           lastScan={lastMalwareScan}
           severity={getMaxSeverity(artefactMetadataTypes.FINDING_MALWARE)}
@@ -347,7 +338,7 @@ const ComplianceCell = ({
           type={artefactMetadataTypes.VULNERABILITY}
           severity={getMaxSeverity(artefactMetadataTypes.VULNERABILITY)}
           lastScan={lastBdbaScan}
-          scanConfig={singleScanCfgOrNull({scanCfgs: scanConfigs, complianceToolName: COMPLIANCE_TOOLS.BDBA})}
+          scanConfig={scanConfig?.config && COMPLIANCE_TOOLS.BDBA in scanConfig.config ? scanConfig : null}
           fetchComplianceSummary={fetchComplianceSummary}
           isLoading={isDataLoading}
         />
@@ -363,7 +354,7 @@ ComplianceCell.propTypes = {
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   complianceDataFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-  scanConfigs: PropTypes.arrayOf(PropTypes.object),
+  scanConfig: PropTypes.object,
 }
 
 

@@ -305,23 +305,16 @@ GolangChip.propTypes = {
 const IssueChip = ({
   component,
   artefact,
-  scanConfigs,
+  scanConfig,
 }) => {
-  // only show issue cell iff there is _one_ scan config and this scan config includes an
-  // issue replicator configuration (otherwise, we're not able to determine a github repo url)
-  if (!(scanConfigs?.length === 1 && COMPLIANCE_TOOLS.ISSUE_REPLICATOR in scanConfigs[0].config)) return
-  const scanConfig = scanConfigs[0]
+  if (!scanConfig) return
 
-  if (scanConfig) {
-    // if artefact type filter is set, don't show license chip for types that are filtered out
-    const artefactTypes = scanConfig.config.issueReplicator.artefact_types
-      ? scanConfig.config.issueReplicator.artefact_types
-      : scanConfig.config.defaults.artefact_types
+  // if artefact type filter is set, don't show license chip for types that are filtered out
+  const artefactTypes = scanConfig.config.issueReplicator.artefact_types
+    ? scanConfig.config.issueReplicator.artefact_types
+    : scanConfig.config.defaults.artefact_types
 
-    if (artefactTypes && !artefactTypes.some((type) => type === artefact.type)) {
-      return null
-    }
-  }
+  if (artefactTypes && !artefactTypes.some((type) => type === artefact.type)) return
 
   const repoUrl = scanConfig.config.issueReplicator.github_issues_target_repository_url
   const issueState = encodeURIComponent('is:open')
@@ -372,7 +365,7 @@ IssueChip.displayName = 'IssueChip'
 IssueChip.propTypes = {
   component: PropTypes.object.isRequired,
   artefact: PropTypes.object.isRequired,
-  scanConfigs: PropTypes.arrayOf(PropTypes.object),
+  scanConfig: PropTypes.object,
 }
 
 export {

@@ -417,6 +417,7 @@ const rescore = {
     artefactExtraId,
     cveRescoringRuleSetName,
     types,
+    scanConfigName,
   }) => {
     const url = new URL(routes.rescore)
     appendPresentParams(url, {
@@ -428,13 +429,17 @@ const rescore = {
       artefactType,
       artefactExtraId: JSON.stringify(artefactExtraId),
       cveRescoringRuleSetName,
+      scanConfigName,
     })
     types?.map((type) => appendPresentParams(url, {type}))
 
     return await _toJson(withAuth(url))
   },
-  create: async ({rescorings}) => {
+  create: async ({rescorings, scanConfigName}) => {
     const url = new URL(routes.rescore)
+    appendPresentParams(url, {
+      scanConfigName,
+    })
 
     const resp = await withAuth(url, {
       method: 'POST',
@@ -455,9 +460,12 @@ const rescore = {
 
     return true
   },
-  delete: async ({id}) => {
+  delete: async ({id, scanConfigName}) => {
     const url = new URL(routes.rescore)
-    appendPresentParams(url, {id})
+    appendPresentParams(url, {
+      id,
+      scanConfigName,
+    })
 
     const resp = await withAuth(url, {
       method: 'DELETE',
