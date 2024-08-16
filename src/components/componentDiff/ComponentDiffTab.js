@@ -31,13 +31,14 @@ import AddIcon from '@mui/icons-material/Add'
 import { ArrowForward, ExpandMore } from '@mui/icons-material'
 import ClearIcon from '@mui/icons-material/Clear'
 import DeleteIcon from '@mui/icons-material/Delete'
+import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import { useTheme } from '@emotion/react'
 
 import { SearchParamContext } from './../../App'
 import { ComponentVector } from './ComponentVector'
-import { shortenComponentName } from '../../util'
+import { downloadObject, shortenComponentName} from '../../util'
 import { TabPanel } from './../Tabs'
 import { ResourceVector } from './ResourceVector'
 import { LabelVector } from './LabelVector'
@@ -219,6 +220,11 @@ const ComponentVersionDiff = ({
     rightVersion: rightVersion,
   })
 
+  const handleExportDiff = () => {
+    const diffBlob = new Blob([JSON.stringify(diff, null, 2)], { type: 'application/json' })
+    downloadObject({ obj: diffBlob, fname: 'component-diff.json' })
+  }
+
   const summaryContent = <Grid
     container
     alignItems='center'
@@ -286,6 +292,16 @@ const ComponentVersionDiff = ({
       alignItems='center'
       justifyContent='center'
     >
+      <Tooltip title={'Export Diff'}>
+        <IconButton
+          onClick={(event) => {
+            event.stopPropagation()
+            handleExportDiff()
+          }}
+        >
+          <FileDownloadIcon/>
+        </IconButton>
+      </Tooltip>
       {
         deleteDiff && <Tooltip
           title={'Delete Diff'}
