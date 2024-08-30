@@ -25,6 +25,7 @@ export default [
       'no-unreachable': ['warn'],
       'eol-last': ['warn'],
       'jsx-a11y/no-autofocus': ['off'],
+      'security/detect-object-injection': ['off'],
     },
 
     settings: {
