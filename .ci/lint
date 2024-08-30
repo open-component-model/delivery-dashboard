@@ -4,7 +4,7 @@ set -e
 src_dir="${1:-"$(readlink -f "$(dirname "${0}")/..")"}"
 
 echo 'Installing dependencies required by linter suite...'
-npm --prefix $src_dir install --include=dev --omit=peer --force
+npm --prefix $src_dir install --include=dev --omit=peer --force --no-audit
 
 echo 'Running eslint for all javascript modules..'
 echo ''
