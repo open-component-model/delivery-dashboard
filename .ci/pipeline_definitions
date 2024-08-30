@@ -15,7 +15,15 @@ delivery-dashboard:
 
   jobs:
     manual-release:
-      <<: *check-steps
+      steps:
+        lint-sast:
+          image: europe-docker.pkg.dev/gardener-project/releases/ocm-gear/delivery-dashboard-linter:latest
+          execute:
+          - 'lint'
+          - 'eslint.sast.config.mjs'
+        lint:
+          image: europe-docker.pkg.dev/gardener-project/releases/ocm-gear/delivery-dashboard-linter:latest
+          execute: lint
       traits:
         version:
           preprocess: finalize
@@ -39,6 +47,16 @@ delivery-dashboard:
           nextversion: bump_minor
           release_notes_policy: disabled
           release_commit_publishing_policy: tag_and_merge_back
+          assets:
+          - type: build-step-log
+            step_name: lint-sast
+            purposes:
+            - lint
+            - sast
+            - eslint
+            comment: |
+              we use eslint with "eslint-plugin-security" for SAST scans
+              see: https://github.com/eslint-community/eslint-plugin-security
         notifications:
           default:
             on_error:
