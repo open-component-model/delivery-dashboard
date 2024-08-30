@@ -1,7 +1,10 @@
 #!/bin/bash -e
 set -e
 
-src_dir="${1:-"$(readlink -f "$(dirname "${0}")/..")"}"
+src_dir="$(readlink -f "$(dirname "${0}")/..")"
+
+eslint_cfg_filename="${1:-"eslint.config.mjs"}"
+echo "Using linter cfg from ${eslint_cfg_filename}"
 
 echo 'Installing dependencies required by linter suite...'
 npm --prefix $src_dir install --include=dev --omit=peer --force --no-audit
@@ -11,8 +14,8 @@ echo ''
 
 if eslint . \
     --max-warnings 0 \
-    -c "${src_dir}/eslint.config.mjs" \
-    ${src_dir}; then
+    -c "${src_dir}/${eslint_cfg_filename}" \
+    "${src_dir}"; then
     echo 'eslint succeeded'
     exit 0
 else
