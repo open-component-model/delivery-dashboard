@@ -3,10 +3,12 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import globals from 'globals'
 import js from '@eslint/js'
 import jsxA11y from 'eslint-plugin-jsx-a11y'
+import pluginSecurity from 'eslint-plugin-security'
 
 export default [
   js.configs.recommended,
   jsxA11y.flatConfigs.recommended,
+  pluginSecurity.configs.recommended,
   reactRecommended,
   {
     rules: {
