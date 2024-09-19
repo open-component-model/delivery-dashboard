@@ -51,6 +51,7 @@ export const ComponentTabs = ({
   componentDescriptor,
   isLoading,
   ocmRepo,
+  versionFilter,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [upgradePRsFeature, setUpgradePRsFeature] = React.useState()
@@ -147,6 +148,8 @@ export const ComponentTabs = ({
       <CdTab
         componentDescriptor={componentDescriptor}
         isLoading={isLoading}
+        ocmRepo={ocmRepo}
+        versionFilter={versionFilter}
       />
     </TabPanel>
     <FeatureDependent requiredFeatures={[features.UPGRADE_PRS]}>
@@ -194,4 +197,5 @@ ComponentTabs.propTypes = {
   componentDescriptor: PropTypes.object,
   isLoading: PropTypes.bool.isRequired,
   ocmRepo: PropTypes.string,
+  versionFilter: PropTypes.string,
 }
