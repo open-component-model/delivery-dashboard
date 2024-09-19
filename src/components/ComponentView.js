@@ -88,6 +88,7 @@ export const ComponentView = ({
         componentDescriptor={componentDescriptor}
         isLoading={isLoading}
         ocmRepo={ocmRepo}
+        versionFilter={componentMeta.versionFilter}
       />
     }
   </Box>

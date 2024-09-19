@@ -267,6 +267,7 @@ const useFetchComponentDescriptor = ({
   ocmRepoUrl,
   version,
   versionFilter,
+  raw=false,
 }) => {
   const [componentDescriptor, setComponentDescriptor] = React.useState()
   const [isError, setIsError] = React.useState()
@@ -292,6 +293,7 @@ const useFetchComponentDescriptor = ({
           ocmRepoUrl,
           version,
           versionFilter,
+          raw,
         })
 
         if (mounted) {

@@ -125,6 +125,7 @@ const ocmComponent = async ({
   ocmRepoUrl,
   version,
   versionFilter,
+  raw=false,
 }) => {
   const url = new URL(routes.ocm.component.base)
   appendPresentParams(url, {
@@ -132,6 +133,7 @@ const ocmComponent = async ({
     ocm_repo_url: ocmRepoUrl,
     version: version,
     version_filter: versionFilter,
+    raw: raw,
   })
 
   const resp = await withAuth(url)
