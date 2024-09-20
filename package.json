@@ -13,7 +13,7 @@
     "@mui/x-data-grid": "^7.18.0",
     "@uiw/codemirror-extensions-langs": "^4.23.1",
     "@uiw/codemirror-theme-bbedit": "^4.23.2",
-    "@uiw/codemirror-theme-vscode": "^4.23.1",
+    "@uiw/codemirror-theme-vscode": "^4.23.2",
     "@uiw/react-codemirror": "^4.23.1",
     "js-yaml": "^4.1.0",
     "notistack": "^3.0.0",
