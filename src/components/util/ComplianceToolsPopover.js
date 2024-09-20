@@ -61,7 +61,7 @@ import {
 import { triggerComplianceTool } from './TriggerComplianceToolButton'
 import { OcmNode, OcmNodeDetails } from './../../ocm/iter'
 import CopyOnClickChip from './CopyOnClickChip'
-import ObjectTextViewer from './ObjectTextViewer'
+import MultilineTextViewer from './MultilineTextViewer'
 
 
 const ServiceConfiguration = ({
@@ -175,7 +175,7 @@ const Configuration = ({
       </Tooltip>
     </div>
     <Box border={1} borderColor={'primary.main'}>
-      <ObjectTextViewer obj={scanConfig}/>
+      <MultilineTextViewer obj={scanConfig}/>
     </Box>
   </Stack>
 }

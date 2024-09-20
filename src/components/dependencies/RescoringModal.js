@@ -93,7 +93,7 @@ import {
 import CopyOnClickChip from '../util/CopyOnClickChip'
 import ErrorBoundary from '../util/ErrorBoundary'
 import ExtraWideTooltip from '../util/ExtraWideTooltip'
-import ObjectTextViewer from '../util/ObjectTextViewer'
+import MultilineTextViewer from '../util/MultilineTextViewer'
 
 const scopeOptions = {
   GLOBAL: 'Global',
@@ -243,7 +243,7 @@ const VulnerabilityRescoringInputs = ({
       </Select>
     </FormControl>
     <Box border={1} borderColor='primary.main'>
-      <ObjectTextViewer obj={cveCategorisationLabel ? cveCategorisationLabel : { info: 'no label found for this artefact' } }/>
+      <MultilineTextViewer obj={cveCategorisationLabel ? cveCategorisationLabel : { info: 'no label found for this artefact' } }/>
     </Box>
     <Divider/>
     <Typography>CVSS Rescoring Rule Set</Typography>
@@ -253,7 +253,7 @@ const VulnerabilityRescoringInputs = ({
       rescoringFeature={rescoringFeature}
     />
     <Box border={1} borderColor='primary.main'>
-      <ObjectTextViewer obj={cveRescoringRuleSet.rules}/>
+      <MultilineTextViewer obj={cveRescoringRuleSet.rules}/>
     </Box>
   </Stack>
 }

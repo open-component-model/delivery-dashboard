@@ -4,14 +4,14 @@ import PropTypes from 'prop-types'
 import Grid from '@mui/material/Grid'
 import { Skeleton } from '@mui/material'
 
-import ObjectTextViewer from './util/ObjectTextViewer'
+import MultilineTextViewer from './util/MultilineTextViewer'
 
 
 export const CdTab = ({
   componentDescriptor,
   isLoading,
 }) => {
-  if (!isLoading) return <ObjectTextViewer obj={componentDescriptor}/>
+  if (!isLoading) return <MultilineTextViewer obj={componentDescriptor}/>
 
   return <Grid container>
     {

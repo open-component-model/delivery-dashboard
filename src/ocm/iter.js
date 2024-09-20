@@ -7,7 +7,7 @@ import PropTypes from 'prop-types'
 
 import { NoMaxWidthTooltip, componentPathQuery, normaliseObject, trimLongString } from '../util'
 import CopyOnClickChip from '../components/util/CopyOnClickChip'
-import ObjectTextViewer from '../components/util/ObjectTextViewer'
+import MultilineTextViewer from '../components/util/MultilineTextViewer'
 import { sanitiseArtefactExtraId } from './util'
 
 
@@ -163,7 +163,7 @@ const OcmNodeDetails = ({
           spacing={1}
         >
           <Typography>Artefact Extra Identity</Typography>
-          <ObjectTextViewer
+          <MultilineTextViewer
             obj={ocmNode.artefact.extraIdentity}
           />
         </Stack>
