@@ -5,13 +5,14 @@ import Grid from '@mui/material/Grid'
 import { Skeleton } from '@mui/material'
 
 import MultilineTextViewer from './util/MultilineTextViewer'
+import { toYamlString } from '../util'
 
 
 export const CdTab = ({
   componentDescriptor,
   isLoading,
 }) => {
-  if (!isLoading) return <MultilineTextViewer obj={componentDescriptor}/>
+  if (!isLoading) return <MultilineTextViewer text={toYamlString(componentDescriptor)}/>
 
   return <Grid container>
     {

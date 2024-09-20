@@ -7,7 +7,6 @@ import { EditorView } from '@codemirror/view'
 import { bbedit } from '@uiw/codemirror-theme-bbedit'
 import { vscodeDark } from '@uiw/codemirror-theme-vscode'
 
-import { toYamlString } from '../../util'
 import { useTheme } from '@emotion/react'
 import { SearchParamContext } from '../../App'
 import { useSnackbar } from 'notistack'
@@ -51,7 +50,7 @@ const scrollDocToView = (editor, lines, handleException) => {
 
 
 const MultilineTextViewer = ({
-  obj,
+  text,
 }) => {
   const theme = useTheme()
   const searchParamContext = React.useContext(SearchParamContext)
@@ -69,7 +68,7 @@ const MultilineTextViewer = ({
         }
       )}
     )}
-    value={toYamlString(obj)}
+    value={text}
     theme={theme.palette.mode == 'dark' ? vscodeDark : bbedit}
     readOnly
     basicSetup={{
@@ -90,10 +89,7 @@ const MultilineTextViewer = ({
   />
 }
 MultilineTextViewer.propTypes = {
-  obj: PropTypes.oneOfType([
-    PropTypes.arrayOf(PropTypes.object),
-    PropTypes.object,
-  ]).isRequired,
+  text: PropTypes.string,
 }
 
 export default MultilineTextViewer

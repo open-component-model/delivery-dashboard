@@ -88,6 +88,7 @@ import {
   pluralise,
   rescoringProposalSeverity,
   sprintNameForRescoring,
+  toYamlString,
   trimLongString,
 } from '../../util'
 import CopyOnClickChip from '../util/CopyOnClickChip'
@@ -243,7 +244,7 @@ const VulnerabilityRescoringInputs = ({
       </Select>
     </FormControl>
     <Box border={1} borderColor='primary.main'>
-      <MultilineTextViewer obj={cveCategorisationLabel ? cveCategorisationLabel : { info: 'no label found for this artefact' } }/>
+      <MultilineTextViewer text={cveCategorisationLabel ? toYamlString(cveCategorisationLabel) : 'no label found for this artefact'}/>
     </Box>
     <Divider/>
     <Typography>CVSS Rescoring Rule Set</Typography>
@@ -253,7 +254,7 @@ const VulnerabilityRescoringInputs = ({
       rescoringFeature={rescoringFeature}
     />
     <Box border={1} borderColor='primary.main'>
-      <MultilineTextViewer obj={cveRescoringRuleSet.rules}/>
+      <MultilineTextViewer text={toYamlString(cveRescoringRuleSet.rules)}/>
     </Box>
   </Stack>
 }
