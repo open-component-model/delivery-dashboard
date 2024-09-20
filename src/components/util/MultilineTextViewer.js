@@ -50,7 +50,7 @@ const scrollDocToView = (editor, lines, handleException) => {
 }
 
 
-const ObjectTextViewer = ({
+const MultilineTextViewer = ({
   obj,
 }) => {
   const theme = useTheme()
@@ -89,11 +89,11 @@ const ObjectTextViewer = ({
     ]}
   />
 }
-ObjectTextViewer.propTypes = {
+MultilineTextViewer.propTypes = {
   obj: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.object),
     PropTypes.object,
   ]).isRequired,
 }
 
-export default ObjectTextViewer
+export default MultilineTextViewer

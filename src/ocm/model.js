@@ -48,7 +48,7 @@ import {
   artefactMetadataSeverityFilter,
   artefactMetadataTypeFilter,
 } from '../cnudie'
-import ObjectTextViewer from '../components/util/ObjectTextViewer'
+import MultilineTextViewer from '../components/util/MultilineTextViewer'
 import { useFetchComponentDescriptor, useFetchQueryMetadata } from '../api/useFetch'
 import CopyOnClickChip from '../components/util/CopyOnClickChip'
 import PestControlIcon from '@mui/icons-material/PestControl'
@@ -129,7 +129,7 @@ const defaultTypedefForName = ({
   return {
     name: name,
     friendlyName: name,
-    SpecificTypeHandler: ObjectTextViewer,
+    SpecificTypeHandler: MultilineTextViewer,
     Icon: ArticleIcon,
   }
 }
@@ -253,43 +253,43 @@ const knownMetadataTypes = [
   {
     name: 'structure_info',
     friendlyName: 'Structure Info',
-    SpecificTypeHandler: ObjectTextViewer,
+    SpecificTypeHandler: MultilineTextViewer,
     Icon: ArticleIcon
   },
   {
     name: 'finding/license',
     friendlyName: 'License',
-    SpecificTypeHandler: ObjectTextViewer,
+    SpecificTypeHandler: MultilineTextViewer,
     Icon: ArticleIcon
   },
   {
     name: 'malware',
     friendlyName: 'Malware',
-    SpecificTypeHandler: ObjectTextViewer,
+    SpecificTypeHandler: MultilineTextViewer,
     Icon: ArticleIcon
   },
   {
     name: 'os_ids',
     friendlyName: 'OS Information',
-    SpecificTypeHandler: ObjectTextViewer,
+    SpecificTypeHandler: MultilineTextViewer,
     Icon: ArticleIcon
   },
   {
     name: 'finding/vulnerability',
     friendlyName: 'Vulnerability',
-    SpecificTypeHandler: ObjectTextViewer,
+    SpecificTypeHandler: MultilineTextViewer,
     Icon: PestControlIcon
   },
   {
     name: 'codechecks/aggregated',
     friendlyName: 'Codechecks',
-    SpecificTypeHandler: ObjectTextViewer,
+    SpecificTypeHandler: MultilineTextViewer,
     Icon: ArticleIcon
   },
   {
     name: 'finding/malware',
     friendlyName: 'Malware',
-    SpecificTypeHandler: ObjectTextViewer,
+    SpecificTypeHandler: MultilineTextViewer,
     Icon: CoronavirusIcon
   },
 ]
