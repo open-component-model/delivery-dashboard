@@ -5,7 +5,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 
 import PropTypes from 'prop-types'
 
-import { NoMaxWidthTooltip, componentPathQuery, normaliseObject, trimLongString } from '../util'
+import { NoMaxWidthTooltip, componentPathQuery, normaliseObject, toYamlString, trimLongString } from '../util'
 import CopyOnClickChip from '../components/util/CopyOnClickChip'
 import MultilineTextViewer from '../components/util/MultilineTextViewer'
 import { sanitiseArtefactExtraId } from './util'
@@ -164,7 +164,7 @@ const OcmNodeDetails = ({
         >
           <Typography>Artefact Extra Identity</Typography>
           <MultilineTextViewer
-            obj={ocmNode.artefact.extraIdentity}
+            text={toYamlString(ocmNode.artefact.extraIdentity)}
           />
         </Stack>
       }

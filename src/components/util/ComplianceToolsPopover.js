@@ -50,6 +50,7 @@ import {
   camelCaseToDisplayText,
   matchObjectWithSearchQuery,
   pluralise,
+  toYamlString,
   trimLongString,
 } from './../../util'
 import {
@@ -175,7 +176,7 @@ const Configuration = ({
       </Tooltip>
     </div>
     <Box border={1} borderColor={'primary.main'}>
-      <MultilineTextViewer obj={scanConfig}/>
+      <MultilineTextViewer text={toYamlString(scanConfig)}/>
     </Box>
   </Stack>
 }
