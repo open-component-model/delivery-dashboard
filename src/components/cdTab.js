@@ -37,6 +37,8 @@ const FetchAndView = ({
     setRaw(componentDescriptor)
   }, [setRaw, componentDescriptor])
 
+  if (isLoading) return <CenteredSpinner/>
+
   return <MultilineTextViewer
     text={raw}
   />
