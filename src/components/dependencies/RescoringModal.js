@@ -1378,6 +1378,7 @@ const RescoringContentTableRow = ({
   const matchingRules = matching_rules
   const applicableRescorings = applicable_rescorings
 
+  const severityCfg = findSeverityCfgByName({name: severity})
   const currentSeverity = rescoringProposalSeverity(rescoring)
   const currentSeverityCfg = findSeverityCfgByName({name: currentSeverity})
 
@@ -1507,7 +1508,8 @@ const RescoringContentTableRow = ({
           <div>
             <Typography variant='inherit' visibility='hidden'>Dummy</Typography>
             <Select
-              value={matchingRules.includes(META_RESCORING_RULES.ORIGINAL_SEVERITY) ? currentSeverity : severity}
+              // unless it is a custom rescoring, don't propose increasing the severity
+              value={!matchingRules.includes(META_RESCORING_RULES.CUSTOM_RESCORING) && currentSeverityCfg.value < severityCfg.value ? currentSeverity : severity}
               onChange={(e) => {
                 editRescoring({
                   rescoring: rescoring,
