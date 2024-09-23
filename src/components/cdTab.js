@@ -34,7 +34,7 @@ const FetchAndView = ({
   })
 
   React.useEffect(() => {
-    setRaw(JSON.stringify(componentDescriptor, null, 2))
+    setRaw(componentDescriptor)
   }, [setRaw, componentDescriptor])
 
   return <MultilineTextViewer
