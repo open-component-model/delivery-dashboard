@@ -1507,7 +1507,7 @@ const RescoringContentTableRow = ({
           <div>
             <Typography variant='inherit' visibility='hidden'>Dummy</Typography>
             <Select
-              value={severity}
+              value={matchingRules.includes(META_RESCORING_RULES.ORIGINAL_SEVERITY) ? currentSeverity : severity}
               onChange={(e) => {
                 editRescoring({
                   rescoring: rescoring,
@@ -2436,7 +2436,7 @@ const RescoringModal = ({
       // explicitly check for `undefined` as `null` is a valid value
       const newRescoreProposal = severity === rescoring.originalSeverityProposal ? {
         severity: rescoring.originalSeverityProposal,
-        matching_rules: rescoring.originalMatchingRules,
+        matching_rules: matchingRules === undefined ? rescoring.matching_rules : matchingRules,
         comment: comment === undefined ? rescoring.comment : comment,
       } : {
         severity: severity === undefined ? rescoring.severity : severity,
