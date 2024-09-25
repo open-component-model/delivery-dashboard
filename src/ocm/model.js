@@ -40,6 +40,7 @@ import {
   findSeverityCfgByName,
   mixupFindingsWithRescorings,
   severityComparator,
+  toYamlString,
   trimLongString,
 } from '../util'
 import {
@@ -188,7 +189,7 @@ const MetadataViewer = ({
     </AccordionSummary>
     <AccordionDetails>
       <ArtefactMetadataViewer
-        obj={data}
+        text={toYamlString(data)}
       />
     </AccordionDetails>
   </Accordion>
