@@ -86,13 +86,13 @@ const SprintInfo = ({
   sprintRules,
   date,
 }) => {
-  const [currentSprint, isCurrentSprintLoading, isCurrentSprintError] = useFetchCurrentSprintInfos()
+  const [currentSprint, state] = useFetchCurrentSprintInfos()
 
-  if (isCurrentSprintLoading) {
+  if (state.isLoading) {
     return <Skeleton/>
   }
 
-  if (isCurrentSprintError) {
+  if (state.error) {
     return <Typography variant='caption'>Error fetching sprint infos</Typography>
   }
 

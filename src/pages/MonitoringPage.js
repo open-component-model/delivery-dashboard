@@ -71,34 +71,29 @@ export const MonitoringPage = () => {
   const service = searchParamContext.get('service')
 
   const [refreshStatuses, setRefreshStatuses] = React.useState({})
-  const [statuses, statusesAreLoading] = useFetchContainerStatuses({
+  const [statuses, statusesState] = useFetchContainerStatuses({
     service: service,
     refresh: refreshStatuses,
   })
-  const aggregatedContainerStatus = getAggregatedContainerStatus({statuses, statusesAreLoading})
+  const aggregatedContainerStatus = getAggregatedContainerStatus({statuses, statusesAreLoading: statusesState.isLoading})
 
   const [logLevel, setLogLevel] = React.useState('INFO')
   const [refreshLogs, setRefreshLogs] = React.useState({})
-  const [logCollections, logCollectionsIsLoading, logCollectionsIsError, setLogCollections] = useFetchLogCollections({
+  const [logCollections, logCollectionsState] = useFetchLogCollections({
     service: service,
     logLevel: logLevel,
     refresh: refreshLogs,
   })
   const logCollectionsFetchDetails = {
     logCollections: logCollections,
-    isLoading: logCollectionsIsLoading,
-    isError: logCollectionsIsError,
+    isLoading: logCollectionsState.isLoading,
+    isError: logCollectionsState.error,
   }
 
   const refresh = {
     statuses: () => setRefreshStatuses({}),
     logs: () => setRefreshLogs({}),
   }
-
-  React.useEffect(() => {
-    // required to show loading skeletion in case service or log level changes
-    setLogCollections([])
-  }, [service, logLevel, setLogCollections])
 
   return <PersistentDrawerLeft open>
     <Stack spacing={1}>
@@ -137,11 +132,11 @@ const ServiceTabs = ({
   const searchParamContext = React.useContext(SearchParamContext)
   const currentTab = searchParamContext.get('servicesTab') || servicesTabConfig.BACKLOG.id
 
-  const [scanConfigs, scanConfigsIsLoading, scanConfigsIsError] = useFetchScanConfigurations()
+  const [scanConfigs, scanConfigsState] = useFetchScanConfigurations()
   const scanConfigsFetchDetails = {
     scanConfigs: scanConfigs,
-    isLoading: scanConfigsIsLoading,
-    isError: scanConfigsIsError,
+    isLoading: scanConfigsState.isLoading,
+    isError: scanConfigsState.error,
   }
 
   // cfgName and priority are already initialised here to keep state between tab changes
@@ -149,10 +144,10 @@ const ServiceTabs = ({
   const [priority, setPriority] = React.useState(PRIORITIES.NONE)
 
   React.useEffect(() => {
-    if (scanConfigsIsLoading || scanConfigsIsError) return
+    if (scanConfigsState.isLoading || scanConfigsState.error) return
 
     if (scanConfigs?.length > 0) setCfgName(scanConfigs[0].name)
-  }, [scanConfigs, scanConfigsIsLoading, scanConfigsIsError])
+  }, [scanConfigs, scanConfigsState.isLoading, scanConfigsState.error])
 
   const handleChange = (_, newTab) => {
     searchParamContext.update({'servicesTab': newTab})
@@ -256,25 +251,18 @@ const Backlog = ({
   const {priority} = priorityState
 
   const [refreshBacklogItems, setRefreshBacklogItems] = React.useState({})
-  const [backlogItems, backlogItemsIsLoading, backlogItemsIsError, setBacklogItems] = useFetchBacklogItems({
+  const [backlogItems, backlogItemsState] = useFetchBacklogItems({
     service: service,
     cfgName: cfgName,
     refresh: refreshBacklogItems,
   })
   const backlogItemsFetchDetails = {
     backlogItems: backlogItems,
-    isLoading: backlogItemsIsLoading,
-    isError: backlogItemsIsError,
+    isLoading: backlogItemsState.isLoading,
+    isError: backlogItemsState.error,
   }
   const [filteredBacklogItems, setFilteredBacklogItems] = React.useState([])
   const [selectedBacklogItems, setSelectedBacklogItems] = React.useState([])
-
-  React.useEffect(() => {
-    // required to show loading skeletion in case service changes
-    setBacklogItems()
-    setFilteredBacklogItems([])
-    setSelectedBacklogItems([])
-  }, [service, setBacklogItems])
 
   const backlogItemClaimedAt = (backlogItem) => {
     const domain = 'delivery-gear.gardener.cloud'
@@ -290,7 +278,7 @@ const Backlog = ({
   }
 
   React.useEffect(() => {
-    if (backlogItemsIsLoading || backlogItemsIsError) return
+    if (backlogItemsState.isLoading || backlogItemsState.error) return
 
     setFilteredBacklogItems(backlogItems.sort((a, b) => {
       // claimed items first
@@ -314,7 +302,7 @@ const Backlog = ({
     }).filter((backlogItem) => {
       return backlogItem.spec.priority >= priority.value
     }))
-  }, [priority, backlogItems, backlogItemsIsLoading, backlogItemsIsError])
+  }, [priority, backlogItems, backlogItemsState.isLoading, backlogItemsState.error])
 
   React.useEffect(() => {
     // remove selection of backlog items which were processed in the meantime
@@ -327,7 +315,7 @@ const Backlog = ({
   useInterval(() => {
     refresh.statuses()
     setRefreshBacklogItems({})
-  }, !(backlogItemsIsLoading || backlogItemsIsError) ? 5000 : null)
+  }, !(backlogItemsState.isLoading || backlogItemsState.error) ? 5000 : null)
 
   return <>
     <BacklogHeader

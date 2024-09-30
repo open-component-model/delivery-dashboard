@@ -62,6 +62,7 @@ import CopyOnClickChip from '../util/CopyOnClickChip'
 import {
   ARTEFACT_KIND,
   errorSnackbarProps,
+  fetchBomPopulate,
   SEVERITIES,
   TOKEN_KEY,
 } from '../../consts'
@@ -871,13 +872,14 @@ const Artefacts = ({
   const [artefactMetadata, setArtefactMetadata] = React.useState()
   const [isLoading, setIsLoading] = React.useState(true)
   const [isError, setIsError] = React.useState(false)
-  const [scanConfigs] = useFetchScanConfigurations()
+  // eslint-disable-next-line no-unused-vars
+  const [scanConfigs, state] = useFetchScanConfigurations()
 
   const scanConfig = scanConfigName
     ? scanConfigs?.find((scanConfig) => scanConfig.name === scanConfigName)
     : scanConfigs?.length === 1 ? scanConfigs[0] : null
 
-  const fetchQueryMetadata = React.useCallback(async (enableCache) => {
+  const fetchQueryMetadata = React.useCallback(async () => {
     try {
       const artefacts = components.map((component) => {
         return {
@@ -888,13 +890,11 @@ const Artefacts = ({
       const findings = await artefactsQueryMetadata({
         artefacts: artefacts,
         types: [type],
-        enableCache: enableCache,
       })
       const rescorings = await artefactsQueryMetadata({
         artefacts: artefacts,
         types: [artefactMetadataTypes.RESCORINGS],
         referenced_types: [type],
-        enableCache: enableCache,
       })
 
       setArtefactMetadata(mixupFindingsWithRescorings(findings, rescorings))
@@ -913,7 +913,7 @@ const Artefacts = ({
   }, [components, type, enqueueSnackbar])
 
   React.useEffect(() => {
-    fetchQueryMetadata(true)
+    fetchQueryMetadata()
   }, [fetchQueryMetadata])
 
   React.useEffect(() => {
@@ -1034,12 +1034,12 @@ const ComplianceTab = ({
   component,
   ocmRepo,
 }) => {
-  // eslint-disable-next-line no-unused-vars
-  const [dependencies, isLoading, isError, error] = useFetchBom(
-    component,
-    ocmRepo,
-    'all',
-  )
+  const [dependencies, state] = useFetchBom({
+    componentName: component.name,
+    componentVersion: component.version,
+    ocmRepo: ocmRepo,
+    populate: fetchBomPopulate.ALL,
+  })
 
   const [type, setType] = React.useState(artefactMetadataTypes.VULNERABILITY)
   const [filterMode, setFilterMode] = React.useState(filterModes.CUSTOM)
@@ -1086,11 +1086,11 @@ const ComplianceTab = ({
     setCustomSelectedOcmNodes([])
   }, [type])
 
-  if (isError) return <Alert severity='error'>
+  if (state.error) return <Alert severity='error'>
     Unable to load Components
   </Alert>
 
-  if (isLoading) return <Box>
+  if (state.isLoading) return <Box>
     <Header
       addOrUpdateFilter={addOrUpdateFilter}
       removeFilter={removeFilter}

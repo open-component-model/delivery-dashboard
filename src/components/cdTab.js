@@ -24,8 +24,7 @@ const FetchAndView = ({
   setRaw,
   raw,
 }) => {
-  // eslint-disable-next-line no-unused-vars
-  const [componentDescriptor, isLoading, isError, error] = useFetchComponentDescriptor({
+  const [componentDescriptor, state] = useFetchComponentDescriptor({
     componentName: componentName,
     ocmRepoUrl: ocmRepo,
     version: componentVersion,
@@ -37,7 +36,7 @@ const FetchAndView = ({
     setRaw(componentDescriptor)
   }, [setRaw, componentDescriptor])
 
-  if (isLoading) return <CenteredSpinner/>
+  if (state.isLoading) return <CenteredSpinner/>
 
   return <MultilineTextViewer
     text={raw}
