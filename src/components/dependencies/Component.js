@@ -437,8 +437,9 @@ const ComponentDetails = React.memo(
   }) => {
     const searchParamContext = React.useContext(SearchParamContext)
     const scanConfigName = searchParamContext.get('scanConfigName')
-    const [scanConfigs] = useFetchScanConfigurations()
-    const [responsibleData, isResponsibleDataLoading, isResponsibleDataError] = useFetchComponentResponsibles({
+    // eslint-disable-next-line no-unused-vars
+    const [scanConfigs, scanCfgState] = useFetchScanConfigurations()
+    const [responsibleData, state] = useFetchComponentResponsibles({
       componentName: component.name,
       componentVersion: component.version,
       ocmRepo: ocmRepo,
@@ -464,15 +465,15 @@ const ComponentDetails = React.memo(
       }
       <ComponentReferencedBy component={component} ocmRepo={ocmRepo}/>
       {
-        !isResponsibleDataError && <div>
+        !state.error && <div>
           <ResponsiblesHeading
             responsibleData={responsibleData}
-            isResponsibleDataLoading={isResponsibleDataLoading}
-            isResponsibleDataError={isResponsibleDataError}
+            isResponsibleDataLoading={state.isLoading}
+            isResponsibleDataError={state.error}
           />
           <Responsibles
             componentResponsibles={responsibleData}
-            isResponsibleDataLoading={isResponsibleDataLoading}
+            isResponsibleDataLoading={state.isLoading}
           />
         </div>
       }
@@ -585,21 +586,36 @@ const Artefacts = ({
   fetchComplianceSummary,
   scanConfig,
 }) => {
-  const [complianceData, isDataLoading, isDataError] = useFetchQueryMetadata({
-    artefacts: [{
+  const artefacts = React.useMemo(() => {
+    return [{
       component_name: component.name,
       component_version: component.version,
-    }],
-    types: [
+    }]
+  }, [
+    component.name,
+    component.version
+  ])
+
+  const types = React.useMemo(() => {
+    return [
       artefactMetadataTypes.ARTEFACT_SCAN_INFO,
       artefactMetadataTypes.CODECHECKS_AGGREGATED,
       artefactMetadataTypes.OS_IDS,
       artefactMetadataTypes.STRUCTURE_INFO,
-    ],
-    enableCache: true,
-  })
+    ]
+  }, [
+    artefactMetadataTypes.ARTEFACT_SCAN_INFO,
+    artefactMetadataTypes.CODECHECKS_AGGREGATED,
+    artefactMetadataTypes.OS_IDS,
+    artefactMetadataTypes.STRUCTURE_INFO,
+  ])
 
-  const complianceDataFetchDetails = {complianceData, isDataLoading, isDataError}
+  const params = React.useMemo(() => {
+    return {artefacts, types}
+  }, [artefacts, types])
+
+  const [complianceData, state] = useFetchQueryMetadata(params)
+  const complianceDataFetchDetails = {complianceData, state}
 
   const resources = component.resources.sort((left, right) => {
     const ltype = left.type

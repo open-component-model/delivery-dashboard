@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import urljoin from 'url-join'
 
 import { addMetadata } from './complianceData'
-import { appendPresentParams, normaliseObject } from './util'
+import { appendPresentParams } from './util'
 import { TOKEN_KEY } from './consts'
 
 
@@ -11,20 +11,6 @@ export const API_RESPONSES = {
   RETRY: 'retry',
 }
 Object.freeze(API_RESPONSES)
-
-
-const apiCache = {}
-const serveFromCache = (requestId) => {
-  if (apiCache[requestId]) {
-    return apiCache[requestId]
-  }
-
-  return null
-}
-
-const updateCache = (requestId, data) => {
-  apiCache[requestId] = data
-}
 
 
 const API_PREFIX =
@@ -146,26 +132,20 @@ const ocmComponent = async ({
   return await resp.json()
 }
 
-/**
- * Parameters:
- * - componentName : specify component:name
- * - version       : specify component:version
- * - ocmRepoUrl    : ocm repo context of component
- * - populate      : population strategy, one of (all, componentReferences)
- */
-const ocmComponentDependencies = async (componentName, version, ocmRepoUrl, populate) => {
+
+const ocmComponentDependencies = async ({
+  componentName,
+  componentVersion,
+  ocmRepoUrl,
+  populate,
+}) => {
   const url = new URL(routes.ocm.component.dependencies())
   appendPresentParams(url, {
     component_name: componentName,
-    version: version,
+    version: componentVersion,
     ocm_repo_url: ocmRepoUrl,
     populate: populate,
   })
-
-  const requestId = `ocmComponentDependencies:${componentName}:${version}:${ocmRepoUrl}:${populate}`
-  if (serveFromCache(requestId)) {
-    return serveFromCache(requestId)
-  }
 
   const resp = await withAuth(url)
 
@@ -176,7 +156,6 @@ const ocmComponentDependencies = async (componentName, version, ocmRepoUrl, popu
   }
 
   const result = await resp.json()
-  updateCache(requestId, result)
   return result
 }
 ocmComponentDependencies.propTypes = {
@@ -186,25 +165,22 @@ ocmComponentDependencies.propTypes = {
   populate: PropTypes.string.isRequired,
 }
 
-const ocmComponentResponsibles = async (componentName, version, ocmRepoUrl) => {
+const ocmComponentResponsibles = async ({
+  componentName,
+  componentVersion,
+  ocmRepo,
+}) => {
   const url = new URL(routes.ocm.component.responsibles())
   appendPresentParams(url, {
     component_name: componentName,
-    version: version,
-    ocm_repo_url: ocmRepoUrl,
+    version: componentVersion,
+    ocm_repo_url: ocmRepo,
   })
-
-  const requestId = `ocmComponentResponsibles:${componentName}:${version}:${ocmRepoUrl}`
-  if (serveFromCache(requestId)) {
-    return serveFromCache(requestId)
-  }
 
   const result = await withAuth(url)
   if (result.status === 202) return API_RESPONSES.RETRY // caller is supposed to retry
 
-  const json = _toJson(result)
-  updateCache(requestId, json)
-  return json
+  return _toJson(result)
 }
 
 const ocmComponentVersions = async ({
@@ -237,17 +213,11 @@ const componentUpgradePRs = async ({
     state,
   })
 
-  const requestId = `componentUpgradePRs:${url}`
-  if (serveFromCache(requestId)) {
-    return serveFromCache(requestId)
-  }
-
   const resp = await withAuth(url)
   if (!resp.ok) throw Error(resp.statusText)
 
-  const result = await resp.json()
-  updateCache(requestId, result)
-  return result
+  return await resp.json()
+
 }
 
 const fetchJoke = async () => {
@@ -261,7 +231,10 @@ const fetchJoke = async () => {
  * @param leftComponent: {name: componentName, version: version}
  * @param rightComponent: {name: componentName, version: version}
  */
-const componentsDiff = async (leftComponent, rightComponent) => {
+const componentsDiff = async ({
+  leftComponent,
+  rightComponent,
+}) => {
   const route = routes.components.diff()
   if (!leftComponent) throw new Error('leftComponent must be passed')
   if (!rightComponent) throw new Error('rightComponent must be passed')
@@ -285,7 +258,6 @@ const componentsComplianceSummary = async ({
   componentVersion,
   ocmRepo,
   recursionDepth,
-  enableCache,
 }) => {
   const url = new URL(routes.components.complianceSummary())
   appendPresentParams(url, {
@@ -295,10 +267,6 @@ const componentsComplianceSummary = async ({
     recursion_depth: recursionDepth,
   })
 
-  const requestId = `componentsComplianceSummary:${componentName}:${componentVersion}:${ocmRepo}:${recursionDepth}`
-  if (enableCache && serveFromCache(requestId)) {
-    return serveFromCache(requestId)
-  }
 
   const resp = await withAuth(url)
 
@@ -309,7 +277,6 @@ const componentsComplianceSummary = async ({
   }
 
   const result = await resp.json()
-  updateCache(requestId, result)
   return result
 }
 
@@ -318,7 +285,6 @@ const artefactsQueryMetadata = async ({
   artefacts,
   types,
   referenced_types,
-  enableCache,
 }) => {
   const url = new URL(routes.artefacts.queryMetadata)
   types?.map((type) => appendPresentParams(url, {type}))
@@ -326,11 +292,6 @@ const artefactsQueryMetadata = async ({
 
   const entries = {
     entries: artefacts,
-  }
-
-  const requestId = `artefactsQueryMetadata:${JSON.stringify(normaliseObject(entries))}:${types}:${referenced_types}`
-  if (enableCache && serveFromCache(requestId)) {
-    return serveFromCache(requestId)
   }
 
   const artefactMetadata = await _toJson(
@@ -343,9 +304,7 @@ const artefactsQueryMetadata = async ({
     })
   )
 
-  const metadata = await Promise.all(artefactMetadata.map(addMetadata))
-  updateCache(requestId, metadata)
-  return metadata
+  return await Promise.all(artefactMetadata.map(addMetadata))
 }
 
 /**
@@ -373,37 +332,25 @@ const osBranches = async (name) => {
   return await resp.json()
 }
 
-const specialComponentCurrentDependencies = async (component) => {
+const specialComponentCurrentDependencies = async ({componentName}) => {
   const url = new URL(routes.specialComponent.currentDependencies)
-  appendPresentParams(url, {component_name: component.name})
+  appendPresentParams(url, {component_name: componentName})
 
-  const requestId = `specialComponentCurrentDependencies:${component.name}`
-  if (serveFromCache(requestId)) {
-    return serveFromCache(requestId)
-  }
 
   const resp = await withAuth(url)
 
   if (!resp.ok) throw Error(resp.statusText)
 
   const result = await resp.json()
-  updateCache(requestId, result)
   return result
 }
 
 const deliverySprintInfosCurrent = async () => {
   const url = new URL(routes.delivery.sprintInfos.current)
-
-  const requestId = `deliverySprintInfosCurrent:${url}`
-  if (serveFromCache(requestId)) {
-    return serveFromCache(requestId)
-  }
-
   const resp = await withAuth(url)
   if (!resp.ok) throw Error(resp.statusText)
 
   const result = await resp.json()
-  updateCache(requestId, result)
   return result
 }
 
@@ -525,83 +472,43 @@ const serviceExtensions = {
   services: async () => {
     const url = new URL(routes.serviceExtensions.base)
 
-    const requestId = 'serviceExtensionsServices'
-    if (serveFromCache(requestId)) {
-      return serveFromCache(requestId)
-    }
-
     const resp = await withAuth(url)
-
     if (!resp.ok) throw Error(resp.statusText)
 
-    const result = await resp.json()
-    updateCache(requestId, result)
-
-    return result?.sort()
+    return (await resp.json()).sort()
   },
-  logCollections: async ({service, logLevel, useCache}) => {
+  logCollections: async ({
+    service,
+    logLevel,
+  }) => {
     const url = new URL(routes.serviceExtensions.logCollections())
     appendPresentParams(url, {
       service: service,
       log_level: logLevel,
     })
 
-    const requestId = 'serviceExtensionsLogCollection'
-    // only store in cache for unspecified service to enable manual
-    // refresh on service monitoring page
-    if (useCache && serveFromCache(requestId)) {
-      return serveFromCache(requestId)
-    }
-
     const resp = await withAuth(url)
-
     if (!resp.ok) throw Error(resp.statusText)
 
-    const result = await resp.json()
-    if (useCache) {
-      updateCache(requestId, result)
-    }
+    return await resp.json()
 
-    return result
   },
-  containerStatuses: async ({service, useCache}) => {
+  containerStatuses: async ({service}) => {
     const url = new URL(routes.serviceExtensions.containerStatuses())
     appendPresentParams(url, {service})
 
-    const requestId = 'serviceExtensionsContainerStatuses'
-    // only store in cache for unspecified service to enable manual
-    // refresh on service monitoring page
-    if (useCache && serveFromCache(requestId)) {
-      return serveFromCache(requestId)
-    }
-
     const resp = await withAuth(url)
-
     if (!resp.ok) throw Error(resp.statusText)
 
-    const result = await resp.json()
-    if (useCache) {
-      updateCache(requestId, result)
-    }
-
-    return result
+    return await resp.json()
   },
   scanConfigurations: async () => {
     const url = new URL(routes.serviceExtensions.scanConfigurations())
 
-    const requestId = 'serviceExtensionsScanConfigurations'
-    if (serveFromCache(requestId)) {
-      return serveFromCache(requestId)
-    }
-
     const resp = await withAuth(url)
-
     if (!resp.ok) throw Error(resp.statusText)
 
-    const result = await resp.json()
-    updateCache(requestId, result)
-
-    return result
+    return await resp.json()
   },
   backlogItems: {
     get: async ({service, cfgName}) => {
@@ -632,9 +539,9 @@ const serviceExtensions = {
         },
         body: JSON.stringify({artefacts}),
       })
-  
+
       if (!resp.ok) throw Error(resp.statusText)
-  
+
       return true
     },
     update: async ({name, spec}) => {
@@ -684,20 +591,12 @@ const dora = {
       filter_component_names: name,
     }))
 
-    const requestId = `doraMetrics:${url}`
-    if (serveFromCache(requestId)) {
-      return serveFromCache(requestId)
-    }
-
     const resp = await withAuth(url)
     if (resp.status === 202) return API_RESPONSES.RETRY // caller is supposed to retry
 
     if (!resp.ok) throw Error(resp.statusText)
 
-    const result = await resp.json()
-    updateCache(requestId, result)
-
-    return result
+    return await _toJson(resp)
   },
 }
 

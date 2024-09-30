@@ -48,11 +48,11 @@ export const ServicesPage = () => {
 
 const Services = () => {
   const navigate = useNavigate()
-  const [services, servicesAreLoading, servicesHaveError] = useFetchServiceExtensions()
-  const [statuses, statusesAreLoading] = useFetchContainerStatuses({useCache: true})
-  const [logCollections, logCollectionsAreLoading] = useFetchLogCollections({logLevel: 'ERROR', useCache: true})
+  const [services, state] = useFetchServiceExtensions()
+  const [statuses, statusesState] = useFetchContainerStatuses({})
+  const [logCollections, logCollectionsState] = useFetchLogCollections({logLevel: 'ERROR'})
 
-  if (!services || servicesAreLoading || servicesHaveError) {
+  if (!services || state.isLoading || state.error) {
     return null
   }
 
@@ -85,11 +85,11 @@ const Services = () => {
       service,
       aggregatedContainerStatus: getAggregatedContainerStatus({
         statuses: statuses?.filter((status) => snakeToCamelCase(status.name).startsWith(service)),
-        statusesAreLoading,
+        statusesAreLoading: statusesState.isLoading,
       }),
       aggregatedLoggingStatus: getAggregatedLoggingStatus({
         logCollection: logCollections?.find((logCollection) => logCollection.spec.service === service),
-        logCollectionIsLoading: logCollectionsAreLoading,
+        logCollectionIsLoading: logCollectionsState.isLoading,
       })
     }
   })

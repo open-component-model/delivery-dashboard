@@ -713,7 +713,7 @@ const MetadataViewerPopover = ({
 
   const [open, setOpen] = React.useState(false)
 
-  const [cd, cdLoading, cdError] = useFetchComponentDescriptor({
+  const [cd, state] = useFetchComponentDescriptor({
     componentName: componentName,
     ocmRepoUrl: ocmRepo,
     version: componentVersion,
@@ -727,16 +727,14 @@ const MetadataViewerPopover = ({
     artefactMetadataTypes.ARTEFACT_SCAN_INFO,
     artefactMetadataTypes.RESCORINGS,
   ].includes(type))
-  const [findings, findingsLoading, findingsError] = useFetchQueryMetadata({
+  const [findings, findingsState] = useFetchQueryMetadata({
     artefacts: components,
     types: types,
-    enableCache: true,
   })
-  const [rescorings, rescoringsLoading, rescoringsError] = useFetchQueryMetadata({
+  const [rescorings, rescoringsState] = useFetchQueryMetadata({
     artefacts: components,
     types: [artefactMetadataTypes.RESCORINGS],
     referenced_types: types,
-    enableCache: true,
   })
 
   const [selectedSeverities, setSelectedSeverities] = React.useState([])
@@ -750,14 +748,14 @@ const MetadataViewerPopover = ({
   if (
     !open &&
     cd &&
-    !cdLoading &&
-    !cdError &&
+    !state.isLoading &&
+    !state.error &&
     findings &&
     rescorings &&
-    !findingsLoading &&
-    !findingsError &&
-    !rescoringsLoading &&
-    !rescoringsError) {
+    !findingsState.isLoading &&
+    !findingsState.error &&
+    !rescoringsState.isLoading &&
+    !rescoringsState.error) {
     setOpen(true)
   }
   if (!open) return null

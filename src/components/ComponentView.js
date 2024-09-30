@@ -67,26 +67,26 @@ export const ComponentView = ({
   componentMeta,
   ocmRepo,
 }) => {
-  const [componentDescriptor, isLoading, isError, error] = useFetchComponentDescriptor({
+  const [componentDescriptor, state] = useFetchComponentDescriptor({
     componentName: componentMeta.name,
-    ocmRepoUrl: ocmRepo,
-    version: componentMeta.version,
+    componentVersion: componentMeta.version,
+    ocmRepo: ocmRepo,
     versionFilter: componentMeta.versionFilter,
   })
 
   return <Box>
     <NavigationHeader
       component={componentDescriptor ? componentDescriptor.component : componentMeta}
-      isLoading={isLoading}
+      isLoading={state.isLoading}
     />
     <div style={{ padding: '1em' }} />
     {
-      isError ? <ComponentDescriptorError
+      state.error ? <ComponentDescriptorError
         component={componentMeta}
-        errorMsg={error}
+        errorMsg={state.error}
       /> : <ComponentTabs
         componentDescriptor={componentDescriptor}
-        isLoading={isLoading}
+        isLoading={state.isLoading}
         ocmRepo={ocmRepo}
         versionFilter={componentMeta.versionFilter}
       />

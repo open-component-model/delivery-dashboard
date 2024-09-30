@@ -40,6 +40,12 @@ export const servicesTabConfig = {
 }
 Object.freeze(servicesTabConfig)
 
+export const fetchBomPopulate = {
+  ALL: 'all',
+  COMPONENT_REFS: 'componentReferences',
+}
+Object.freeze(fetchBomPopulate)
+
 export const LOGIN_PATH = '/login'
 export const COMPONENT_PATH = '/component'
 export const SERVICES_PATH = '/services'
