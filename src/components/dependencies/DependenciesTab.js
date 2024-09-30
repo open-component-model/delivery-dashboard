@@ -31,6 +31,7 @@ import { Component, Components } from './Component'
 import {
   DEPENDENT_COMPONENT,
   features,
+  fetchBomPopulate,
 } from '../../consts'
 import {
   downloadObject,
@@ -331,25 +332,26 @@ const FetchComponentRefsTab = React.memo(({
   searchQuery,
   setComponentRefs,
 }) => {
-  const [componentRefs, isRefsLoading, isRefsError, refsError] = useFetchBom(
-    component,
-    ocmRepo,
-    'componentReferences',
-  )
+  const [componentRefs, state] = useFetchBom({
+    componentName: component.name,
+    componentVersion: component.version,
+    ocmRepo: ocmRepo,
+    populate: fetchBomPopulate.COMPONENT_REFS,
+  })
 
   React.useEffect(() => {
     if (!componentRefs) return
     setComponentRefs(componentRefs.componentDependencies)
   }, [componentRefs, setComponentRefs])
 
-  if (isRefsError) return <Alert severity='error'>
+  if (state.error) return <Alert severity='error'>
     Component Dependencies could not be resolved.
     <br></br>
     <br></br>
-    {refsError?.toString()}
+    {state.error?.toString()}
   </Alert>
 
-  if (isRefsLoading || !componentRefs) return <LoadingDependencies/>
+  if (state.isLoading || !componentRefs) return <LoadingDependencies/>
 
   return <FetchDependenciesTab
     component={component}
@@ -445,19 +447,19 @@ export const FetchDependenciesTab = React.memo(({
       && JSON.stringify(normaliseObject(c.repositoryContexts)) === JSON.stringify(normaliseObject(component.repositoryContexts))
   }
 
-  // eslint-disable-next-line no-unused-vars
-  const [components, isComponentsLoading, isComponentsError, componentsError] = useFetchBom(
-    component,
-    ocmRepo,
-    'all',
-  )
+  const [components, state] = useFetchBom({
+    componentName: component.name,
+    componentVersion: component.version,
+    ocmRepo: ocmRepo,
+    populate: fetchBomPopulate.ALL,
+  })
 
   const filteredBom = () => {
     const bom = () => {
       if (
         component
-        && !isComponentsLoading
-        && !isComponentsError
+        && !state.isLoading
+        && !state.error
       ) return components.componentDependencies.sort((a, b) => compareComponentsByName(a, b))
 
       // to display flat component structure already
@@ -504,8 +506,8 @@ export const FetchDependenciesTab = React.memo(({
       >
         <Components
           components={left}
-          isComponentsLoading={isComponentsLoading}
-          isComponentsError={isComponentsError}
+          isComponentsLoading={state.isLoading}
+          isComponentsError={state.error}
           ocmRepo={ocmRepo}
         />
       </Box>
@@ -514,8 +516,8 @@ export const FetchDependenciesTab = React.memo(({
       >
         <Components
           components={right}
-          isComponentsLoading={isComponentsLoading}
-          isComponentsError={isComponentsError}
+          isComponentsLoading={state.isLoading}
+          isComponentsError={state.error}
           ocmRepo={ocmRepo}
         />
       </Box>
@@ -536,12 +538,11 @@ const SpecialComponentStatus = ({
   componentRefs,
   specialComponentFeature,
 }) => {
-  // eslint-disable-next-line no-unused-vars
-  const [specialComponentStatus, isLoading, isError] = useFetchSpecialComponentCurrentDependencies(component)
+  const [specialComponentStatus, state] = useFetchSpecialComponentCurrentDependencies({componentName: component.name})
 
   if (!componentRefs) return <Skeleton/>
 
-  if (isError) {
+  if (state.error) {
     return <Typography variant='caption'>Error fetching special component status</Typography>
   }
   if (!specialComponentStatus) {

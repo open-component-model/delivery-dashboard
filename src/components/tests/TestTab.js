@@ -15,6 +15,7 @@ import { routes } from '../../api'
 import { Box } from '@mui/system'
 import { useFetchBom } from '../../api/useFetch'
 import CenteredSpinner from '../util/CenteredSpinner'
+import { fetchBomPopulate } from '../../consts'
 
 
 const TestDownload = ({
@@ -22,15 +23,15 @@ const TestDownload = ({
   ocmRepo,
   testsFeature,
 }) => {
-  // eslint-disable-next-line no-unused-vars
-  const [componentRefs, isRefsLoading, isRefsError, refsError] = useFetchBom(
-    component,
-    ocmRepo,
-    'componentReferences',
-  )
+  const [componentRefs, state] = useFetchBom({
+    componentName: component.name,
+    componentVersion: component.version,
+    ocmRepo: ocmRepo,
+    populate: fetchBomPopulate.COMPONENT_REFS,
+  })
 
-  if (isRefsLoading) return <CenteredSpinner sx={{ height: '90vh' }} />
-  if (isRefsError) return <Alert severity='error'>
+  if (state.isLoading) return <CenteredSpinner sx={{ height: '90vh' }} />
+  if (state.error) return <Alert severity='error'>
     Component descriptor <b>{component.name}:{component.version}</b> could not be fetched.
   </Alert>
 

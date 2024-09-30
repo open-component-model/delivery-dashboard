@@ -53,6 +53,7 @@ import {
   pullRequestsStates,
   errorSnackbarProps,
   VERSION_FILTER,
+  fetchBomPopulate,
 } from '../../consts'
 import { enqueueSnackbar } from 'notistack'
 
@@ -213,7 +214,7 @@ const ComponentVersionDiff = ({
   pullRequest,
   deleteDiff,
 }) => {
-  const [diff, isDiffLoading, isDiffError] = useFetchCompDiff({
+  const [diff, state] = useFetchCompDiff({
     leftName: leftName,
     rightName: rightName,
     leftVersion: leftVersion,
@@ -321,8 +322,8 @@ const ComponentVersionDiff = ({
     </Grid>
   </Grid>
 
-  if (isDiffLoading || isDiffLoading) return <LoadingDiff/>
-  if (isDiffError) return <Accordion expanded={false}>
+  if (state.isLoading) return <LoadingDiff/>
+  if (state.error) return <Accordion expanded={false}>
     <AccordionSummary
       expandIcon={
         <Tooltip
@@ -830,16 +831,16 @@ export const ComponentDiffTab = React.memo(({
 }) => {
   const searchParamContext = React.useContext(SearchParamContext)
 
-  // eslint-disable-next-line no-unused-vars
-  const [componentRefs, isRefsLoading, isRefsError, refsError] = useFetchBom(
-    component,
-    ocmRepo,
-    'componentReferences',
-  )
+  const [componentRefs, state] = useFetchBom({
+    componentName: component.name,
+    componentVersion: component.version,
+    ocmRepo: ocmRepo,
+    populate: fetchBomPopulate.COMPONENT_REFS,
+  })
 
   const componentNames = [...new Set(componentRefs?.componentDependencies.map(dep => dep.name))]
 
-  const [prs, prsLoading, prFetchError] = useFetchUpgradePRs({
+  const [prs, prState] = useFetchUpgradePRs({
     componentName: component.name,
     state: pullRequestsStates.OPEN,
   })
@@ -878,7 +879,7 @@ export const ComponentDiffTab = React.memo(({
 
   const [customDiffs, setCustomDiffs] = React.useState(componentDiffsFromParam())
 
-  if (isRefsLoading) return <ComponentDiffTabLoading loadingPullRequestsCount={3}/>
+  if (state.isLoading) return <ComponentDiffTabLoading loadingPullRequestsCount={3}/>
 
   const addComponentDiff = ({
     leftName,
@@ -938,7 +939,7 @@ export const ComponentDiffTab = React.memo(({
     componentDiffsAsParam(componentDiffs)
   }
 
-  if (prsLoading) return <ComponentDiffTabLoading loadingPullRequestsCount={3}/>
+  if (prState.isLoading) return <ComponentDiffTabLoading loadingPullRequestsCount={3}/>
 
   const findPullRequest = ({
     leftName,
@@ -1046,7 +1047,7 @@ export const ComponentDiffTab = React.memo(({
       }
       <PullRequests
         pullRequests={prs}
-        isError={prFetchError}
+        isError={prState.error}
       />
     </Stack>
   </Stack>
