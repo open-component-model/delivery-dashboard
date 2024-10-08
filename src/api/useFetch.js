@@ -412,6 +412,7 @@ const useFetchServiceExtensions = () => {
 const useFetchLogCollections = ({
   service,
   logLevel,
+  skipCache = false,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [serviceExtensionsFeature, setServiceExtensionsFeature] = React.useState()
@@ -441,12 +442,14 @@ const useFetchLogCollections = ({
     fetchParams: params,
     fetchCondition: fetchCondition,
     errorMessage: `Log collection for service ${service} and log level ${logLevel} could not be fetched`,
+    ...(skipCache && { cacheKey: null }),
   })
 }
 
 
 const useFetchContainerStatuses = ({
   service,
+  skipCache = false,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [serviceExtensionsFeature, setServiceExtensionsFeature] = React.useState()
@@ -474,6 +477,7 @@ const useFetchContainerStatuses = ({
     fetchParams: params,
     fetchCondition: fetchCondition,
     errorMessage: `Container statuses for service ${service} could not be fetched`,
+    ...(skipCache && { cacheKey: null }),
   })
 }
 
@@ -505,6 +509,7 @@ const useFetchScanConfigurations = () => {
 const useFetchBacklogItems = ({
   service,
   cfgName,
+  skipCache = false,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [serviceExtensionsFeature, setServiceExtensionsFeature] = React.useState()
@@ -534,6 +539,7 @@ const useFetchBacklogItems = ({
     fetchParams: params,
     fetchCondition: fetchCondition,
     errorMessage: 'Backlog items could not be fetched',
+    ...(skipCache && { cacheKey: null }),
   })
 }
 

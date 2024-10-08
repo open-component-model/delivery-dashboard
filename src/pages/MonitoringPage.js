@@ -70,29 +70,31 @@ export const MonitoringPage = () => {
   const searchParamContext = React.useContext(SearchParamContext)
   const service = searchParamContext.get('service')
 
-  const [refreshStatuses, setRefreshStatuses] = React.useState({})
-  const [statuses, statusesState] = useFetchContainerStatuses({
+  // use cache during initial load
+  const skipCache = React.useRef(false)
+
+  const [statuses, statusesState, refreshContainerStatus] = useFetchContainerStatuses({
     service: service,
-    refresh: refreshStatuses,
+    skipCache: skipCache.current,
   })
   const aggregatedContainerStatus = getAggregatedContainerStatus({statuses, statusesAreLoading: statusesState.isLoading})
 
   const [logLevel, setLogLevel] = React.useState('INFO')
-  const [refreshLogs, setRefreshLogs] = React.useState({})
-  const [logCollections, logCollectionsState] = useFetchLogCollections({
+  const [logCollections, logCollectionsState, refreshLogCollections] = useFetchLogCollections({
     service: service,
     logLevel: logLevel,
-    refresh: refreshLogs,
+    skipCache: skipCache.current,
   })
-  const logCollectionsFetchDetails = {
-    logCollections: logCollections,
-    isLoading: logCollectionsState.isLoading,
-    isError: logCollectionsState.error,
-  }
+
+  // refreshing should bypass cache
+  const refreshWithoutCache = React.useCallback((callable) => {
+    skipCache.current = true
+    callable()
+  }, [])
 
   const refresh = {
-    statuses: () => setRefreshStatuses({}),
-    logs: () => setRefreshLogs({}),
+    statuses: () => refreshWithoutCache(refreshContainerStatus),
+    logs: () => refreshWithoutCache(refreshLogCollections),
   }
 
   return <PersistentDrawerLeft open>
@@ -104,15 +106,19 @@ export const MonitoringPage = () => {
         Object.values(COMPLIANCE_TOOLS).includes(service) ? <ServiceTabs
           service={service}
           aggregatedContainerStatus={aggregatedContainerStatus}
-          logCollectionsFetchDetails={logCollectionsFetchDetails}
+          showLoadingAnimation={logCollections === undefined && logCollectionsState.isLoading} // skip animation on re-fetch
+          error={logCollectionsState.error}
+          logCollections={logCollections}
           logLevelState={{logLevel, setLogLevel}}
           refresh={refresh}
         /> : <LogTab
           service={service}
           aggregatedContainerStatus={aggregatedContainerStatus}
-          logCollectionsFetchDetails={logCollectionsFetchDetails}
           logLevelState={{logLevel, setLogLevel}}
           refresh={refresh}
+          showLoadingAnimation={logCollections === undefined && logCollectionsState.isLoading} // skip animation on re-fetch
+          error={logCollectionsState.error}
+          logCollections={logCollections}
         />
       }
     </Stack>
@@ -125,7 +131,9 @@ MonitoringPage.propTypes = {}
 const ServiceTabs = ({
   service,
   aggregatedContainerStatus,
-  logCollectionsFetchDetails,
+  showLoadingAnimation,
+  error,
+  logCollections,
   logLevelState,
   refresh,
 }) => {
@@ -185,7 +193,9 @@ const ServiceTabs = ({
       <LogTab
         service={service}
         aggregatedContainerStatus={aggregatedContainerStatus}
-        logCollectionsFetchDetails={logCollectionsFetchDetails}
+        showLoadingAnimation={showLoadingAnimation}
+        error={error}
+        logCollections={logCollections}
         logLevelState={logLevelState}
         refresh={refresh}
       />
@@ -196,7 +206,9 @@ ServiceTabs.displayName = 'ServiceTabs'
 ServiceTabs.propTypes = {
   service: PropTypes.string.isRequired,
   aggregatedContainerStatus: PropTypes.object.isRequired,
-  logCollectionsFetchDetails: PropTypes.object.isRequired,
+  showLoadingAnimation: PropTypes.bool.isRequired,
+  error: PropTypes.any,
+  logCollections: PropTypes.array,
   logLevelState: PropTypes.object.isRequired,
   refresh: PropTypes.object.isRequired,
 }
@@ -250,37 +262,24 @@ const Backlog = ({
   const {cfgName} = cfgNameState
   const {priority} = priorityState
 
-  const [refreshBacklogItems, setRefreshBacklogItems] = React.useState({})
-  const [backlogItems, backlogItemsState] = useFetchBacklogItems({
+  // use cache during initial load
+  const skipCache = React.useRef(false)
+
+  const [backlogItems, backlogItemsState, refreshBacklogItems] = useFetchBacklogItems({
     service: service,
     cfgName: cfgName,
-    refresh: refreshBacklogItems,
+    skipCache: skipCache.current,
   })
   const backlogItemsFetchDetails = {
     backlogItems: backlogItems,
     isLoading: backlogItemsState.isLoading,
     isError: backlogItemsState.error,
   }
-  const [filteredBacklogItems, setFilteredBacklogItems] = React.useState([])
   const [selectedBacklogItems, setSelectedBacklogItems] = React.useState([])
 
-  const backlogItemClaimedAt = (backlogItem) => {
-    const domain = 'delivery-gear.gardener.cloud'
-    const annotationClaimedAt = `${domain}/claimed-at`
-    const labelClaimed = `${domain}/claimed`
-
-    const annotations = backlogItem.metadata.annotations
-    const labels = backlogItem.metadata.labels
-    if (labelClaimed in labels && labels[labelClaimed] === 'True') {
-      return annotations[annotationClaimedAt]
-    }
-    return null
-  }
-
-  React.useEffect(() => {
-    if (backlogItemsState.isLoading || backlogItemsState.error) return
-
-    setFilteredBacklogItems(backlogItems.sort((a, b) => {
+  const filteredBacklogItems = React.useCallback(() => {
+    if (backlogItems === undefined) return []
+    return backlogItems.sort((a, b) => {
       // claimed items first
       if (Boolean(backlogItemClaimedAt(a)) && !backlogItemClaimedAt(b)) return -1
       if (Boolean(backlogItemClaimedAt(b)) && !backlogItemClaimedAt(a)) return 1
@@ -301,20 +300,35 @@ const Backlog = ({
       }
     }).filter((backlogItem) => {
       return backlogItem.spec.priority >= priority.value
-    }))
+    })
   }, [priority, backlogItems, backlogItemsState.isLoading, backlogItemsState.error])
+
+  const backlogItemClaimedAt = React.useCallback((backlogItem) => {
+    const domain = 'delivery-gear.gardener.cloud'
+    const annotationClaimedAt = `${domain}/claimed-at`
+    const labelClaimed = `${domain}/claimed`
+
+    const annotations = backlogItem.metadata.annotations
+    const labels = backlogItem.metadata.labels
+    if (labelClaimed in labels && labels[labelClaimed] === 'True') {
+      return annotations[annotationClaimedAt]
+    }
+    return null
+  }, [])
 
   React.useEffect(() => {
     // remove selection of backlog items which were processed in the meantime
+
     setSelectedBacklogItems((prev) => prev.filter((backlogItem) => {
-      return filteredBacklogItems.map((bli) => bli.metadata.uid).includes(backlogItem.metadata.uid)
+      return backlogItems.map((bli) => bli.metadata.uid).includes(backlogItem.metadata.uid)
     }))
-  }, [filteredBacklogItems])
+  }, [backlogItems])
 
   // periodically update backlog items
   useInterval(() => {
     refresh.statuses()
-    setRefreshBacklogItems({})
+    skipCache.current = true
+    refreshBacklogItems()
   }, !(backlogItemsState.isLoading || backlogItemsState.error) ? 5000 : null)
 
   return <>
@@ -326,18 +340,19 @@ const Backlog = ({
       backlogItemsFetchDetails={backlogItemsFetchDetails}
       selectedBacklogItems={selectedBacklogItems}
       setSelectedBacklogItems={setSelectedBacklogItems}
-      setRefreshBacklogItems={setRefreshBacklogItems}
+      refreshBacklogItems={refreshBacklogItems}
       refresh={refresh}
     />
     <div style={{height: '2rem'}}/>
     <BacklogItems
       service={service}
       scanConfig={scanConfigs.find((scanConfig) => scanConfig.name === cfgName)}
-      filteredBacklogItems={filteredBacklogItems}
-      backlogItemsFetchDetails={backlogItemsFetchDetails}
+      filteredBacklogItems={filteredBacklogItems()}
+      error={backlogItemsState.error}
       selectedBacklogItems={selectedBacklogItems}
       setSelectedBacklogItems={setSelectedBacklogItems}
-      setRefreshBacklogItems={setRefreshBacklogItems}
+      refreshBacklogItems={refreshBacklogItems}
+      showLoadingAnimation={backlogItems === undefined && backlogItemsState.isLoading} // skip animation on re-fetch
     />
   </>
 }
@@ -360,7 +375,7 @@ const BacklogHeader = ({
   backlogItemsFetchDetails,
   selectedBacklogItems,
   setSelectedBacklogItems,
-  setRefreshBacklogItems,
+  refreshBacklogItems,
   refresh,
 }) => {
   const theme = useTheme()
@@ -404,7 +419,7 @@ const BacklogHeader = ({
     )
     setSelectedBacklogItems([])
     setDeletionIsLoading(false)
-    setRefreshBacklogItems({})
+    refreshBacklogItems()
   }
 
   return <Stack direction='row' spacing={3} display='flex' alignItems='center' justifyContent='space-between'>
@@ -427,7 +442,7 @@ const BacklogHeader = ({
         }}
         onClick={() => {
           refresh.statuses()
-          setRefreshBacklogItems({})
+          refreshBacklogItems()
         }}
         disabled={backlogItemsFetchDetails.isLoading}
       >
@@ -458,7 +473,7 @@ BacklogHeader.propTypes = {
   backlogItemsFetchDetails: PropTypes.object.isRequired,
   selectedBacklogItems: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedBacklogItems: PropTypes.func.isRequired,
-  setRefreshBacklogItems: PropTypes.func.isRequired,
+  refreshBacklogItems: PropTypes.func.isRequired,
   refresh: PropTypes.object.isRequired,
 }
 
@@ -467,10 +482,11 @@ const BacklogItems = ({
   service,
   scanConfig,
   filteredBacklogItems,
-  backlogItemsFetchDetails,
   selectedBacklogItems,
   setSelectedBacklogItems,
-  setRefreshBacklogItems,
+  refreshBacklogItems,
+  showLoadingAnimation,
+  error,
 }) => {
   const context = React.useContext(ConfigContext)
 
@@ -492,8 +508,6 @@ const BacklogItems = ({
   const [order, setOrder] = React.useState(orderDirections.ASCENDING)
   const [orderBy, setOrderBy] = React.useState(orderAttributes.POSITION)
 
-  const {backlogItems, isLoading, isError} = backlogItemsFetchDetails
-
   React.useEffect(() => {
     const calculateMaxPage = () => {
       if (!filteredBacklogItems) return 0
@@ -502,11 +516,11 @@ const BacklogItems = ({
     if (page > calculateMaxPage()) setPage(calculateMaxPage())
   }, [filteredBacklogItems, page, rowsPerPage])
 
-  if (isError) return <Alert severity='error' variant={context.prefersDarkMode ? 'outlined' : 'standard'}>
+  if (error) return <Alert severity='error' variant={context.prefersDarkMode ? 'outlined' : 'standard'}>
     Backlog items could not be fetched.
   </Alert>
   // show loading skeleton if service changes (no items available yet) or no items found and is loading again
-  else if (isLoading && !backlogItems) return <Skeleton/>
+  else if (showLoadingAnimation) return <Skeleton/>
   else if (filteredBacklogItems.length === 0) return <Alert severity='success' variant={context.prefersDarkMode ? 'outlined' : 'standard'}>
     No open backlog items {String.fromCodePoint('0x1F973')} {/* "Party-Face" symbol */}
   </Alert>
@@ -649,7 +663,7 @@ const BacklogItems = ({
                 backlogItem={backlogItem}
                 selectedBacklogItems={selectedBacklogItems}
                 setSelectedBacklogItems={setSelectedBacklogItems}
-                setRefreshBacklogItems={setRefreshBacklogItems}
+                refreshBacklogItems={refreshBacklogItems}
               />)
           }
         </TableBody>
@@ -671,10 +685,11 @@ BacklogItems.propTypes = {
   service: PropTypes.string.isRequired,
   scanConfig: PropTypes.object,
   filteredBacklogItems: PropTypes.arrayOf(PropTypes.object).isRequired,
-  backlogItemsFetchDetails: PropTypes.object.isRequired,
   selectedBacklogItems: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedBacklogItems: PropTypes.func.isRequired,
-  setRefreshBacklogItems: PropTypes.func.isRequired,
+  refreshBacklogItems: PropTypes.func.isRequired,
+  showLoadingAnimation: PropTypes.bool.isRequired,
+  error: PropTypes.any,
 }
 
 
@@ -936,13 +951,14 @@ PriorityFilter.propTypes = {
 const LogTab = ({
   service,
   aggregatedContainerStatus,
-  logCollectionsFetchDetails,
+  error,
   logLevelState,
   refresh,
+  showLoadingAnimation,
+  logCollections,
 }) => {
   const theme = useTheme()
 
-  const {logCollections, isLoading, isError} = logCollectionsFetchDetails
   const {logLevel, setLogLevel} = logLevelState
 
   const logs = logCollections?.length === 1 ? [...logCollections[0].spec.logs].reverse().map(
@@ -972,25 +988,27 @@ const LogTab = ({
             refresh.statuses()
             refresh.logs()
           }}
-          disabled={isLoading}
+          disabled={showLoadingAnimation}
         >
           <RefreshIcon/>
         </IconButton>
         <ServiceStatus serviceStatus={aggregatedContainerStatus}/>
       </Stack>
-      <DownloadLogs logs={logs} service={service} logLevel={logLevel} disabled={isLoading || isError}/>
+      <DownloadLogs logs={logs} service={service} logLevel={logLevel} disabled={showLoadingAnimation || error}/>
     </Stack>
     <div style={{height: '2rem'}}/>
-    <Logs logs={logs} isLoading={isLoading} isError={isError}/>
+    <Logs logs={logs} isLoading={showLoadingAnimation} isError={error}/>
   </>
 }
 LogTab.displayName = 'LogTab'
 LogTab.propTypes = {
   service: PropTypes.string.isRequired,
   aggregatedContainerStatus: PropTypes.object.isRequired,
-  logCollectionsFetchDetails: PropTypes.object.isRequired,
+  logCollections: PropTypes.array,
   logLevelState: PropTypes.object.isRequired,
   refresh: PropTypes.object.isRequired,
+  showLoadingAnimation: PropTypes.bool.isRequired,
+  error: PropTypes.any,
 }
 
 
