@@ -17,6 +17,211 @@ import {
 import { FeatureRegistrationContext } from '../App'
 
 import { registerCallbackHandler } from '../feature'
+import { normaliseObject } from '../util'
+
+
+const cache = new Map()
+
+
+/**
+ * Custom hook to fetch data with retry logic and error handling.
+ *
+ * @param {Function} fetchFunction - function to fetch data, which should return a promise.
+ * @param {Object} fetchParams - parameters to pass to the fetch function, provide `null` to not pass
+ * parameters at all.
+ * @param {Function} [fetchCondition=null] - optional callback which shortcuts fetching if it is falsy.
+ * @param {string} [errorMessage='error'] - error message to display in the snackbar.
+ * @param {Function} [retryCondition] - used to determine if a retry is needed based on theresult.
+ * @param {number} [retryIntervalSeconds=10] - interval in seconds between retry attempts.
+ * @param {boolean} [showSnackbar=true] - flag to show a snackbar on error.
+ * @param {string} [cacheKey=JSON.stringify({fetchFunction, fetchParams})] - if not `null`, use to
+ * lookup and serve result from cache.
+ * @param {Function} [cacheCondition=null] - optional callback, takes resolved promise data as input
+ * and must be truthy to write entry to cache (implication: prevents unresolved promise from being
+ * cached)
+ * @returns {[any, {isLoading: boolean, error: string|null}, callable]} - array containing the
+ * fetched data, the state object, and a callback to re-fetch (data state is *not* re-initialised
+ * allowing consumers to differeniate between inital fetch and re-fetch).
+ */
+const _useFetch = ({
+  fetchFunction,
+  fetchParams = null,
+  fetchCondition = null,
+  errorMessage = 'error',
+  retryCondition,
+  retryIntervalSeconds = 10,
+  showSnackbar = true,
+  cacheCondition = null,
+  cacheKey = JSON.stringify({
+    fetchFunction: fetchFunction.name,
+    fetchParams: fetchParams === null ? null : normaliseObject(fetchParams),
+  }),
+}) => {
+  const [data, setData] = React.useState()
+  const [state, setState] = React.useState({
+    isLoading: true,
+    error: null,
+  })
+
+  // toggle state to refresh useFetch hook, callable is returned next to data and state
+  const [refresh, setRefresh] = React.useState(true)
+  const resetState = () => {
+    setState({
+      isLoading: true,
+      error: null,
+    })
+  }
+  React.useEffect(() => resetState(), [refresh])
+
+  const retryIntervalRef = React.useRef()
+  const isFetching = React.useRef(false)
+
+  const { enqueueSnackbar } = useSnackbar()
+
+  const clearIntervalFromRef = (ref) => {
+    clearInterval(ref.current)
+    ref.current = null
+  }
+
+  React.useEffect(() => {
+    if (fetchCondition && !fetchCondition()) return
+
+    // track whether hook is mounted
+    let mounted = true
+
+    const fetchData = async () => {
+      // prevent multiple fetch attempts if component is re-rendered while fetching
+      if (isFetching.current) return
+      isFetching.current = true
+
+      // prevent stale updates to avoid memory leaks
+      if (!mounted) return
+
+      if (cacheKey !== null) {
+        const cachedResult = cache.get(cacheKey)
+        if (cachedResult) {
+          try {
+            const result = cachedResult instanceof Promise
+              ? await cachedResult
+              : cachedResult
+
+            setData(result)
+            setState({
+              isLoading: false,
+              error: null,
+            })
+
+            if (
+              cacheCondition === null
+              || (cacheCondition && cacheCondition(result))
+            ) {
+              cache.set(cacheKey, result)
+            }
+
+          } catch (error) {
+            setState({
+              isLoading: false,
+              error: error.toString(),
+            })
+            showSnackbar && enqueueSnackbar(
+              errorMessage,
+              {
+                ...errorSnackbarProps,
+                details: error.toString(),
+                onRetry: () => fetchData(),
+              }
+            )
+          }
+          isFetching.current = false
+          return
+        }
+      }
+
+      const fetchPromise = fetchParams === null ? fetchFunction() : fetchFunction(fetchParams)
+      if (
+        cacheKey !== null
+        && cacheCondition === null // cannot evaluate cache condition if promise is not resolved
+      ) {
+        cache.set(cacheKey, fetchPromise)
+      }
+
+      try {
+        const result = await fetchPromise
+        if (retryCondition && retryCondition(result)) {
+          if (!retryIntervalRef.current) {
+            retryIntervalRef.current = setInterval(() => fetchData(), retryIntervalSeconds * 1000)
+          }
+          return
+        }
+
+        setData(result)
+        setState({
+          isLoading: false,
+          error: null,
+        })
+
+        if (cacheKey !== null) {
+          if (
+            cacheCondition === null
+            || (cacheCondition && cacheCondition(result))
+          ) {
+            cache.set(cacheKey, result)
+          }
+        }
+        clearIntervalFromRef(retryIntervalRef)
+
+      } catch (error) {
+        setState({
+          isLoading: false,
+          error: error.toString(),
+        })
+        clearIntervalFromRef(retryIntervalRef)
+        showSnackbar && enqueueSnackbar(
+          errorMessage,
+          {
+            ...errorSnackbarProps,
+            details: error.toString(),
+            onRetry: () => fetchData(),
+          }
+        )
+
+      } finally {
+        isFetching.current = false
+
+      }
+    }
+
+    fetchData()
+
+    return () => {
+      mounted = false
+      resetState()
+      isFetching.current = false
+      clearIntervalFromRef(retryIntervalRef)
+    }
+  }, [
+    retryIntervalRef.current,
+    setData,
+    setState,
+    enqueueSnackbar,
+    fetchCondition,
+    fetchFunction,
+    fetchParams,
+    errorMessage,
+    retryCondition,
+    showSnackbar,
+    retryIntervalSeconds,
+    cacheKey,
+    cacheCondition,
+    refresh,
+  ])
+
+  return [
+    data,
+    state,
+    () => setRefresh(prev => !prev),
+  ]
+}
 
 
 const useFetchUpgradePRs = ({
