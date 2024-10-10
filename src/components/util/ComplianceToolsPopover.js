@@ -56,6 +56,7 @@ import {
 import {
   ARTEFACT_KIND,
   COMPLIANCE_TOOLS,
+  fetchBomPopulate,
   PRIORITIES,
   TOKEN_KEY,
 } from './../../consts'
@@ -641,38 +642,38 @@ const ComplianceToolPopover = ({
   const [openInput, setOpenInput] = React.useState(false)
   const [filters, setFilters] = React.useState([])
 
-  // eslint-disable-next-line no-unused-vars
-  const [dependencies, isLoading, isError, error] = useFetchBom(component, null, 'all')
+  const [dependencies, state] = useFetchBom({
+    componentName: component.name,
+    componentVersion: component.version,
+    ocmRepo: null,
+    populate: fetchBomPopulate.ALL,
+  })
   const [ocmNodes, setOcmNodes] = React.useState([])
   const [selectedOcmNodes, setSelectedOcmNodes] = React.useState([])
 
-  const [services, servicesIsLoading, servicesIsError, setServices] = useFetchServiceExtensions()
+  const [services, servicesState] = useFetchServiceExtensions()
   const [service, setService] = React.useState()
 
-  const [scanConfigs, scanConfigsIsLoading, scanConfigsIsError] = useFetchScanConfigurations()
+  const [scanConfigs, scanConfigsState] = useFetchScanConfigurations()
   const [scanConfig, setScanConfig] = React.useState()
 
   const [priority, setPriority] = React.useState(PRIORITIES.CRITICAL)
 
   React.useEffect(() => {
-    if (servicesIsLoading || servicesIsError) return
+    if (servicesState.isLoading || servicesState.error) return
 
-    const complianceTools = Object.values(COMPLIANCE_TOOLS)
-
-    if (services.some((s) => !complianceTools.includes(s))) {
-      setServices(services.filter((s) => complianceTools.includes(s)))
-    } else if (!service && services.length > 0) {
+    if (!service && services.length > 0) {
       setService(services[0])
     }
-  }, [services, servicesIsLoading, servicesIsError, setServices, service])
+  }, [services, servicesState, service])
 
   React.useEffect(() => {
-    if (scanConfigsIsLoading || scanConfigsIsError) return
+    if (scanConfigsState.isLoading || scanConfigsState.error) return
     if (!scanConfig && scanConfigs?.length > 0) setScanConfig(scanConfigs[0])
-  }, [scanConfigs, scanConfigsIsLoading, scanConfigsIsError, scanConfig])
+  }, [scanConfigs, scanConfigsState.isLoading, scanConfigsState.error, scanConfig])
 
   React.useEffect(() => {
-    if (isLoading || isError || servicesIsLoading || servicesIsError) return
+    if (state.isLoading || state.error || servicesState.isLoading || servicesState.state) return
 
     const components = dependencies.componentDependencies
     if (!(components.length > 0 && service)) return
@@ -702,7 +703,7 @@ const ComplianceToolPopover = ({
         return !artefactTypes || artefactTypes.some((type) => type === node.artefact.type)
       })
     }, []))
-  }, [dependencies, scanConfig, isLoading, isError, service, servicesIsLoading, servicesIsError])
+  }, [dependencies, scanConfig, state.isLoading, state.error, service, servicesState.isLoading, servicesState.error])
 
   const addOrUpdateFilter = React.useCallback((newFilter) => {
     setFilters((prevFilters) => {
@@ -725,9 +726,9 @@ const ComplianceToolPopover = ({
     }, ocmNodes)
   }, [filters])
 
-  if (isError || servicesIsError || scanConfigsIsError) {
+  if (state.error || servicesState.error || scanConfigsState.error) {
     return
-  } else if (isLoading || servicesIsLoading || scanConfigsIsLoading || !service || !scanConfig) {
+  } else if (state.isLoading || servicesState.isLoading || scanConfigsState.isLoading || !service || !scanConfig) {
     return
   }
 
@@ -807,7 +808,7 @@ const ComplianceToolPopover = ({
             serviceConfigsAgg={{
               service,
               setService,
-              services,
+              services: services.filter((s) => Object.values(COMPLIANCE_TOOLS).includes(s)),
             }}
           />
           <PriorityConfiguration

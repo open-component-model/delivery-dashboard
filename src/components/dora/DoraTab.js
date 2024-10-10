@@ -383,19 +383,19 @@ const DoraTab = ({
   const context = React.useContext(ConfigContext)
   const [timeSpanDays, setTimeSpanDays] = React.useState(90)
 
-  const [doraMetrics, isLoading, isError] = useFetchDoraMetrics({
+  const [doraMetrics, state] = useFetchDoraMetrics({
     targetComponentName,
     filterComponentNames,
     timeSpanDays,
   })
 
-  if (isError) {
+  if (state.error) {
     return <Alert severity='error' variant={context.prefersDarkMode ? 'outlined' : 'standard'}>
       Dora metrics could not be fetched
     </Alert>
   }
 
-  if (isLoading || !doraMetrics) {
+  if (state.isLoading) {
     return <Stack spacing={5} alignItems='center'>
       <TimeSpanSlider
         timeSpanDays={timeSpanDays}
@@ -451,11 +451,16 @@ export const DoraTabWrapper = ({ componentName }) => {
     (specialComponent) => specialComponent.name == componentName,
   ))
 
+  const filterComponentNames = React.useCallback(() => {
+    if (isSpecialComponent) return []
+    return [componentName]
+  }, [isSpecialComponent, componentName])
+
   if (isSpecialComponent || path?.length > 0) {
     return <DoraTab
       componentName={componentName}
       targetComponentName={isSpecialComponent ? componentName : path[0].name}
-      filterComponentNames={isSpecialComponent ? [] : [componentName]}
+      filterComponentNames={filterComponentNames()}
       isSpecialComponent={isSpecialComponent}
     />
   }
@@ -463,7 +468,7 @@ export const DoraTabWrapper = ({ componentName }) => {
   return <DoraTab
     componentName={componentName}
     targetComponentName={componentName}
-    filterComponentNames={[componentName]}
+    filterComponentNames={filterComponentNames()}
     isSpecialComponent={isSpecialComponent}
   />
 }

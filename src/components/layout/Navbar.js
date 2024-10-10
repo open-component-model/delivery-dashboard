@@ -230,7 +230,7 @@ ServiceListEntry.propTypes = {
 
 
 const ServiceList = () => {
-  const [services, isLoading, isError] = useFetchServiceExtensions()
+  const [services, state] = useFetchServiceExtensions()
   const [open, setOpen] = React.useState(true)
   const navigate = useNavigate()
 
@@ -250,7 +250,7 @@ const ServiceList = () => {
     navigate(SERVICES_PATH)
   }
 
-  if (isLoading || isError || !services) {
+  if (state.isLoading || state.error || !services) {
     return null
   }
 

@@ -39,11 +39,11 @@ import { ServiceStatus } from './../../pages/ServicesPage.js'
 
 
 const ServiceExtensionStatus = () => {
-  const [services, servicesAreLoading, servicesHaveError] = useFetchServiceExtensions()
-  const [statuses, statusesAreLoading] = useFetchContainerStatuses({useCache: true})
-  const [logCollections, logCollectionsAreLoading] = useFetchLogCollections({logLevel: 'ERROR', useCache: true})
+  const [services, state] = useFetchServiceExtensions()
+  const [statuses, statusesState] = useFetchContainerStatuses({})
+  const [logCollections, logCollectionState] = useFetchLogCollections({logLevel: 'ERROR'})
 
-  if (!services || servicesAreLoading || servicesHaveError) {
+  if (!services || state.isLoading || state.error) {
     return <a href={`#${SERVICES_PATH}`}>
       <Skeleton sx={{
         width: '1rem',
@@ -54,11 +54,11 @@ const ServiceExtensionStatus = () => {
   const aggregatedServiceStatuses = services.map((service) => {
     const aggregatedContainerStatus = getAggregatedContainerStatus({
       statuses: statuses?.filter((status) => snakeToCamelCase(status.name).startsWith(service)),
-      statusesAreLoading,
+      statusesAreLoading: statusesState.isLoading,
     })
     const aggregatedLoggingStatus = getAggregatedLoggingStatus({
       logCollection: logCollections?.find((logCollection) => logCollection.spec.service === service),
-      logCollectionIsLoading: logCollectionsAreLoading,
+      logCollectionIsLoading: logCollectionState.isLoading,
     })
     const worstStatus = aggregatedContainerStatus.status.severity > aggregatedLoggingStatus.status.severity ?
       aggregatedContainerStatus.status :

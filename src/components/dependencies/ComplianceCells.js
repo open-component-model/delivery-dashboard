@@ -232,7 +232,7 @@ const ComplianceCell = ({
   scanConfig,
 }) => {
   const {complianceSummary, isSummaryLoading, isSummaryError} = complianceSummaryFetchDetails
-  const {complianceData, isDataLoading, isDataError} = complianceDataFetchDetails
+  const {complianceData, state} = complianceDataFetchDetails
 
   const componentSummary = complianceSummary?.complianceSummary.find((componentSummary) => {
     return (
@@ -252,7 +252,7 @@ const ComplianceCell = ({
     )
   })
 
-  if (isSummaryError || isDataError || (!isSummaryLoading && !artefactSummary)) return <TableCell>
+  if (isSummaryError || state.error || (!isSummaryLoading && !artefactSummary)) return <TableCell>
     <Alert severity='error'>Unable to fetch Compliance Data</Alert>
   </TableCell>
 
@@ -293,7 +293,7 @@ const ComplianceCell = ({
           lastScan={lastBdbaScan}
           scanConfig={scanConfig?.config && COMPLIANCE_TOOLS.BDBA in scanConfig.config ? scanConfig : null}
           fetchComplianceSummary={fetchComplianceSummary}
-          isLoading={isDataLoading}
+          isLoading={state.isLoading}
         />
       }
       {
@@ -313,14 +313,14 @@ const ComplianceCell = ({
           fetchComplianceSummary={fetchComplianceSummary}
           lastScan={lastMalwareScan}
           severity={getMaxSeverity(artefactMetadataTypes.FINDING_MALWARE)}
-          isLoading={isDataLoading}
+          isLoading={state.isLoading}
         />
       }
       {
         artefact.kind === ARTEFACT_KIND.RESOURCE && <OsCell
           osData={osData}
           severity={getMaxSeverity(artefactMetadataTypes.OS_IDS)}
-          isLoading={isDataLoading}
+          isLoading={state.isLoading}
         />
       }
       {
@@ -340,7 +340,7 @@ const ComplianceCell = ({
           lastScan={lastBdbaScan}
           scanConfig={scanConfig?.config && COMPLIANCE_TOOLS.BDBA in scanConfig.config ? scanConfig : null}
           fetchComplianceSummary={fetchComplianceSummary}
-          isLoading={isDataLoading}
+          isLoading={state.isLoading}
         />
       }
     </Grid>

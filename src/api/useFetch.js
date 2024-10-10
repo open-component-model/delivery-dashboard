@@ -17,56 +17,229 @@ import {
 import { FeatureRegistrationContext } from '../App'
 
 import { registerCallbackHandler } from '../feature'
+import { normaliseObject } from '../util'
+
+
+const cache = new Map()
+
+
+/**
+ * Custom hook to fetch data with retry logic and error handling.
+ *
+ * @param {Function} fetchFunction - function to fetch data, which should return a promise.
+ * @param {Object} fetchParams - parameters to pass to the fetch function, provide `null` to not pass
+ * parameters at all.
+ * @param {Function} [fetchCondition=null] - optional callback which shortcuts fetching if it is falsy.
+ * @param {string} [errorMessage='error'] - error message to display in the snackbar.
+ * @param {Function} [retryCondition] - used to determine if a retry is needed based on theresult.
+ * @param {number} [retryIntervalSeconds=10] - interval in seconds between retry attempts.
+ * @param {boolean} [showSnackbar=true] - flag to show a snackbar on error.
+ * @param {string} [cacheKey=JSON.stringify({fetchFunction, fetchParams})] - if not `null`, use to
+ * lookup and serve result from cache.
+ * @param {Function} [cacheCondition=null] - optional callback, takes resolved promise data as input
+ * and must be truthy to write entry to cache (implication: prevents unresolved promise from being
+ * cached)
+ * @returns {[any, {isLoading: boolean, error: string|null}, callable]} - array containing the
+ * fetched data, the state object, and a callback to re-fetch (data state is *not* re-initialised
+ * allowing consumers to differeniate between inital fetch and re-fetch).
+ */
+const _useFetch = ({
+  fetchFunction,
+  fetchParams = null,
+  fetchCondition = null,
+  errorMessage = 'error',
+  retryCondition,
+  retryIntervalSeconds = 10,
+  showSnackbar = true,
+  cacheCondition = null,
+  cacheKey = JSON.stringify({
+    fetchFunction: fetchFunction.name,
+    fetchParams: fetchParams === null ? null : normaliseObject(fetchParams),
+  }),
+}) => {
+  const [data, setData] = React.useState()
+  const [state, setState] = React.useState({
+    isLoading: true,
+    error: null,
+  })
+
+  // toggle state to refresh useFetch hook, callable is returned next to data and state
+  const [refresh, setRefresh] = React.useState(true)
+  const resetState = () => {
+    setState({
+      isLoading: true,
+      error: null,
+    })
+  }
+  React.useEffect(() => resetState(), [refresh])
+
+  const retryIntervalRef = React.useRef()
+  const isFetching = React.useRef(false)
+
+  const { enqueueSnackbar } = useSnackbar()
+
+  const clearIntervalFromRef = (ref) => {
+    clearInterval(ref.current)
+    ref.current = null
+  }
+
+  React.useEffect(() => {
+    if (fetchCondition && !fetchCondition()) return
+
+    // track whether hook is mounted
+    let mounted = true
+
+    const fetchData = async () => {
+      // prevent multiple fetch attempts if component is re-rendered while fetching
+      if (isFetching.current) return
+      isFetching.current = true
+
+      // prevent stale updates to avoid memory leaks
+      if (!mounted) return
+
+      if (cacheKey !== null) {
+        const cachedResult = cache.get(cacheKey)
+        if (cachedResult) {
+          if (cachedResult instanceof Promise) {
+            try {
+              const result = await cachedResult
+              setData(result)
+              setState({
+                isLoading: false,
+                error: null,
+              })
+
+            } catch (error) {
+              setState({
+                isLoading: false,
+                error: error.toString(),
+              })
+              showSnackbar && enqueueSnackbar(
+                errorMessage,
+                {
+                  ...errorSnackbarProps,
+                  details: error.toString(),
+                  onRetry: () => fetchData(),
+                }
+              )
+            }
+
+            isFetching.current = false
+            return
+
+          } else {
+            setData(cachedResult)
+            setState({
+              isLoading: false,
+              error: null,
+            })
+            isFetching.current = false
+            return
+          }
+        }
+      }
+
+      const fetchPromise = fetchParams === null ? fetchFunction() : fetchFunction(fetchParams)
+      if (
+        cacheKey !== null
+        && cacheCondition === null // cannot evaluate cache condition if promise is not resolved
+      ) {
+        cache.set(cacheKey, fetchPromise)
+      }
+
+      try {
+        const result = await fetchPromise
+        if (retryCondition && retryCondition(result)) {
+          if (!retryIntervalRef.current) {
+            retryIntervalRef.current = setInterval(() => fetchData(), retryIntervalSeconds * 1000)
+          }
+          return
+        }
+
+        setData(result)
+        setState({
+          isLoading: false,
+          error: null,
+        })
+
+        if (cacheKey !== null) {
+          if (cacheCondition && cacheCondition(result)) {
+            cache.set(cacheKey, result)
+          }
+        }
+        clearIntervalFromRef(retryIntervalRef)
+
+      } catch (error) {
+        setState({
+          isLoading: false,
+          error: error.toString(),
+        })
+        clearIntervalFromRef(retryIntervalRef)
+        showSnackbar && enqueueSnackbar(
+          errorMessage,
+          {
+            ...errorSnackbarProps,
+            details: error.toString(),
+            onRetry: () => fetchData(),
+          }
+        )
+
+      } finally {
+        isFetching.current = false
+
+      }
+    }
+
+    fetchData()
+
+    return () => {
+      mounted = false
+      resetState()
+      isFetching.current = false
+      clearIntervalFromRef(retryIntervalRef)
+    }
+  }, [
+    retryIntervalRef.current,
+    setData,
+    setState,
+    enqueueSnackbar,
+    fetchCondition,
+    fetchFunction,
+    fetchParams,
+    errorMessage,
+    retryCondition,
+    showSnackbar,
+    retryIntervalSeconds,
+    cacheKey,
+    cacheCondition,
+    refresh,
+  ])
+
+  return [
+    data,
+    state,
+    () => setRefresh(prev => !prev),
+  ]
+}
 
 
 const useFetchUpgradePRs = ({
   componentName,
   state,
 }) => {
-  const [prs, setPRs] = React.useState()
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [isError, setIsError] = React.useState()
-
-  const { enqueueSnackbar } = useSnackbar()
-
-  React.useEffect(() => {
-    let mounted = true
-    const fetchUpgradePrs = async (componentName, state) => {
-      try {
-        const prs = await components.upgradePullRequests({
-          componentName,
-          state,
-        })
-        if (mounted) {
-          setPRs(prs)
-          setIsLoading(false)
-        }
-      } catch (error) {
-        if (mounted) {
-          setIsError(true)
-          setIsLoading(false)
-        }
-        enqueueSnackbar(
-          'Pull Requests could not be fetched',
-          {
-            ...errorSnackbarProps,
-            details: error.toString(),
-            onRetry: () => fetchUpgradePrs(componentName, state),
-          }
-        )
-      }
-    }
-    fetchUpgradePrs(componentName, state)
-    return () => {
-      mounted = false
-    }
-  }, [
+  const params = React.useMemo(() => ({
     componentName,
     state,
-    enqueueSnackbar,
+  }), [
+    componentName,
+    state,
   ])
 
-  return [prs, isLoading, isError]
+  return _useFetch({
+    fetchFunction: components.upgradePullRequests,
+    fetchParams: params,
+    errorMessage: 'Pull Requests could not be fetched',
+  })
 }
 
 const useFetchCompDiff = ({
@@ -75,82 +248,28 @@ const useFetchCompDiff = ({
   rightName,
   rightVersion,
 }) => {
-  const [diff, setDiff] = React.useState()
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [isError, setIsError] = React.useState()
+  const params = React.useMemo(() => ({
+    leftComponent: { name: leftName, version: leftVersion },
+    rightComponent: { name: rightName, version: rightVersion },
+  }), [
+    leftName,
+    leftVersion,
+    rightName,
+    rightVersion,
+  ])
 
-  const { enqueueSnackbar } = useSnackbar()
-
-  React.useEffect(() => {
-    setIsLoading(true)
-    const fetchComponentDiff = async () => {
-      try {
-        const localDiff = await components.diff(
-          {name: leftName, version: leftVersion},
-          {name: rightName, version: rightVersion},
-        )
-        setDiff(localDiff)
-        setIsLoading(false)
-        setIsError(false)
-
-      } catch {
-        setIsLoading(false)
-        setIsError(true)
-
-        enqueueSnackbar(
-          `Pull Request Diff from '${leftVersion}' to '${rightVersion}' for '${leftName}' could not b
-          e fetched.`,
-          {
-            ...errorSnackbarProps,
-            // TODO: add error details
-            onRetry: () => fetchComponentDiff(),
-          }
-        )
-      }
-    }
-    fetchComponentDiff()
-  }, [leftName, leftVersion, rightName, rightVersion, enqueueSnackbar])
-
-  return [diff, isLoading, isError]
+  return _useFetch({
+    fetchFunction: components.diff,
+    fetchParams: params,
+    errorMessage: `Pull Request Diff from '${leftVersion}' to '${rightVersion}' for '${leftName}' could not be fetched`,
+  })
 }
 
 const useFetchCurrentSprintInfos = () => {
-  const [sprintInfos, setSprintInfos] = React.useState()
-  const [isError, setIsError] = React.useState()
-  const [isLoading, setIsLoading] = React.useState(true)
-  const {enqueueSnackbar} = useSnackbar()
-
-  React.useEffect(() => {
-    let mounted = true
-    const fetchCurrentSprintInfos = async () => {
-      try {
-        if (mounted) {
-          setSprintInfos(await deliverySprintInfosCurrent())
-          setIsError(false)
-          setIsLoading(false)
-        }
-      } catch (error) {
-        if (mounted) {
-          setIsError(true)
-          setIsLoading(false)
-        }
-        enqueueSnackbar(
-          'Current sprint infos could not be fetched',
-          {
-            ...errorSnackbarProps,
-            details: error.toString(),
-            onRetry: () => fetchCurrentSprintInfos(),
-          }
-        )
-      }
-    }
-    fetchCurrentSprintInfos()
-    return () => {
-      mounted = false
-    }
-  }, [enqueueSnackbar])
-
-  return [sprintInfos, isLoading, isError]
+  return _useFetch({
+    fetchFunction: deliverySprintInfosCurrent,
+    errorMessage: 'Current sprint infos could not be fetched',
+  })
 }
 
 const useFetchComplianceSummary = ({
@@ -158,367 +277,110 @@ const useFetchComplianceSummary = ({
   componentVersion,
   ocmRepo,
   recursionDepth,
-  enableCache,
 }) => {
-  const [complianceSummary, setComplianceSummary] = React.useState()
-  const [isError, setIsError] = React.useState()
-  const [isLoading, setIsLoading] = React.useState(true)
-  const { enqueueSnackbar } = useSnackbar()
-  const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
+  const params = React.useMemo(() => ({
+    componentName,
+    componentVersion,
+    ocmRepo,
+    recursionDepth,
+  }), [
+    componentName,
+    componentVersion,
+    ocmRepo,
+    recursionDepth,
+  ])
 
-  const [deliveryDbFeature, setDeliveryDbFeature] = React.useState()
-
-  React.useEffect(() => {
-    return registerCallbackHandler({
-      featureRegistrationContext: featureRegistrationContext,
-      featureName: features.DELIVERY_DB,
-      callback: ({feature}) => setDeliveryDbFeature(feature),
-    })
-  }, [featureRegistrationContext])
-
-  const isAvailable = deliveryDbFeature && deliveryDbFeature.isAvailable
-
-  React.useEffect(() => {
-    let mounted = true
-
-    const fetchComplianceSummary = async ({componentName, componentVersion, ocmRepo, recursionDepth, enableCache}) => {
-      try {
-        const _complianceSummary = await components.complianceSummary({
-          componentName,
-          componentVersion,
-          ocmRepo,
-          recursionDepth,
-          enableCache,
-        })
-
-        if (mounted) {
-          setComplianceSummary(_complianceSummary)
-          setIsError(false)
-          setIsLoading(false)
-        }
-      } catch (error) {
-        if (mounted) {
-          setIsError(true)
-          setIsLoading(false)
-        }
-        enqueueSnackbar(
-          'Compliance Summary could not be fetched',
-          {
-            ...errorSnackbarProps,
-            details: error.toString(),
-            onRetry: () => fetchComplianceSummary({componentName, componentVersion, ocmRepo, recursionDepth, enableCache}),
-          }
-        )
-      }
-    }
-    if (isAvailable)
-      fetchComplianceSummary({componentName, componentVersion, ocmRepo, recursionDepth, enableCache})
-    return () => {
-      mounted = false
-    }
-  }, [enqueueSnackbar, componentName, componentVersion, ocmRepo, recursionDepth, enableCache, isAvailable])
-
-  return [complianceSummary, isLoading, isError]
+  return _useFetch({
+    fetchFunction: components.complianceSummary,
+    fetchParams: params,
+    errorMessage: 'Compliance Summary could not be fetched',
+  })
 }
 
-const useFetchSpecialComponentCurrentDependencies = (component) => {
-  const [dependencies, setDependencies] = React.useState()
-  const [isError, setIsError] = React.useState()
-  const [isLoading, setIsLoading] = React.useState(true)
+const useFetchSpecialComponentCurrentDependencies = ({componentName}) => {
+  const params = React.useMemo(() => ({ componentName: componentName }), [componentName])
 
-  const [locked, setLocked] = React.useState(false)
-
-  const {enqueueSnackbar} = useSnackbar()
-
-  React.useEffect(() => {
-    const fetchSpecialComponentDependencies = async (component) => {
-      try {
-        const fetchedDependencies = await specialComponentCurrentDependencies(component)
-        setDependencies(fetchedDependencies)
-        setIsLoading(false)
-        setIsError(false)
-
-      } catch (error) {
-        setIsError(true)
-        setIsLoading(false)
-
-        enqueueSnackbar(
-          'Special component dependencies could not be fetched',
-          {
-            ...errorSnackbarProps,
-            details: error.toString(),
-            onRetry: () => fetchSpecialComponentDependencies(component),
-          }
-        )
-      }
-    }
-
-    if (locked) return
-    setLocked(true)
-    fetchSpecialComponentDependencies(component)
-
-  }, [locked, component, dependencies, enqueueSnackbar])
-
-  return [dependencies, isLoading, isError]
+  return _useFetch({
+    fetchFunction: specialComponentCurrentDependencies,
+    fetchParams: params,
+    errorMessage: 'Special component dependencies could not be fetched',
+  })
 }
 
 const useFetchComponentDescriptor = ({
   componentName,
-  ocmRepoUrl,
-  version,
+  componentVersion,
+  ocmRepo,
   versionFilter,
-  raw=false,
+  raw,
 }) => {
-  const [componentDescriptor, setComponentDescriptor] = React.useState()
-  const [isError, setIsError] = React.useState()
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [error, setError] = React.useState()
+  const params = React.useMemo(() => ({
+    componentName: componentName,
+    version: componentVersion,
+    ocmRepoUrl: ocmRepo,
+    versionFilter: versionFilter,
+    raw: raw,
+  }), [
+    componentName,
+    componentVersion,
+    ocmRepo,
+    versionFilter,
+    raw,
+  ])
 
-  const { enqueueSnackbar } = useSnackbar()
-
-  React.useEffect(() => {
-    let mounted = true
-    setIsError(false)
-    setIsLoading(true)
-
-    const fetchComponentDescriptor = async (
-      componentName,
-      ocmRepoUrl,
-      version,
-      versionFilter,
-    ) => {
-      try {
-        const _componentDescriptor = await components.ocmComponent({
-          componentName,
-          ocmRepoUrl,
-          version,
-          versionFilter,
-          raw,
-        })
-
-        if (mounted) {
-          setComponentDescriptor(_componentDescriptor)
-          setIsLoading(false)
-        }
-      } catch (error) {
-        if (mounted) {
-          setIsError(true)
-          setError(error.toString())
-          setIsLoading(false)
-
-          enqueueSnackbar(
-            `Component "${componentName}" could not be fetched`,
-            {
-              ...errorSnackbarProps,
-              details: error.toString(),
-              onRetry: () => fetchComponentDescriptor(
-                componentName,
-                ocmRepoUrl,
-                version,
-                versionFilter,
-              ),
-            }
-          )
-        }
-      }
-    }
-    fetchComponentDescriptor(componentName, ocmRepoUrl, version, versionFilter)
-
-    return () => {
-      mounted = false
-    }
-  }, [componentName, ocmRepoUrl, version, versionFilter, enqueueSnackbar])
-  return [componentDescriptor, isLoading, isError, error]
+  return _useFetch({
+    fetchFunction: components.ocmComponent,
+    fetchParams: params,
+    errorMessage: `Component "${componentName}" could not be fetched`,
+  })
 }
 
-const useFetchBom = (component, ocmRepo, populate) => {
-  const [componentBom, setComponentBom] = React.useState()
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [isError, setIsError] = React.useState()
-  const [error, setError] = React.useState()
+const useFetchBom = ({
+  componentName,
+  componentVersion,
+  ocmRepo,
+  populate,
+}) => {
+  const params = React.useMemo(() => ({
+    componentName: componentName,
+    componentVersion: componentVersion,
+    ocmRepoUrl: ocmRepo,
+    populate: populate,
+  }), [
+    componentName,
+    componentVersion,
+    ocmRepo,
+    populate,
+  ])
 
-  const [locked, setLocked] = React.useState(false)
-
-  const { enqueueSnackbar } = useSnackbar()
-
-  React.useEffect(() => {
-    const fetchComponents = async () => {
-      try {
-        const localComponentBom = await components.componentDependencies(
-          component.name,
-          component.version,
-          ocmRepo,
-          populate,
-        )
-        setComponentBom(localComponentBom)
-        setIsLoading(false)
-        setIsError(false)
-
-      } catch (error) {
-        setError(error)
-        setIsError(true)
-        setIsLoading(false)
-
-        enqueueSnackbar(
-          `Component "${component.name}" could not be fetched`,
-          {
-            ...errorSnackbarProps,
-            details: error.toString(),
-            onRetry: () => fetchComponents(),
-          }
-        )
-      }
-    }
-
-    if (locked) return
-    setLocked(true)
-    fetchComponents()
-
-  }, [componentBom, locked, component, ocmRepo, populate, enqueueSnackbar])
-
-  return [componentBom, isLoading, isError, error]
+  return _useFetch({
+    fetchFunction: components.componentDependencies,
+    fetchParams: params,
+    errorMessage: `Transitive closure of component "${componentName}:${componentVersion}" could not be fetched`,
+  })
 }
 
 
 const useFetchQueryMetadata = ({
   artefacts,
   types,
-  referenced_types,
-  enableCache,
+  referenced_types = React.useMemo(() => {[]}, []),
 }) => {
-  const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
+  const params = React.useMemo(() => ({
+    artefacts,
+    types,
+    referenced_types,
+  }), [
+    artefacts,
+    types,
+    referenced_types,
+  ])
 
-  const [artefactMetadata, setArtefactMetadata] = React.useState()
-  const [isError, setIsError] = React.useState(false)
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [error, setError] = React.useState()
-
-  const [isFetching, setIsFetching] = React.useState(false)
-
-  const [deliveryDbFeature, setDeliveryDbFeature] = React.useState()
-
-  React.useEffect(() => {
-    return registerCallbackHandler({
-      featureRegistrationContext: featureRegistrationContext,
-      featureName: features.DELIVERY_DB,
-      callback: ({feature}) => setDeliveryDbFeature(feature),
-    })
-  }, [featureRegistrationContext])
-
-  const isAvailable = deliveryDbFeature && deliveryDbFeature.isAvailable
-
-  const { enqueueSnackbar } = useSnackbar()
-
-  React.useEffect(() => {
-    const fetchQueryMetadata = async ({artefacts, types, referenced_types, enableCache}) => {
-      try {
-        const _artefactMetadata = await artefactsQueryMetadata({
-          artefacts,
-          types,
-          referenced_types,
-          enableCache,
-        })
-
-        setArtefactMetadata(_artefactMetadata)
-        setIsError(false)
-        setIsLoading(false)
-      } catch (error) {
-        setIsError(true)
-        setError(error.toString())
-
-        setIsLoading(false)
-
-        enqueueSnackbar(
-          'Unable to fetch artefact metadata',
-          {
-            ...errorSnackbarProps,
-            details: error.toString(),
-            onRetry: () => fetchQueryMetadata({artefacts, types, referenced_types, enableCache}),
-          }
-        )
-      }
-    }
-
-    if (isAvailable && !isFetching) {
-      setIsFetching(true)
-      fetchQueryMetadata({artefacts, types, referenced_types, enableCache})
-    }
-  }, [artefacts, types, referenced_types, enableCache, enqueueSnackbar, isAvailable, isFetching])
-
-  return [artefactMetadata, isLoading, isError, error]
-}
-
-
-const clearIntervalFromRef = (ref) => {
-  clearInterval(ref.current)
-  ref.current = null
-}
-
-
-const useFetchComponentResponsibles = ({
-  componentName,
-  componentVersion,
-  ocmRepo,
-}) => {
-  const [responsibleData, setResponsibleData] = React.useState()
-  const [isError, setIsError] = React.useState()
-  const [isLoading, setIsLoading] = React.useState(true)
-  const retryInterval = React.useRef()
-
-  const { enqueueSnackbar } = useSnackbar()
-
-  React.useEffect(() => {
-    let mounted = true
-
-    clearIntervalFromRef(retryInterval)
-
-    const fetchResponsibleData = async (componentName, componentVersion, ocmRepo) => {
-      try {
-        const _responsibleData = await components.componentResponsibles(
-          componentName,
-          componentVersion,
-          ocmRepo,
-        )
-
-        if (mounted && _responsibleData === API_RESPONSES.RETRY && !retryInterval.current) {
-          retryInterval.current = setInterval(
-            () => fetchResponsibleData(componentName, componentVersion, ocmRepo),
-            5000,
-          )
-          return
-        }
-
-        if (mounted && _responsibleData !== API_RESPONSES.RETRY) {
-          setResponsibleData(_responsibleData)
-          setIsError(false)
-          setIsLoading(false)
-          clearIntervalFromRef(retryInterval)
-        }
-      } catch (error) {
-        if (mounted) {
-          setIsError(true)
-          setIsLoading(false)
-        }
-        enqueueSnackbar(
-          'Responsible Data could not be fetched',
-          {
-            ...errorSnackbarProps,
-            details: error.toString(),
-            onRetry: () => fetchResponsibleData(componentName, componentVersion, ocmRepo),
-          }
-        )
-      }
-    }
-
-    fetchResponsibleData(componentName, componentVersion, ocmRepo)
-
-    return () => {
-      mounted = false
-      clearIntervalFromRef(retryInterval)
-    }
-  }, [enqueueSnackbar, componentName, componentVersion, ocmRepo])
-
-  return [responsibleData, isLoading, isError]
+  return _useFetch({
+    fetchFunction: artefactsQueryMetadata,
+    fetchParams: params,
+    errorMessage: 'Unable to fetch artefact metadata',
+  })
 }
 
 
@@ -534,59 +396,22 @@ const useFetchServiceExtensions = () => {
     })
   }, [featureRegistrationContext])
 
-  const isAvailable = serviceExtensionsFeature?.isAvailable
+  const fetchCondition = React.useCallback(() => {
+    return serviceExtensionsFeature?.isAvailable
+  }, [serviceExtensionsFeature])
 
-  const [services, setServices] = React.useState()
-  const [isError, setIsError] = React.useState()
-  const [isLoading, setIsLoading] = React.useState(true)
-  const { enqueueSnackbar } = useSnackbar()
-
-  React.useEffect(() => {
-    let mounted = true
-
-    const fetchServiceExtensions = async () => {
-      try {
-        const _services = await serviceExtensions.services()
-
-        if (mounted) {
-          setServices(_services)
-          setIsError(false)
-          setIsLoading(false)
-        }
-      } catch (error) {
-        if (mounted) {
-          setIsError(true)
-          setIsLoading(false)
-        }
-        enqueueSnackbar(
-          'Service extensions could not be fetched',
-          {
-            ...errorSnackbarProps,
-            details: error.toString(),
-            onRetry: () => fetchServiceExtensions(),
-          }
-        )
-      }
-    }
-
-    if (isAvailable) {
-      fetchServiceExtensions()
-    }
-
-    return () => {
-      mounted = false
-    }
-  }, [enqueueSnackbar, isAvailable])
-
-  return [services, isLoading, isError, setServices]
+  return _useFetch({
+    fetchFunction: serviceExtensions.services,
+    fetchCondition: fetchCondition,
+    errorMessage: 'Service extensions could not be fetched',
+  })
 }
 
 
 const useFetchLogCollections = ({
   service,
   logLevel,
-  useCache,
-  refresh,
+  skipCache = false,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [serviceExtensionsFeature, setServiceExtensionsFeature] = React.useState()
@@ -599,59 +424,31 @@ const useFetchLogCollections = ({
     })
   }, [featureRegistrationContext])
 
-  const isAvailable = serviceExtensionsFeature?.isAvailable
+  const fetchCondition = React.useCallback(() => {
+    return serviceExtensionsFeature?.isAvailable
+  }, [serviceExtensionsFeature])
 
-  const [logCollections, setLogCollections] = React.useState()
-  const [isError, setIsError] = React.useState(false)
-  const [isLoading, setIsLoading] = React.useState(true)
-  const { enqueueSnackbar } = useSnackbar()
+  const params = React.useMemo(() => ({
+    service,
+    logLevel,
+  }), [
+    service,
+    logLevel,
+  ])
 
-  React.useEffect(() => {
-    let mounted = true
-    setIsLoading(true)
-
-    const fetchLogCollections = async ({service, logLevel, useCache}) => {
-      try {
-        const _logCollections = await serviceExtensions.logCollections({service, logLevel, useCache})
-
-        if (mounted) {
-          setLogCollections(_logCollections)
-          setIsError(false)
-          setIsLoading(false)
-        }
-      } catch (error) {
-        if (mounted) {
-          setIsError(true)
-          setIsLoading(false)
-        }
-        enqueueSnackbar(
-          `Log collection for service ${service} and log level ${logLevel} could not be fetched`,
-          {
-            ...errorSnackbarProps,
-            details: error.toString(),
-            onRetry: () => fetchLogCollections({service, logLevel, useCache}),
-          }
-        )
-      }
-    }
-
-    if (isAvailable) {
-      fetchLogCollections({service, logLevel, useCache})
-    }
-
-    return () => {
-      mounted = false
-    }
-  }, [enqueueSnackbar, isAvailable, service, logLevel, useCache, refresh])
-
-  return [logCollections, isLoading, isError, setLogCollections]
+  return _useFetch({
+    fetchFunction: serviceExtensions.logCollections,
+    fetchParams: params,
+    fetchCondition: fetchCondition,
+    errorMessage: `Log collection for service ${service} and log level ${logLevel} could not be fetched`,
+    ...(skipCache && { cacheKey: null }),
+  })
 }
 
 
 const useFetchContainerStatuses = ({
   service,
-  useCache,
-  refresh,
+  skipCache = false,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [serviceExtensionsFeature, setServiceExtensionsFeature] = React.useState()
@@ -664,49 +461,23 @@ const useFetchContainerStatuses = ({
     })
   }, [featureRegistrationContext])
 
-  const isAvailable = serviceExtensionsFeature?.isAvailable
+  const fetchCondition = React.useCallback(() => {
+    return serviceExtensionsFeature?.isAvailable
+  }, [serviceExtensionsFeature])
 
-  const [containerStatuses, setContainerStatuses] = React.useState()
-  const [isLoading, setIsLoading] = React.useState(true)
-  const { enqueueSnackbar } = useSnackbar()
+  const params = React.useMemo(() => ({
+    service,
+  }), [
+    service,
+  ])
 
-  React.useEffect(() => {
-    let mounted = true
-    setIsLoading(true)
-
-    const fetchContainerStatuses = async ({service, useCache}) => {
-      try {
-        const _containerStatus = await serviceExtensions.containerStatuses({service, useCache})
-
-        if (mounted) {
-          setContainerStatuses(_containerStatus)
-          setIsLoading(false)
-        }
-      } catch (error) {
-        if (mounted) {
-          setIsLoading(false)
-        }
-        enqueueSnackbar(
-          `Container statuses for service ${service} could not be fetched`,
-          {
-            ...errorSnackbarProps,
-            details: error.toString(),
-            onRetry: () => fetchContainerStatuses({service, useCache}),
-          }
-        )
-      }
-    }
-
-    if (isAvailable) {
-      fetchContainerStatuses({service, useCache})
-    }
-
-    return () => {
-      mounted = false
-    }
-  }, [enqueueSnackbar, isAvailable, service, useCache, refresh])
-
-  return [containerStatuses, isLoading]
+  return _useFetch({
+    fetchFunction: serviceExtensions.containerStatuses,
+    fetchParams: params,
+    fetchCondition: fetchCondition,
+    errorMessage: `Container statuses for service ${service} could not be fetched`,
+    ...(skipCache && { cacheKey: null }),
+  })
 }
 
 
@@ -722,59 +493,22 @@ const useFetchScanConfigurations = () => {
     })
   }, [featureRegistrationContext])
 
-  const isAvailable = serviceExtensionsFeature?.isAvailable
+  const fetchCondition = React.useCallback(() => {
+    return serviceExtensionsFeature?.isAvailable
+  }, [serviceExtensionsFeature])
 
-  const [scanConfigurations, setScanConfigurations] = React.useState()
-  const [isError, setIsError] = React.useState()
-  const [isLoading, setIsLoading] = React.useState(true)
-  const { enqueueSnackbar } = useSnackbar()
-
-  React.useEffect(() => {
-    let mounted = true
-
-    const fetchScanConfigurations = async () => {
-      try {
-        const _scanConfigurations = await serviceExtensions.scanConfigurations()
-
-        if (mounted) {
-          setScanConfigurations(_scanConfigurations)
-          setIsError(false)
-          setIsLoading(false)
-        }
-      } catch (error) {
-        if (mounted) {
-          setIsError(true)
-          setIsLoading(false)
-        }
-        enqueueSnackbar(
-          'Scan configurations could not be fetched',
-          {
-            ...errorSnackbarProps,
-            details: error.toString(),
-            onRetry: () => fetchScanConfigurations(),
-          }
-        )
-      }
-    }
-
-    if (isAvailable) {
-      fetchScanConfigurations()
-    }
-
-    return () => {
-      mounted = false
-    }
-  }, [enqueueSnackbar, isAvailable])
-
-  // in case service extensions feature is not available, disable loading indicator
-  return [scanConfigurations, isAvailable ? isLoading : false, isError]
+  return _useFetch({
+    fetchFunction: serviceExtensions.scanConfigurations,
+    fetchCondition: fetchCondition,
+    errorMessage: 'Scan configurations could not be fetched',
+  })
 }
 
 
 const useFetchBacklogItems = ({
   service,
   cfgName,
-  refresh,
+  skipCache = false,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [serviceExtensionsFeature, setServiceExtensionsFeature] = React.useState()
@@ -787,126 +521,98 @@ const useFetchBacklogItems = ({
     })
   }, [featureRegistrationContext])
 
-  const isAvailable = serviceExtensionsFeature?.isAvailable
+  const fetchCondition = React.useCallback(() => {
+    return serviceExtensionsFeature?.isAvailable
+  }, [serviceExtensionsFeature])
 
-  const [backlogItems, setBacklogItems] = React.useState()
-  const [isError, setIsError] = React.useState(false)
-  const [isLoading, setIsLoading] = React.useState(true)
-  const { enqueueSnackbar } = useSnackbar()
+  const params = React.useMemo(() => ({
+    service,
+    cfgName,
+  }), [
+    service,
+    cfgName,
+  ])
 
-  React.useEffect(() => {
-    let mounted = true
-    setIsLoading(true)
+  return _useFetch({
+    fetchFunction: serviceExtensions.backlogItems.get,
+    fetchParams: params,
+    fetchCondition: fetchCondition,
+    errorMessage: 'Backlog items could not be fetched',
+    ...(skipCache && { cacheKey: null }),
+  })
+}
 
-    const fetchBacklogItems = async ({service, cfgName}) => {
-      try {
-        const _backlogItems = await serviceExtensions.backlogItems.get({
-          service,
-          cfgName,
-        })
 
-        if (mounted) {
-          setBacklogItems(_backlogItems)
-          setIsError(false)
-          setIsLoading(false)
-        }
-      } catch (error) {
-        if (mounted) {
-          setIsError(true)
-          setIsLoading(false)
-        }
-        enqueueSnackbar(
-          'Backlog items could not be fetched',
-          {
-            ...errorSnackbarProps,
-            details: error.toString(),
-            onRetry: () => fetchBacklogItems({service, cfgName}),
-          }
-        )
-      }
-    }
+const useFetchComponentResponsibles = ({
+  componentName,
+  componentVersion,
+  ocmRepo,
+}) => {
+  const params = React.useMemo(() => ({
+    componentName,
+    componentVersion,
+    ocmRepo,
+  }), [
+    componentName,
+    componentVersion,
+    ocmRepo,
+  ])
 
-    if (isAvailable) {
-      fetchBacklogItems({service, cfgName})
-    }
+  const retryCondition = React.useCallback((res) => {
+    return res === API_RESPONSES.RETRY
+  }, [
+    API_RESPONSES.RETRY,
+  ])
 
-    return () => {
-      mounted = false
-    }
-  }, [enqueueSnackbar, isAvailable, service, cfgName, refresh])
+  const cacheCondition = React.useCallback((res) => {
+    // only cache if the response is not a retry
+    return res !== API_RESPONSES.RETRY
+  }, [
+    API_RESPONSES.RETRY,
+  ])
 
-  return [backlogItems, isLoading, isError, setBacklogItems]
+  return _useFetch({
+    fetchFunction: components.componentResponsibles,
+    fetchParams: params,
+    errorMessage: 'Responsible Data could not be fetched',
+    retryCondition: retryCondition,
+    cacheCondition: cacheCondition,
+  })
 }
 
 
 const useFetchDoraMetrics = ({
   targetComponentName,
-  filterComponentNames,
   timeSpanDays,
 }) => {
-  const [doraMetrics, setDoraMetrics] = React.useState()
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [isError, setIsError] = React.useState(false)
-  const retryInterval = React.useRef()
+  const params = React.useMemo(() => ({
+    targetComponentName,
+    timeSpanDays,
+  }), [
+    targetComponentName,
+    timeSpanDays,
+  ])
 
-  const { enqueueSnackbar } = useSnackbar()
+  const retryCondition = React.useCallback((res) => {
+    return res === API_RESPONSES.RETRY
+  }, [
+    API_RESPONSES.RETRY,
+  ])
 
-  React.useEffect(() => {
-    let mounted = true
-    setIsLoading(true)
-    setIsError(false)
+  const cacheCondition = React.useCallback((res) => {
+    // only cache if the response is not a retry
+    return res !== API_RESPONSES.RETRY
+  }, [
+    API_RESPONSES.RETRY,
+  ])
 
-    clearIntervalFromRef(retryInterval)
-
-    const fetchDoraMetrics = async ({targetComponentName, filterComponentNames, timeSpanDays}) => {
-      try {
-        const _doraMetrics = await dora.doraMetrics({
-          targetComponentName,
-          filterComponentNames,
-          timeSpanDays,
-        })
-
-        if (mounted && _doraMetrics === API_RESPONSES.RETRY && !retryInterval.current) {
-          setDoraMetrics()
-          retryInterval.current = setInterval(
-            () => fetchDoraMetrics({targetComponentName, filterComponentNames, timeSpanDays}),
-            5000,
-          )
-          return
-        }
-
-        if (mounted && _doraMetrics !== API_RESPONSES.RETRY) {
-          setDoraMetrics(_doraMetrics)
-          setIsLoading(false)
-          setIsError(false)
-          clearIntervalFromRef(retryInterval)
-        }
-      } catch (error) {
-        if (mounted) {
-          setIsLoading(false)
-          setIsError(true)
-        }
-        enqueueSnackbar(
-          `Dora metrics for component ${targetComponentName} could not be fetched`,
-          {
-            ...errorSnackbarProps,
-            details: error.toString(),
-            onRetry: () => fetchDoraMetrics({targetComponentName, filterComponentNames, timeSpanDays}),
-          }
-        )
-      }
-      setIsLoading(false)
-    }
-
-    fetchDoraMetrics({targetComponentName, filterComponentNames, timeSpanDays})
-
-    return () => {
-      mounted = false
-      clearIntervalFromRef(retryInterval)
-    }
-  }, [enqueueSnackbar, targetComponentName, filterComponentNames, timeSpanDays])
-
-  return [doraMetrics, isLoading, isError]
+  return _useFetch({
+    fetchFunction: dora.doraMetrics,
+    fetchParams: params,
+    errorMessage: `Dora metrics for component ${targetComponentName} could not be fetched`,
+    retryCondition: retryCondition,
+    cacheCondition: cacheCondition,
+  })
 }
 
 

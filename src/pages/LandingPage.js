@@ -67,6 +67,7 @@ import { artefactMetadataTypes } from './../ocm/model'
 import {
   features,
   FEATURES_CFG_KEY,
+  fetchBomPopulate,
   OCM_REPO_AUTO_OPTION,
   pullRequestsStates,
   tabConfig,
@@ -100,12 +101,12 @@ const SpecialComponent = ({
 }) => {
   const [isEditMode, setIsEditMode] = React.useState(false)
 
-  // eslint-disable-next-line no-unused-vars
-  const [componentDependencies, isLoading, isError, error] = useFetchBom(
-    component,
-    component.repoContextUrl,
-    'componentReferences',
-  )
+  const [componentDependencies, state] = useFetchBom({
+    componentName: component.name,
+    componentVersion: component.version,
+    ocmRepo: null,
+    populate: fetchBomPopulate.COMPONENT_REFS,
+  })
 
   const toggleEditMode = () => {
     if (isEditMode) specialComponentsFeature.triggerRerender()
@@ -123,8 +124,8 @@ const SpecialComponent = ({
         component={component}
         componentDependenciesFetchDetails={{
           componentDependencies: componentDependencies,
-          isComponentDependenciesLoading: isLoading,
-          isComponentDependenciesError: isError,
+          isComponentDependenciesLoading: state.isLoading,
+          isComponentDependenciesError: state.error,
         }}
         specialComponentsFeature={specialComponentsFeature}
         isEditMode={isEditMode}
@@ -503,7 +504,7 @@ const ComponentBody = ({
 }) => {
   const theme = useTheme()
   const [addDepDialogOpen, setAddDepDialogOpen] = React.useState(false)
-  const [specialComponentStatus, isLoading, isError] = useFetchSpecialComponentCurrentDependencies(component)
+  const [specialComponentStatus, specialComponentStatusState] = useFetchSpecialComponentCurrentDependencies({componentName: component.name})
 
   const componentUrl = `#${componentPathQuery({
     name: component.name,
@@ -516,8 +517,7 @@ const ComponentBody = ({
   })}`
 
   // component derived from specialComponents has version 'greatest', therefore retrieve again
-  // eslint-disable-next-line no-unused-vars
-  const [cd, isCdLoading, isCdError, cdError] = useFetchComponentDescriptor({
+  const [cd, state] = useFetchComponentDescriptor({
     componentName: component.name,
     ocmRepoUrl: component.repoContextUrl,
     version: component.version,
@@ -525,7 +525,7 @@ const ComponentBody = ({
   })
   const { componentDependencies, isComponentDependenciesLoading, isComponentDependenciesError } = componentDependenciesFetchDetails
 
-  if (isLoading || isCdLoading || isComponentDependenciesLoading) {
+  if (specialComponentStatusState.isLoading || state.isLoading || isComponentDependenciesLoading) {
     return <div>
       <ComponentHeader
         component={component}
@@ -543,7 +543,7 @@ const ComponentBody = ({
       </a>
     </div>
   }
-  if (isError || isCdError || isComponentDependenciesError) {
+  if (specialComponentStatusState.error || state.error || isComponentDependenciesError) {
     return <ComponentHeader
       component={component}
       specialComponentsFeature={specialComponentsFeature}
@@ -1057,15 +1057,15 @@ DefaultFooter.propTypes = {
 const PullRequestsOverview = ({
   component,
 }) => {
-  const [prs, prsLoading, prFetchError] = useFetchUpgradePRs({
+  const [prs, state] = useFetchUpgradePRs({
     componentName: component.name,
     state: pullRequestsStates.OPEN,
   })
 
-  if (prsLoading) {
+  if (state.isLoading) {
     return <Skeleton />
   }
-  if (prFetchError) {
+  if (state.error) {
     return <Typography variant='caption'> error while fetching useFetchUpgradePRs</Typography>
   }
   if (prs.length === 0) {
@@ -1141,11 +1141,10 @@ PullRequestReference.propTypes = {
 
 
 const ComponentCompliance = ({ component }) => {
-  const [complianceSummary, isSummaryLoading, isSummaryError] = useFetchComplianceSummary({
+  const [complianceSummary, state] = useFetchComplianceSummary({
     componentName: component.name,
     componentVersion: component.version,
     ocmRepo: component.repoContextUrl,
-    enableCache: true,
   })
 
   function* iterSummaries(complianceSummary) {
@@ -1176,8 +1175,8 @@ const ComponentCompliance = ({ component }) => {
     component={component}
     complianceSummaryFetchDetails={{
       complianceSummary: componentSummary,
-      isSummaryLoading: isSummaryLoading,
-      isSummaryError: isSummaryError,
+      isSummaryLoading: state.isLoading,
+      isSummaryError: state.error,
     }}
   />
 }
