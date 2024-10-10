@@ -426,60 +426,69 @@ ResponsiblesHeading.propTypes = {
   isResponsibleDataError: PropTypes.bool,
 }
 
-const ComponentDetails = React.memo(
-  ({
-    component,
-    isComponentLoading,
-    isComponentError,
-    ocmRepo,
-    complianceSummaryFetchDetails,
-    fetchComplianceSummary,
-  }) => {
-    const searchParamContext = React.useContext(SearchParamContext)
-    const scanConfigName = searchParamContext.get('scanConfigName')
-    // eslint-disable-next-line no-unused-vars
-    const [scanConfigs, scanCfgState] = useFetchScanConfigurations()
-    const [responsibleData, state] = useFetchComponentResponsibles({
-      componentName: component.name,
-      componentVersion: component.version,
-      ocmRepo: ocmRepo,
-    })
 
-    const scanConfig = scanConfigName
-      ? scanConfigs?.find((scanConfig) => scanConfig.name === scanConfigName)
-      : scanConfigs?.length === 1 ? scanConfigs[0] : null
+const ResponsiblesWrapper = ({
+  component,
+  ocmRepo,
+}) => {
+  const [responsibleData, state] = useFetchComponentResponsibles({
+    componentName: component.name,
+    componentVersion: component.version,
+    ocmRepo: ocmRepo,
+  })
 
-    if (isComponentError) {
-      return <Alert severity='error'>Unable to fetch Component</Alert>
-    }
+  if (state.error) return <Alert severity='error'>Unable to fetch Responsibles</Alert>
 
-    return <Stack spacing={8}>
-      {
-        isComponentLoading ? <CircularProgress color='inherit' size={20}/> : <Artefacts
+  return <>
+    <ResponsiblesHeading
+      responsibleData={responsibleData}
+      isResponsibleDataLoading={state.isLoading}
+      isResponsibleDataError={state.error}
+    />
+    <Responsibles
+      componentResponsibles={responsibleData}
+      isResponsibleDataLoading={state.isLoading}
+    />
+  </>
+}
+ResponsiblesWrapper.displayName = 'ResponsiblesWrapper'
+ResponsiblesWrapper.propTypes = {
+  component: PropTypes.object.isRequired,
+  ocmRepo: PropTypes.string,
+}
+
+
+const ComponentDetails = React.memo(({
+  component,
+  isComponentLoading,
+  isComponentError,
+  ocmRepo,
+  complianceSummaryFetchDetails,
+  fetchComplianceSummary,
+}) => {
+  if (isComponentError) return <Alert severity='error'>Unable to fetch Component</Alert>
+
+  return <Stack spacing={8}>
+    {
+      isComponentLoading
+        ? <CircularProgress color='inherit' size={20}/>
+        : <Artefacts
           component={component}
           ocmRepo={ocmRepo}
           complianceSummaryFetchDetails={complianceSummaryFetchDetails}
           fetchComplianceSummary={fetchComplianceSummary}
-          scanConfig={scanConfig}
         />
-      }
-      <ComponentReferencedBy component={component} ocmRepo={ocmRepo}/>
-      {
-        !state.error && <div>
-          <ResponsiblesHeading
-            responsibleData={responsibleData}
-            isResponsibleDataLoading={state.isLoading}
-            isResponsibleDataError={state.error}
-          />
-          <Responsibles
-            componentResponsibles={responsibleData}
-            isResponsibleDataLoading={state.isLoading}
-          />
-        </div>
-      }
-    </Stack>
-  }
-)
+    }
+    <ComponentReferencedBy
+      component={component}
+      ocmRepo={ocmRepo}
+    />
+    <ResponsiblesWrapper
+      component={component}
+      ocmRepo={ocmRepo}
+    />
+  </Stack>
+})
 ComponentDetails.displayName = 'ComponentDetails'
 ComponentDetails.propTypes = {
   component: PropTypes.object.isRequired,
@@ -584,8 +593,16 @@ const Artefacts = ({
   ocmRepo,
   complianceSummaryFetchDetails,
   fetchComplianceSummary,
-  scanConfig,
 }) => {
+  const searchParamContext = React.useContext(SearchParamContext)
+  const scanConfigName = searchParamContext.get('scanConfigName')
+  // eslint-disable-next-line no-unused-vars
+  const [scanConfigs, scanCfgState] = useFetchScanConfigurations()
+
+  const scanConfig = scanConfigName
+    ? scanConfigs?.find((scanConfig) => scanConfig.name === scanConfigName)
+    : scanConfigs?.length === 1 ? scanConfigs[0] : null
+
   const artefacts = React.useMemo(() => {
     return [{
       component_name: component.name,
@@ -682,7 +699,6 @@ Artefacts.propTypes = {
   ocmRepo: PropTypes.string,
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-  scanConfig: PropTypes.object,
 }
 
 
