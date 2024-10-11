@@ -9,6 +9,7 @@ import {
   artefactsQueryMetadata,
   serviceExtensions,
   dora,
+  routes,
 } from '../api'
 import {
   errorSnackbarProps,
@@ -34,8 +35,7 @@ const cache = new Map()
  * @param {Function} [retryCondition] - used to determine if a retry is needed based on theresult.
  * @param {number} [retryIntervalSeconds=10] - interval in seconds between retry attempts.
  * @param {boolean} [showSnackbar=true] - flag to show a snackbar on error.
- * @param {string} [cacheKey=JSON.stringify({fetchFunction, fetchParams})] - if not `null`, use to
- * lookup and serve result from cache.
+ * @param {string} [cacheKey=null] - used to lookup and serve from cache, skip cache if `null`
  * @param {Function} [cacheCondition=null] - optional callback, takes resolved promise data as input
  * and must be truthy to write entry to cache (implication: prevents unresolved promise from being
  * cached)
@@ -52,10 +52,7 @@ const _useFetch = ({
   retryIntervalSeconds = 10,
   showSnackbar = true,
   cacheCondition = null,
-  cacheKey = JSON.stringify({
-    fetchFunction: fetchFunction.name,
-    fetchParams: fetchParams === null ? null : normaliseObject(fetchParams),
-  }),
+  cacheKey = null,
 }) => {
   const [data, setData] = React.useState()
   const [state, setState] = React.useState({
@@ -240,6 +237,10 @@ const useFetchUpgradePRs = ({
     fetchFunction: components.upgradePullRequests,
     fetchParams: params,
     errorMessage: 'Pull Requests could not be fetched',
+    cacheKey: JSON.stringify({
+      route: routes.upgradePullRequests(),
+      fetchParams: normaliseObject(params),
+    }),
   })
 }
 
@@ -263,6 +264,10 @@ const useFetchCompDiff = ({
     fetchFunction: components.diff,
     fetchParams: params,
     errorMessage: `Pull Request Diff from '${leftVersion}' to '${rightVersion}' for '${leftName}' could not be fetched`,
+    cacheKey: JSON.stringify({
+      route: routes.components.diff(),
+      fetchParams: normaliseObject(params),
+    }),
   })
 }
 
@@ -270,6 +275,9 @@ const useFetchCurrentSprintInfos = () => {
   return _useFetch({
     fetchFunction: deliverySprintInfosCurrent,
     errorMessage: 'Current sprint infos could not be fetched',
+    cacheKey: JSON.stringify({
+      route: routes.delivery.sprintInfos.current,
+    }),
   })
 }
 
@@ -295,6 +303,10 @@ const useFetchComplianceSummary = ({
     fetchFunction: components.complianceSummary,
     fetchParams: params,
     errorMessage: 'Compliance Summary could not be fetched',
+    cacheKey: JSON.stringify({
+      route: routes.components.complianceSummary(),
+      fetchParams: normaliseObject(params),
+    }),
   })
 }
 
@@ -305,6 +317,10 @@ const useFetchSpecialComponentCurrentDependencies = ({componentName}) => {
     fetchFunction: specialComponentCurrentDependencies,
     fetchParams: params,
     errorMessage: 'Special component dependencies could not be fetched',
+    cacheKey: JSON.stringify({
+      route: routes.specialComponent.currentDependencies,
+      fetchParams: normaliseObject(params),
+    }),
   })
 }
 
@@ -333,6 +349,10 @@ const useFetchComponentDescriptor = ({
     fetchFunction: components.ocmComponent,
     fetchParams: params,
     errorMessage: `Component "${componentName}" could not be fetched`,
+    cacheKey: JSON.stringify({
+      route: routes.ocm.component.base,
+      fetchParams: normaliseObject(params),
+    }),
   })
 }
 
@@ -358,6 +378,10 @@ const useFetchBom = ({
     fetchFunction: components.componentDependencies,
     fetchParams: params,
     errorMessage: `Transitive closure of component "${componentName}:${componentVersion}" could not be fetched`,
+    cacheKey: JSON.stringify({
+      route: routes.ocm.component.dependencies(),
+      fetchParams: normaliseObject(params),
+    }),
   })
 }
 
@@ -381,6 +405,10 @@ const useFetchQueryMetadata = ({
     fetchFunction: artefactsQueryMetadata,
     fetchParams: params,
     errorMessage: 'Unable to fetch artefact metadata',
+    cacheKey: JSON.stringify({
+      route: routes.artefacts.queryMetadata,
+      fetchParams: normaliseObject(params),
+    }),
   })
 }
 
@@ -405,6 +433,9 @@ const useFetchServiceExtensions = () => {
     fetchFunction: serviceExtensions.services,
     fetchCondition: fetchCondition,
     errorMessage: 'Service extensions could not be fetched',
+    cacheKey: JSON.stringify({
+      route: routes.serviceExtensions.base,
+    }),
   })
 }
 
@@ -437,12 +468,17 @@ const useFetchLogCollections = ({
     logLevel,
   ])
 
+  const cacheKey = JSON.stringify({
+    route: routes.serviceExtensions.logCollections(),
+    fetchParams: normaliseObject(params),
+  })
+
   return _useFetch({
     fetchFunction: serviceExtensions.logCollections,
     fetchParams: params,
     fetchCondition: fetchCondition,
     errorMessage: `Log collection for service ${service} and log level ${logLevel} could not be fetched`,
-    ...(skipCache && { cacheKey: null }),
+    cacheKey: skipCache ? null : cacheKey,
   })
 }
 
@@ -472,12 +508,17 @@ const useFetchContainerStatuses = ({
     service,
   ])
 
+  const cacheKey = JSON.stringify({
+    route: routes.serviceExtensions.containerStatuses(),
+    fetchParams: normaliseObject(params),
+  })
+
   return _useFetch({
     fetchFunction: serviceExtensions.containerStatuses,
     fetchParams: params,
     fetchCondition: fetchCondition,
     errorMessage: `Container statuses for service ${service} could not be fetched`,
-    ...(skipCache && { cacheKey: null }),
+    cacheKey: skipCache ? null : cacheKey,
   })
 }
 
@@ -502,6 +543,9 @@ const useFetchScanConfigurations = () => {
     fetchFunction: serviceExtensions.scanConfigurations,
     fetchCondition: fetchCondition,
     errorMessage: 'Scan configurations could not be fetched',
+    cacheKey: JSON.stringify({
+      route: routes.serviceExtensions.scanConfigurations(),
+    }),
   })
 }
 
@@ -534,12 +578,17 @@ const useFetchBacklogItems = ({
     cfgName,
   ])
 
+  const cacheKey = JSON.stringify({
+    route: routes.serviceExtensions.backlogItems(),
+    fetchParams: normaliseObject(params),
+  })
+
   return _useFetch({
     fetchFunction: serviceExtensions.backlogItems.get,
     fetchParams: params,
     fetchCondition: fetchCondition,
     errorMessage: 'Backlog items could not be fetched',
-    ...(skipCache && { cacheKey: null }),
+    cacheKey: skipCache ? null : cacheKey,
   })
 }
 
@@ -578,6 +627,10 @@ const useFetchComponentResponsibles = ({
     errorMessage: 'Responsible Data could not be fetched',
     retryCondition: retryCondition,
     cacheCondition: cacheCondition,
+    cacheKey: JSON.stringify({
+      route: routes.ocm.component.responsibles(),
+      fetchParams: normaliseObject(params),
+    }),
   })
 }
 
@@ -613,6 +666,10 @@ const useFetchDoraMetrics = ({
     errorMessage: `Dora metrics for component ${targetComponentName} could not be fetched`,
     retryCondition: retryCondition,
     cacheCondition: cacheCondition,
+    cacheKey: JSON.stringify({
+      route: routes.dora.doraMetrics(),
+      fetchParams: normaliseObject(params),
+    }),
   })
 }
 
