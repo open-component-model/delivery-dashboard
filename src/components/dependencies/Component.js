@@ -35,7 +35,6 @@ import PublishedWithChangesIcon from '@mui/icons-material/PublishedWithChanges'
 import SearchIcon from '@mui/icons-material/Search'
 
 import { FeatureRegistrationContext, SearchParamContext } from '../../App'
-import { components } from './../../api'
 import { generateArtefactID } from '../../cnudie'
 import { ComponentChip } from './ComplianceChips'
 import { Responsibles } from './Responsibles'
@@ -56,6 +55,7 @@ import {
   useFetchComponentResponsibles,
   useFetchScanConfigurations,
   useFetchQueryMetadata,
+  useFetchComplianceSummary,
 } from '../../api/useFetch'
 import { registerCallbackHandler } from '../../feature'
 import CopyOnClickChip from '../util/CopyOnClickChip'
@@ -221,33 +221,24 @@ const Component = React.memo(
 
     const [expanded, setExpanded] = React.useState(Boolean(isParentComponent && Boolean(searchParamContext.get('rootExpanded'))))
 
-    const [complianceSummary, setComplianceSummary] = React.useState()
-    const [isSummaryLoading, setIsSummaryLoading] = React.useState(true)
-    const [isSummaryError, setIsSummaryError] = React.useState(false)
+    const [complianceSummary, complianceSummaryState, refreshComplianceSummary] = useFetchComplianceSummary({
+      componentName: component.name,
+      componentVersion: component.version,
+      recursionDepth: 0,
+      ocmRepo: ocmRepo,
+    })
 
-    const complianceSummaryFetchDetails = {complianceSummary, isSummaryLoading, isSummaryError}
-
-    const fetchComplianceSummary = React.useCallback(async (enableCache) => {
-      try {
-        const _complianceSummary = await components.complianceSummary({
-          componentName: component.name,
-          componentVersion: component.version,
-          recursionDepth: 0,
-          enableCache: enableCache,
-        })
-
-        setComplianceSummary(_complianceSummary)
-        setIsSummaryLoading(false)
-        setIsSummaryError(false)
-      } catch {
-        setIsSummaryLoading(false)
-        setIsSummaryError(true)
+    const complianceSummaryFetchDetails = React.useMemo(() => {
+      return {
+        complianceSummary,
+        isSummaryLoading: complianceSummaryState.isLoading,
+        isSummaryError: complianceSummaryState.error,
       }
-    }, [component])
-
-    React.useEffect(() => {
-      fetchComplianceSummary(true)
-    }, [fetchComplianceSummary])
+    }, [
+      complianceSummary,
+      complianceSummaryState.isLoading,
+      complianceSummaryState.error,
+    ])
 
     return <Box
       sx={{
@@ -339,7 +330,7 @@ const Component = React.memo(
             isComponentError={isComponentError}
             ocmRepo={ocmRepo}
             complianceSummaryFetchDetails={complianceSummaryFetchDetails}
-            fetchComplianceSummary={fetchComplianceSummary}
+            fetchComplianceSummary={refreshComplianceSummary}
           />
         </AccordionDetails>
       </Accordion>
