@@ -401,26 +401,7 @@ const ArtefactCell = ({
       </Link>
     </TableCell>
   }
-  if (Object.values(artefact.extraIdentity).length > 0)
-    return <TableCell>
-      <Tooltip
-        title={
-          <Typography
-            variant='inherit'
-            sx={{
-              whiteSpace: 'pre-wrap',
-              maxWidth: 'none',
-            }}
-          >
-            {JSON.stringify(artefact.extraIdentity, null, 2)}
-          </Typography>
-        }
-        placement='top-start'
-        describeChild
-      >
-        <Typography variant='inherit'>{`${artefactDisplayName}*`}</Typography>
-      </Tooltip>
-    </TableCell>
+
   if (artefact.access.type === 'localBlob/v1') {
     const isAuthenticated = JSON.parse(localStorage.getItem(TOKEN_KEY)) !== null
 
@@ -430,9 +411,27 @@ const ArtefactCell = ({
         flexDirection='row'
         alignItems='center'
       >
-        <Typography variant='inherit'>
-          {artefactDisplayName}
-        </Typography>
+        {
+          Object.values(artefact.extraIdentity).length > 0
+            ? <Tooltip
+              title={
+                <Typography
+                  variant='inherit'
+                  sx={{
+                    whiteSpace: 'pre-wrap',
+                    maxWidth: 'none',
+                  }}
+                >
+                  {JSON.stringify(artefact.extraIdentity, null, 2)}
+                </Typography>
+              }
+              placement='top-start'
+              describeChild
+            >
+              <Typography variant='inherit'>{`${artefactDisplayName}*`}</Typography>
+            </Tooltip>
+            : <Typography variant='inherit'>{artefactDisplayName}</Typography>
+        }
         <div style={{ padding: '0.3em' }} />
         <Tooltip
           title={
