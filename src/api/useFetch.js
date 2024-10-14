@@ -19,6 +19,7 @@ import { FeatureRegistrationContext } from '../App'
 
 import { registerCallbackHandler } from '../feature'
 import { normaliseObject } from '../util'
+import { useConnected } from '../components/util/Connectivity'
 
 
 const cache = new Map()
@@ -60,6 +61,8 @@ const _useFetch = ({
     error: null,
   })
 
+  const isConnected = useConnected()
+
   // toggle state to refresh useFetch hook, callable is returned next to data and state
   const [refresh, setRefresh] = React.useState(true)
   const resetState = () => {
@@ -92,9 +95,12 @@ const _useFetch = ({
         const cachedResult = cache.get(cacheKey)
         if (cachedResult) {
           try {
-            const result = cachedResult instanceof Promise
-              ? await cachedResult
-              : cachedResult
+            let result = cachedResult
+
+            if (cachedResult instanceof Promise) {
+              if (!isConnected) return // assume promise can't be resolved without connection
+              result = await cachedResult
+            }
 
             setData(result)
             setState({
@@ -127,6 +133,8 @@ const _useFetch = ({
           return
         }
       }
+
+      if (!isConnected) return
 
       const fetchPromise = fetchParams === null ? fetchFunction() : fetchFunction(fetchParams)
       if (
@@ -204,6 +212,7 @@ const _useFetch = ({
     cacheKey,
     cacheCondition,
     refresh,
+    isConnected,
   ])
 
   return [
