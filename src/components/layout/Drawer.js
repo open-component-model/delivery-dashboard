@@ -19,6 +19,7 @@ import { FeatureRegistrationContext } from '../../App'
 import { features } from '../../consts'
 import { registerCallbackHandler } from '../../feature'
 import FeatureDependent from './../util/FeatureDependent'
+import { ConnectivityIndicator } from '../util/Connectivity'
 
 const Title = () => {
   const [joke, setJoke] = React.useState()
@@ -218,6 +219,7 @@ const PersistentDrawerLeft = ({
               columnGap: '2em',
             }}
           >
+            <ConnectivityIndicator/>
             <FeatureDependent requiredFeatures={[features.SERVICE_EXTENSIONS]}>
               <ServiceExtensionStatus />
             </FeatureDependent>
