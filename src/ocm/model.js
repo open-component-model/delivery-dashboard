@@ -719,21 +719,28 @@ const MetadataViewerPopover = ({
     version: componentVersion,
   })
 
-  const components = [{
+  const components = React.useMemo(() => [{
     component_name: componentName,
     component_version: componentVersion,
-  }]
-  const types = Object.values(artefactMetadataTypes).filter((type) => ![
-    artefactMetadataTypes.ARTEFACT_SCAN_INFO,
-    artefactMetadataTypes.RESCORINGS,
-  ].includes(type))
+  }], [componentName, componentVersion])
+
+  const types = React.useMemo(() => {
+    return Object.values(artefactMetadataTypes).filter((type) => ![
+      artefactMetadataTypes.ARTEFACT_SCAN_INFO,
+      artefactMetadataTypes.RESCORINGS,
+    ].includes(type))
+  }, [artefactMetadataTypes])
+
   const [findings, findingsState] = useFetchQueryMetadata({
     artefacts: components,
     types: types,
   })
+
+  const rescoringTypes = React.useMemo(() => [artefactMetadataTypes.RESCORINGS], [])
+
   const [rescorings, rescoringsState] = useFetchQueryMetadata({
     artefacts: components,
-    types: [artefactMetadataTypes.RESCORINGS],
+    types: rescoringTypes,
     referenced_types: types,
   })
 
