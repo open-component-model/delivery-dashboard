@@ -7,7 +7,7 @@ eslint_cfg_filename="${1:-"eslint.config.mjs"}"
 echo "Using linter cfg from ${eslint_cfg_filename}"
 
 echo 'Installing dependencies required by linter suite...'
-npm --prefix $src_dir install --include=dev --omit=peer --force --no-audit
+npm --prefix $src_dir install --include=dev --omit=peer --no-audit
 
 echo 'Running eslint for all javascript modules..'
 echo ''

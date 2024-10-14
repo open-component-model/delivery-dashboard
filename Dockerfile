@@ -6,7 +6,7 @@ WORKDIR /src
 RUN apk add python3 --no-cache --update && .ci/template_env.py
 
 RUN apk add --no-cache npm \
-  && npm i --force /src \
+  && npm i /src \
   && npm run build
 
 FROM nginx:latest
