@@ -328,8 +328,8 @@ const useFetchComponentDescriptor = ({
     componentName: componentName,
     version: componentVersion,
     ocmRepoUrl: ocmRepo,
-    versionFilter: versionFilter,
     raw: raw,
+    ...(versionFilter !== null && { versionFilter: versionFilter }), // keep cache key stable
   }), [
     componentName,
     componentVersion,
