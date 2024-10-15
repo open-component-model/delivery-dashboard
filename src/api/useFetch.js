@@ -98,7 +98,10 @@ const _useFetch = ({
             let result = cachedResult
 
             if (cachedResult instanceof Promise) {
-              if (!isConnected) return // assume promise can't be resolved without connection
+              if (!isConnected) {
+                isFetching.current = false
+                return // assume promise can't be resolved without connection
+              }
               result = await cachedResult
             }
 
@@ -134,7 +137,10 @@ const _useFetch = ({
         }
       }
 
-      if (!isConnected) return
+      if (!isConnected) {
+        isFetching.current = false
+        return
+      }
 
       const fetchPromise = fetchParams === null ? fetchFunction() : fetchFunction(fetchParams)
       if (
