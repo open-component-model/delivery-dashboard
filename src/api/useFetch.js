@@ -83,16 +83,10 @@ const _useFetch = ({
   React.useEffect(() => {
     if (fetchCondition && !fetchCondition()) return
 
-    // track whether hook is mounted
-    let mounted = true
-
     const fetchData = async () => {
       // prevent multiple fetch attempts if component is re-rendered while fetching
       if (isFetching.current) return
       isFetching.current = true
-
-      // prevent stale updates to avoid memory leaks
-      if (!mounted) return
 
       if (cacheKey !== null) {
         const cachedResult = cache.get(cacheKey)
@@ -191,7 +185,6 @@ const _useFetch = ({
     fetchData()
 
     return () => {
-      mounted = false
       resetState()
       isFetching.current = false
       clearIntervalFromRef(retryIntervalRef)
