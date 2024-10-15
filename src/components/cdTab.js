@@ -26,8 +26,8 @@ const FetchAndView = ({
 }) => {
   const [componentDescriptor, state] = useFetchComponentDescriptor({
     componentName: componentName,
-    ocmRepoUrl: ocmRepo,
-    version: componentVersion,
+    componentVersion: componentVersion,
+    ocmRepo: ocmRepo,
     versionFilter: versionFilter,
     raw: true,
   })

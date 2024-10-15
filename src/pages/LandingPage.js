@@ -519,8 +519,8 @@ const ComponentBody = ({
   // component derived from specialComponents has version 'greatest', therefore retrieve again
   const [cd, state] = useFetchComponentDescriptor({
     componentName: component.name,
-    ocmRepoUrl: component.repoContextUrl,
-    version: component.version,
+    componentVersion: component.version,
+    ocmRepo: component.repoContextUrl,
     versionFilter: component.versionFilter,
   })
   const { componentDependencies, isComponentDependenciesLoading, isComponentDependenciesError } = componentDependenciesFetchDetails

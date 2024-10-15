@@ -715,8 +715,8 @@ const MetadataViewerPopover = ({
 
   const [cd, state] = useFetchComponentDescriptor({
     componentName: componentName,
-    ocmRepoUrl: ocmRepo,
-    version: componentVersion,
+    componentVersion: componentVersion,
+    ocmRepo: ocmRepo,
   })
 
   const components = React.useMemo(() => [{
