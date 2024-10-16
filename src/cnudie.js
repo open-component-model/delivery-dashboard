@@ -1,5 +1,5 @@
 import { sanitiseArtefactExtraId } from './ocm/util'
-import { artefactMetadatumSeverity } from './util'
+import { artefactMetadatumSeverity, normaliseObject } from './util'
 
 
 const generateArtefactID = (artefact) => {
@@ -20,7 +20,6 @@ const artefactMetadataFilter = ({
   artefactType,
   artefactName,
   artefactVersion,
-  // eslint-disable-next-line no-unused-vars
   artefactExtraId,
   metadataType,
 }) => {
@@ -32,7 +31,7 @@ const artefactMetadataFilter = ({
     if(artefactType && artefactType !== artefact.artefact_type) return false
     if(artefactName && artefactName !== artefact.artefact_name) return false
     if(artefactVersion && artefactVersion !== artefact.artefact_version) return false
-    // XXX ignore artefactExtraId for now (need to normalise and compare)
+    if(artefactExtraId && JSON.stringify(normaliseObject(artefactExtraId)) !== JSON.stringify(normaliseObject(artefact.artefact_extra_id))) return false
     if(metadataType && metadataType !== metadata.meta.type) return false
 
     return true

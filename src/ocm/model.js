@@ -896,6 +896,7 @@ const MetadataViewerPopover = ({
               artefactMetadataFilter({
                 artefactName: artefact.name,
                 artefactVersion: artefact.version,
+                artefactExtraId: artefact.extraIdentity,
               })
             )
 
