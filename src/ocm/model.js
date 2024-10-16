@@ -773,7 +773,7 @@ const MetadataViewerPopover = ({
 
   /**
    * Component is not passend from parent, but retrieved locally.
-   * Thus, its mutable and modifying (e.g. sort by severity) influences other components.
+   * Thus, it is mutable and modifying (e.g. sort by severity) influences other components.
    *
    * --> work on a deep copy
    */
