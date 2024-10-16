@@ -357,10 +357,6 @@ const useFetchComponentDescriptor = ({
     fetchFunction: components.ocmComponent,
     fetchParams: params,
     errorMessage: `Component "${componentName}" could not be fetched`,
-    cacheKey: JSON.stringify({
-      route: routes.ocm.component.base,
-      fetchParams: normaliseObject(params),
-    }),
   })
 }
 
