@@ -169,7 +169,11 @@ export const LoadingDependencies = () => {
 
 const bomCache = {}
 
-const DownloadBom = ({ component, ocmRepo }) => {
+const DownloadBom = ({
+  component,
+  ocmRepo,
+  isLoading,
+}) => {
   const theme = useTheme()
 
   const handleClick = async () => {
@@ -201,15 +205,19 @@ const DownloadBom = ({ component, ocmRepo }) => {
     startIcon={<CloudDownloadIcon />}
     onClick={handleClick}
     variant='outlined'
-    style={theme.bomButton}
+    style={{
+      color: isLoading ? 'grey' : theme.bomButton.color,
+    }}
+    disabled={isLoading}
   >
     download bom
   </Button>
 }
 DownloadBom.displayName = 'DownloadBom'
 DownloadBom.propTypes = {
-  component: PropTypes.object.isRequired,
+  component: PropTypes.object,
   ocmRepo: PropTypes.string,
+  isLoading: PropTypes.bool.isRequired,
 }
 
 const ComponentSearch = ({
@@ -299,12 +307,11 @@ const DependenciesTabHeader = React.memo(({
       }
     </Grid>
     <Grid item width='17%' display='flex' justifyContent='right' flexDirection='column'>
-      {
-        isComponentLoading ? <Skeleton/> : <DownloadBom
-          component={component}
-          ocmRepo={searchParamContext.get('ocmRepo')}
-        />
-      }
+      <DownloadBom
+        component={component}
+        ocmRepo={searchParamContext.get('ocmRepo')}
+        isLoading={isComponentLoading}
+      />
     </Grid>
   </Grid>
 })
