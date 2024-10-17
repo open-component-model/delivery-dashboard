@@ -53,13 +53,60 @@ import { VersionOverview, evaluateVersionMatch } from '../util/VersionOverview'
 import { registerCallbackHandler } from '../../feature'
 
 
+const LoadingComponents = ({loadingComponentsCount}) => {
+  return <Box
+    width='50%'
+  >
+    {
+      [...Array(loadingComponentsCount).keys()].map(e => <Box key={e}>
+        <Accordion>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Grid container alignItems='center' padding={1}>
+              <Grid item xs={6}>
+                <Typography variant='body1'>
+                  <Skeleton />
+                </Typography>
+              </Grid>
+              <Grid item xs={1} />
+              <Grid item xs={1}>
+                <Typography variant='body1'>
+                  <Skeleton />
+                </Typography>
+              </Grid>
+              <Grid item xs={1} />
+              <Grid item xs={1}>
+                <Typography variant='body1'>
+                  <Skeleton />
+                </Typography>
+              </Grid>
+              <Grid item xs={1} />
+              <Grid item xs={1}>
+                <Typography variant='body1'>
+                  <Skeleton />
+                </Typography>
+              </Grid>
+            </Grid>
+          </AccordionSummary>
+        </Accordion>
+        <div style={{ padding: '0.15em' }} />
+      </Box>
+      )
+    }
+  </Box>
+}
+LoadingComponents.displayName = 'LoadingComponents'
+LoadingComponents.propTypes = {
+  loadingComponentsCount: PropTypes.number.isRequired,
+}
+
+
 export const LoadingDependencies = () => {
   const loadingComponentsCount = 40
 
   return <Box>
     <Accordion>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <Grid container alignItems='center'>
+        <Grid container alignItems='center' padding={1}>
           <Grid item xs={4}>
             <Typography variant='body1'>
               <Skeleton />
@@ -91,78 +138,8 @@ export const LoadingDependencies = () => {
       spacing={3}
       direction='row'
     >
-      <Box
-        width='50%'
-      >
-        {
-          [...Array(loadingComponentsCount).keys()].map(e => <Accordion key={e}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Grid container alignItems='center'>
-                <Grid item xs={6}>
-                  <Typography variant='body1'>
-                    <Skeleton />
-                  </Typography>
-                </Grid>
-                <Grid item xs={1} />
-                <Grid item xs={1}>
-                  <Typography variant='body1'>
-                    <Skeleton />
-                  </Typography>
-                </Grid>
-                <Grid item xs={1} />
-                <Grid item xs={1}>
-                  <Typography variant='body1'>
-                    <Skeleton />
-                  </Typography>
-                </Grid>
-                <Grid item xs={1} />
-                <Grid item xs={1}>
-                  <Typography variant='body1'>
-                    <Skeleton />
-                  </Typography>
-                </Grid>
-              </Grid>
-            </AccordionSummary>
-          </Accordion>
-          )
-        }
-      </Box>
-      <Box
-        width='50%'
-      >
-        {
-          [...Array(loadingComponentsCount).keys()].map(e => <Accordion key={e}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Grid container alignItems='center'>
-                <Grid item xs={6}>
-                  <Typography variant='body1'>
-                    <Skeleton />
-                  </Typography>
-                </Grid>
-                <Grid item xs={1} />
-                <Grid item xs={1}>
-                  <Typography variant='body1'>
-                    <Skeleton />
-                  </Typography>
-                </Grid>
-                <Grid item xs={1} />
-                <Grid item xs={1}>
-                  <Typography variant='body1'>
-                    <Skeleton />
-                  </Typography>
-                </Grid>
-                <Grid item xs={1} />
-                <Grid item xs={1}>
-                  <Typography variant='body1'>
-                    <Skeleton />
-                  </Typography>
-                </Grid>
-              </Grid>
-            </AccordionSummary>
-          </Accordion>
-          )
-        }
-      </Box>
+      <LoadingComponents loadingComponentsCount={loadingComponentsCount}/>
+      <LoadingComponents loadingComponentsCount={loadingComponentsCount}/>
     </Stack>
   </Box>
 }
