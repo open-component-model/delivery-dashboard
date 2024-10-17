@@ -264,52 +264,47 @@ const DependenciesTabHeader = React.memo(({
   const now = new Date()
 
   return <Grid
-    spacing={3}
     container
+    spacing={3}
+    alignItems='center'
   >
-    <Grid item xs={6} display='flex' justifyContent='center' alignItems='center'>
-      <Box width='100%'>
-        <ComponentSearch
-          updateSearchQuery={updateSearchQuery}
-          defaultValue={defaultSearchValue}
-        />
-      </Box>
+    <Grid item width='50%'>
+      <ComponentSearch
+        updateSearchQuery={updateSearchQuery}
+        defaultValue={defaultSearchValue}
+      />
     </Grid>
-    <Grid item display='flex' justifyContent='center' alignItems='center'>
-      <Box width='12vw'>
-        <FeatureDependent
-          requiredFeatures={[features.SPRINTS]}
-          childrenIfFeatureLoading={<Skeleton/>}
-        >
-          <ErrorBoundary>
-            <SprintInfo
-              sprintRules={sprintRules}
-              date={now}
-            />
-          </ErrorBoundary>
-        </FeatureDependent>
-      </Box>
+    <Grid item width='15%'>
+      <FeatureDependent
+        requiredFeatures={[features.SPRINTS]}
+        childrenIfFeatureLoading={<Skeleton/>}
+      >
+        <ErrorBoundary>
+          <SprintInfo
+            sprintRules={sprintRules}
+            date={now}
+          />
+        </ErrorBoundary>
+      </FeatureDependent>
     </Grid>
-    <Grid item display='flex' justifyContent='center' alignItems='center'>
-      <Box width='13vw'>
-        {
-          (componentType !== DEPENDENT_COMPONENT) & !isComponentLoading ? <SpecialComponentStatus
+    <Grid item width='18%' alignItems='center' display='flex' flexDirection='column'>
+      {
+        (componentType !== DEPENDENT_COMPONENT) & !isComponentLoading
+          ? <SpecialComponentStatus
             component={component}
             componentRefs={componentRefs}
             specialComponentFeature={getSpecialComponentFeature()}
-          /> : <Skeleton/>
-        }
-      </Box>
-    </Grid>
-    <Grid item display='flex' justifyContent='center' alignItems='center'>
-      <Box width='12vw'>
-        {
-          isComponentLoading ? <Skeleton/> : <DownloadBom
-            component={component}
-            ocmRepo={searchParamContext.get('ocmRepo')}
           />
-        }
-      </Box>
+          : <Skeleton width='100%'/> /* explicitly set width as parent container is a flexbox */
+      }
+    </Grid>
+    <Grid item width='17%' display='flex' justifyContent='right' flexDirection='column'>
+      {
+        isComponentLoading ? <Skeleton/> : <DownloadBom
+          component={component}
+          ocmRepo={searchParamContext.get('ocmRepo')}
+        />
+      }
     </Grid>
   </Grid>
 })
@@ -540,13 +535,13 @@ const SpecialComponentStatus = ({
 }) => {
   const [specialComponentStatus, state] = useFetchSpecialComponentCurrentDependencies({componentName: component.name})
 
-  if (!componentRefs) return <Skeleton/>
+  if (!componentRefs) return <Skeleton width='100%'/>
 
   if (state.error) {
     return <Typography variant='caption'>Error fetching special component status</Typography>
   }
   if (!specialComponentStatus) {
-    return <Skeleton/>
+    return <Skeleton width='100%'/>
   }
 
   if (!specialComponentStatus.component_dependencies) {
