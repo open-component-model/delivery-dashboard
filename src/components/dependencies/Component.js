@@ -98,7 +98,7 @@ MetadataViewer.propTypes = {
   ocmRepo: PropTypes.string,
 }
 
-const ComplianceTools = ({
+export const ComplianceTools = ({
   component,
 }) => {
   const [complianceToolsPopoverOpen, setComplianceToolsPopoverOpen] = React.useState(false)

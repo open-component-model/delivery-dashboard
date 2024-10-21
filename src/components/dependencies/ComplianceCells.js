@@ -2,7 +2,6 @@ import React from 'react'
 import PropTypes from 'prop-types'
 
 import {
-  Alert,
   Avatar,
   Box,
   Chip,
@@ -24,6 +23,7 @@ import AutoAwesomeMosaicIcon from '@mui/icons-material/AutoAwesomeMosaic'
 import AutorenewIcon from '@mui/icons-material/Autorenew'
 import IosShareIcon from '@mui/icons-material/IosShare'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import PublishedWithChangesIcon from '@mui/icons-material/PublishedWithChanges'
 import SourceIcon from '@mui/icons-material/Source'
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore'
 
@@ -54,6 +54,7 @@ import { OcmNode } from '../../ocm/iter'
 import TriggerComplianceToolButton from './../util/TriggerComplianceToolButton'
 import { routes } from '../../api'
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
+import ComplianceToolPopover from '../util/ComplianceToolsPopover'
 
 
 const OsCell = ({
@@ -234,6 +235,9 @@ const ComplianceCell = ({
   const {complianceSummary, isSummaryLoading, isSummaryError} = complianceSummaryFetchDetails
   const {complianceData, state} = complianceDataFetchDetails
 
+  const [mountRescoring, setMountRescoring] = React.useState(false)
+  const [mountComplianceTool, setMountComplianceTool] = React.useState(false)
+
   const componentSummary = complianceSummary?.complianceSummary.find((componentSummary) => {
     return (
       componentSummary.componentId.name === component.name
@@ -252,8 +256,65 @@ const ComplianceCell = ({
     )
   })
 
+  const handleRescoringClose = React.useCallback(() => setMountRescoring(false), [setMountRescoring])
+
   if (isSummaryError || state.error || (!isSummaryLoading && !artefactSummary)) return <TableCell>
-    <Alert severity='error'>Unable to fetch Compliance Data</Alert>
+    {
+      mountRescoring && <RescoringModal
+        ocmNodes={[new OcmNode([component], artefact, ARTEFACT_KIND.RESOURCE)]}
+        ocmRepo={ocmRepo}
+        handleClose={handleRescoringClose}
+        fetchComplianceSummary={fetchComplianceSummary}
+        scanConfig={scanConfig}
+      />
+    }
+    {
+      mountComplianceTool && <ComplianceToolPopover
+        popoverProps={{component}}
+        handleClose={(e) => {
+          e.stopPropagation()
+          setMountComplianceTool(false)
+        }}
+      />
+    }
+    <Grid
+      container
+      direction='row-reverse'
+      spacing={1}
+    >
+      <Tooltip
+        title={
+          <List>
+            <RescoringButton
+              setMountRescoring={setMountRescoring}
+              title={'Rescoring'}
+            />
+            <ListItemButton onClick={(e) => {
+              e.stopPropagation()
+              setMountComplianceTool(prev => !prev)
+            }}>
+              <ListItemAvatar>
+                <Avatar>
+                  <PublishedWithChangesIcon/>
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText primary={'Schedule Compliance Tool'}/>
+            </ListItemButton>
+          </List>
+        }
+      >
+        <Grid item>
+          <Chip
+            color='critical'
+            label='Fetch Error'
+            variant='outlined'
+            size='small'
+            icon={<UnfoldMoreIcon/>}
+            clickable={false}
+          />
+        </Grid>
+      </Tooltip>
+    </Grid>
   </TableCell>
 
   const getMaxSeverity = (type) => {
