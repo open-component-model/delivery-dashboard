@@ -157,12 +157,12 @@ const DownloadBom = ({
     const key = `${component.name}:${component.version}`
     let dependencies = null
     if (!bomCache[key]) {
-      bomCache[key] = await components.componentDependencies(
-        component.name,
-        component.version,
-        ocmRepo,
-        'all',
-      )
+      bomCache[key] = await components.componentDependencies({
+        componentName: component.name,
+        componentVersion: component.version,
+        ocmRepoUrl: ocmRepo,
+        populate: 'all',
+      })
     }
     dependencies = bomCache[key]
 
