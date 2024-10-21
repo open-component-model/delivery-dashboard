@@ -40,12 +40,14 @@ const ComponentChip = ({
   complianceSummaryFetchDetails,
 }) => {
   const {complianceSummary, isSummaryLoading, isSummaryError} = complianceSummaryFetchDetails
-
-  if (isSummaryError) return <Chip
+  const ErrorChip = () => <Chip
     label='FetchError'
     variant='outlined'
     color='warning'
   />
+  ErrorChip.displayName = 'ErrorChip'
+
+  if (isSummaryError) return <ErrorChip/>
 
   if (isSummaryLoading) return <Skeleton/>
 
@@ -55,6 +57,12 @@ const ComponentChip = ({
       && componentSummary.componentId.version === component.version
     )
   })
+
+  /**
+   * do not break upon delivery-service error
+   * should return component-summary even for unknown components
+   */
+  if (!componentSummary) return <ErrorChip/>
 
   const mostCriticalSeverity = componentSummary.entries.reduce((max, element) => {
     if (findSeverityCfgByName({name: element.severity}).value > findSeverityCfgByName({name: max.severity}).value) {
