@@ -166,8 +166,8 @@ export const orderRescoringsBySpecificity = (rescorings) => {
     if (b.artefact.artefact.artefact_name && !a.artefact.artefact.artefact_name) return 1
 
     // if one rescoring has artefact scope, use the other one
-    if (a.artefact.component_version && !b.artefact.component_version) return -1
-    if (b.artefact.component_version && !a.artefact.component_version) return 1
+    if (a.artefact.artefact.artefact_version && !b.artefact.artefact.artefact_version) return -1
+    if (b.artefact.artefact.artefact_version && !a.artefact.artefact.artefact_version) return 1
 
     // if both rescorings share the same scope, use the latest one
     return new Date(b.meta.creation_date) - new Date(a.meta.creation_date)
