@@ -206,137 +206,135 @@ ComponentSettings.propTypes = {
   iconProps: PropTypes.object,
 }
 
-const Component = React.memo(
-  ({
-    component,
-    isComponentLoading,
-    isComponentError,
-    ocmRepo,
-    isParentComponent,
-  }) => {
-    const searchParamContext = React.useContext(SearchParamContext)
-    const theme = useTheme()
+const Component = React.memo(({
+  component,
+  isComponentLoading,
+  isComponentError,
+  ocmRepo,
+  isParentComponent,
+}) => {
+  const searchParamContext = React.useContext(SearchParamContext)
+  const theme = useTheme()
 
-    const name = trimComponentName(component.name)
+  const name = trimComponentName(component.name)
 
-    const [expanded, setExpanded] = React.useState(Boolean(isParentComponent && Boolean(searchParamContext.get('rootExpanded'))))
+  const [expanded, setExpanded] = React.useState(Boolean(isParentComponent && Boolean(searchParamContext.get('rootExpanded'))))
 
-    const [complianceSummary, complianceSummaryState, refreshComplianceSummary] = useFetchComplianceSummary({
-      componentName: component.name,
-      componentVersion: component.version,
-      recursionDepth: 0,
-      ocmRepo: ocmRepo,
-    })
+  const [complianceSummary, complianceSummaryState, refreshComplianceSummary] = useFetchComplianceSummary({
+    componentName: component.name,
+    componentVersion: component.version,
+    recursionDepth: 0,
+    ocmRepo: ocmRepo,
+  })
 
-    const complianceSummaryFetchDetails = React.useMemo(() => {
-      return {
-        complianceSummary,
-        isSummaryLoading: complianceSummaryState.isLoading,
-        isSummaryError: complianceSummaryState.error,
-      }
-    }, [
+  const complianceSummaryFetchDetails = React.useMemo(() => {
+    return {
       complianceSummary,
-      complianceSummaryState.isLoading,
-      complianceSummaryState.error,
-    ])
+      isSummaryLoading: complianceSummaryState.isLoading,
+      isSummaryError: complianceSummaryState.error,
+    }
+  }, [
+    complianceSummary,
+    complianceSummaryState.isLoading,
+    complianceSummaryState.error,
+  ])
 
-    return <Box
-      sx={{
-        paddingBottom: '0.3em',
-        '&:hover': {
-          backgroundColor: alpha(theme.palette.common.black, theme.palette.mode === 'light' ? 0.15 : 1),
-        },
-      }}
+  return <Box
+    sx={{
+      paddingBottom: '0.3em',
+      '&:hover': {
+        backgroundColor: alpha(theme.palette.common.black, theme.palette.mode === 'light' ? 0.15 : 1),
+      },
+    }}
+  >
+    <Accordion
+      TransitionProps={{ unmountOnExit: true }}
+      // manual expansion control required to prevent trigger on MetadataViewerPopover events
+      expanded={expanded}
+      onClick={() => setExpanded(!expanded)}
     >
-      <Accordion
-        TransitionProps={{ unmountOnExit: true }}
-        // manual expansion control required to prevent trigger on MetadataViewerPopover events
-        expanded={expanded}
-        onClick={() => setExpanded(!expanded)}
-      >
-        <AccordionSummary expandIcon={<ExpandMoreIcon {...isParentComponent ? {sx: {color: theme.bomButton}} : {}}/>}>
-          <Grid container alignItems='center'>
-            <Grid item {...isParentComponent ? {sx: {flexGrow: '0.05'}} : {xs: 7}} >
-              <Typography variant='body1' sx={{fontWeight: isParentComponent ? 'bold' : 1}}>
-                <Link
-                  color={'inherit'}
-                  // use href rather than router to enable "open in new tab"
-                  href={`#${componentPathQuery({
-                    name: component.name,
-                    version: component.version,
-                    view: 'bom',
-                    ocmRepo: ocmRepo,
-                  })}`}
-                  // don't expand accordion
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    if (component.comp_ref) {
-                      updatePathFromComponentRef(component.comp_ref)
-                    }
-                  }}
+      <AccordionSummary expandIcon={<ExpandMoreIcon {...isParentComponent ? {sx: {color: theme.bomButton}} : {}}/>}>
+        <Grid container alignItems='center'>
+          <Grid item {...isParentComponent ? {sx: {flexGrow: '0.05'}} : {xs: 7}} >
+            <Typography variant='body1' sx={{fontWeight: isParentComponent ? 'bold' : 1}}>
+              <Link
+                color={'inherit'}
+                // use href rather than router to enable "open in new tab"
+                href={`#${componentPathQuery({
+                  name: component.name,
+                  version: component.version,
+                  view: 'bom',
+                  ocmRepo: ocmRepo,
+                })}`}
+                // don't expand accordion
+                onClick={(event) => {
+                  event.stopPropagation()
+                  if (component.comp_ref) {
+                    updatePathFromComponentRef(component.comp_ref)
+                  }
+                }}
+              >
+                {name}
+              </Link>
+            </Typography>
+          </Grid>
+          <Grid item {...isParentComponent ? {sx: {flexGrow: '1'}} : {xs: 2}}>
+            <Box display='flex' alignItems='left' justifyContent='left'>
+              {
+                component.version.length > 8 ? <Tooltip
+                  title={JSON.stringify(component.version, null, 2)}
                 >
-                  {name}
-                </Link>
-              </Typography>
-            </Grid>
-            <Grid item {...isParentComponent ? {sx: {flexGrow: '1'}} : {xs: 2}}>
-              <Box display='flex' alignItems='left' justifyContent='left'>
-                {
-                  component.version.length > 8 ? <Tooltip
-                    title={JSON.stringify(component.version, null, 2)}
-                  >
-                    <CopyOnClickChip
-                      value={component.version}
-                      label={trimLongString(component.version, 8)}
-                      chipProps={{
-                        variant: 'outlined'
-                      }}
-                    />
-                  </Tooltip> : <CopyOnClickChip
+                  <CopyOnClickChip
                     value={component.version}
                     label={trimLongString(component.version, 8)}
                     chipProps={{
-                      variant: 'outlined',
-                      sx: {fontWeight: isParentComponent ? 'bold' : 1},
+                      variant: 'outlined'
                     }}
                   />
-                }
-              </Box>
-            </Grid>
-            <FeatureDependent
-              requiredFeatures={[features.DELIVERY_DB]}
-              childrenIfFeatureUnavailable={<Grid item xs={isParentComponent ? 1 : 2}/>}
-            >
-              <Grid item xs={isParentComponent ? 1 : 2}>
-                <ComponentChip
-                  component={component}
-                  complianceSummaryFetchDetails={complianceSummaryFetchDetails}
+                </Tooltip> : <CopyOnClickChip
+                  value={component.version}
+                  label={trimLongString(component.version, 8)}
+                  chipProps={{
+                    variant: 'outlined',
+                    sx: {fontWeight: isParentComponent ? 'bold' : 1},
+                  }}
                 />
-              </Grid>
-            </FeatureDependent>
-            <Grid item xs={isParentComponent ? 0.5 : 1}>
-              <ComponentSettings
+              }
+            </Box>
+          </Grid>
+          <FeatureDependent
+            requiredFeatures={[features.DELIVERY_DB]}
+            childrenIfFeatureUnavailable={<Grid item xs={isParentComponent ? 1 : 2}/>}
+          >
+            <Grid item xs={isParentComponent ? 1 : 2}>
+              <ComponentChip
                 component={component}
-                ocmRepo={ocmRepo}
-                iconProps={isParentComponent ? {sx: {color: theme.bomButton}} : {}}
+                complianceSummaryFetchDetails={complianceSummaryFetchDetails}
               />
             </Grid>
+          </FeatureDependent>
+          <Grid item xs={isParentComponent ? 0.5 : 1}>
+            <ComponentSettings
+              component={component}
+              ocmRepo={ocmRepo}
+              iconProps={isParentComponent ? {sx: {color: theme.bomButton}} : {}}
+            />
           </Grid>
-        </AccordionSummary>
-        <AccordionDetails onClick={(event) => event.stopPropagation()}>
-          <ComponentDetails
-            component={component}
-            isComponentLoading={isComponentLoading}
-            isComponentError={isComponentError}
-            ocmRepo={ocmRepo}
-            complianceSummaryFetchDetails={complianceSummaryFetchDetails}
-            fetchComplianceSummary={refreshComplianceSummary}
-          />
-        </AccordionDetails>
-      </Accordion>
-    </Box>
-  }
-)
+        </Grid>
+      </AccordionSummary>
+      <AccordionDetails onClick={(event) => event.stopPropagation()}>
+        <ComponentDetails
+          component={component}
+          isComponentLoading={isComponentLoading}
+          isComponentError={isComponentError}
+          ocmRepo={ocmRepo}
+          complianceSummaryFetchDetails={complianceSummaryFetchDetails}
+          fetchComplianceSummary={refreshComplianceSummary}
+        />
+      </AccordionDetails>
+    </Accordion>
+  </Box>
+})
 Component.displayName = 'Component'
 Component.propTypes = {
   component: PropTypes.object.isRequired,
