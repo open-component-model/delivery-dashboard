@@ -277,6 +277,12 @@ const InnerRouter = () => {
     set: (params) => {
       setSearchParams(params)
     },
+    delete: (key) => {
+      setSearchParams(prev => {
+        prev.delete(key)
+        return prev
+      })
+    }
   }
 
   return <SearchParamContext.Provider value={searchParamConfig}>

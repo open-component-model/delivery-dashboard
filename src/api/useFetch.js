@@ -60,18 +60,21 @@ const _useFetch = ({
     isLoading: true,
     error: null,
   })
+  const honourCacheKey = React.useRef(true)
 
   const isConnected = useConnected()
 
-  // toggle state to refresh useFetch hook, callable is returned next to data and state
-  const [refresh, setRefresh] = React.useState(true)
-  const resetState = () => {
+  // increment to refresh useFetch hook, callable is returned next to data and state
+  const [refresh, setRefresh] = React.useState(0)
+
+  React.useEffect(() => {
+    if (refresh === 0) return // ignore first trigger
+    honourCacheKey.current = false // shortcut cache if explicit refresh (=> refetch) is requested
     setState({
       isLoading: true,
       error: null,
     })
-  }
-  React.useEffect(() => resetState(), [refresh])
+  }, [refresh])
 
   const retryIntervalRef = React.useRef()
   const isFetching = React.useRef(false)
@@ -91,7 +94,10 @@ const _useFetch = ({
       if (isFetching.current) return
       isFetching.current = true
 
-      if (cacheKey !== null) {
+      if (
+        cacheKey !== null
+        && honourCacheKey.current
+      ) {
         const cachedResult = cache.get(cacheKey)
         if (cachedResult) {
           try {
@@ -146,6 +152,7 @@ const _useFetch = ({
       if (
         cacheKey !== null
         && cacheCondition === null // cannot evaluate cache condition if promise is not resolved
+        && honourCacheKey.current
       ) {
         cache.set(cacheKey, fetchPromise)
       }
@@ -165,7 +172,10 @@ const _useFetch = ({
           error: null,
         })
 
-        if (cacheKey !== null) {
+        if (
+          cacheKey !== null
+          && honourCacheKey.current
+        ) {
           if (
             cacheCondition === null
             || (cacheCondition && cacheCondition(result))
@@ -197,10 +207,15 @@ const _useFetch = ({
     }
 
     fetchData()
+    honourCacheKey.current = true
 
     return () => {
-      resetState()
+      setState({
+        isLoading: true,
+        error: null,
+      })
       isFetching.current = false
+      honourCacheKey.current = true
       clearIntervalFromRef(retryIntervalRef)
     }
   }, [
@@ -224,7 +239,7 @@ const _useFetch = ({
   return [
     data,
     state,
-    () => setRefresh(prev => !prev),
+    () => setRefresh(prev => prev + 1)
   ]
 }
 
