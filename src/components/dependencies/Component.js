@@ -60,6 +60,8 @@ import {
 import { registerCallbackHandler } from '../../feature'
 import CopyOnClickChip from '../util/CopyOnClickChip'
 import { useTheme } from '@emotion/react'
+import { RescoringModal } from './RescoringModal'
+import { OcmNode } from '../../ocm/iter'
 
 
 const MetadataViewer = ({
@@ -239,6 +241,48 @@ const Component = React.memo(({
     complianceSummaryState.error,
   ])
 
+  const [mountRescoring, setMountRescoring] = React.useState(Boolean(searchParamContext.get('rescoreArtefacts')))
+
+  const artefactNodes = React.useMemo(() => {
+    if (!isParentComponent) return [] // only allow rescore linking for root component
+    const artefactIds = searchParamContext.getAll('rescoreArtefacts')
+    if (artefactIds.length === 0) return []
+
+    const artefactId = (artefact) => {
+      return `${artefact.name}:${artefact.version}`
+    }
+
+    return component.resources.reduce((resources, resource) => {
+      return [
+        ...resources,
+        ...(
+          artefactIds.includes(artefactId(resource)) // resource selected via URL params
+          && !resources.map(r => artefactId(r)).includes(artefactId(resource)) // deduplicate resources (extra-id is ignored)
+            ? [resource]
+            : []
+        ),
+      ]
+    }, []).map((resource) => {
+      return new OcmNode([component], resource, ARTEFACT_KIND.RESOURCE)
+
+    })
+  }, [
+    searchParamContext,
+    component.resources
+  ])
+
+  const handleRescoringClose = React.useCallback(() => {
+    setMountRescoring(false)
+    searchParamContext.delete('rescoreArtefacts')
+  }, [setMountRescoring])
+
+  const scanConfigName = searchParamContext.get('scanConfigName')
+  const [scanConfigs] = useFetchScanConfigurations()
+
+  const scanConfig = scanConfigName
+    ? scanConfigs?.find((scanConfig) => scanConfig.name === scanConfigName)
+    : scanConfigs?.length === 1 ? scanConfigs[0] : null
+
   return <Box
     sx={{
       paddingBottom: '0.3em',
@@ -247,6 +291,18 @@ const Component = React.memo(({
       },
     }}
   >
+    {
+      (
+        mountRescoring
+        && (artefactNodes.length > 0)
+      ) && <RescoringModal
+        ocmNodes={artefactNodes}
+        ocmRepo={ocmRepo}
+        handleClose={handleRescoringClose}
+        fetchComplianceSummary={refreshComplianceSummary}
+        scanConfig={scanConfig}
+      />
+    }
     <Accordion
       TransitionProps={{ unmountOnExit: true }}
       // manual expansion control required to prevent trigger on MetadataViewerPopover events
@@ -330,6 +386,7 @@ const Component = React.memo(({
           ocmRepo={ocmRepo}
           complianceSummaryFetchDetails={complianceSummaryFetchDetails}
           fetchComplianceSummary={refreshComplianceSummary}
+          scanConfig={scanConfig}
         />
       </AccordionDetails>
     </Accordion>
@@ -454,6 +511,7 @@ const ComponentDetails = React.memo(({
   ocmRepo,
   complianceSummaryFetchDetails,
   fetchComplianceSummary,
+  scanConfig,
 }) => {
   if (isComponentError) return <Alert severity='error'>Unable to fetch Component</Alert>
 
@@ -466,6 +524,7 @@ const ComponentDetails = React.memo(({
           ocmRepo={ocmRepo}
           complianceSummaryFetchDetails={complianceSummaryFetchDetails}
           fetchComplianceSummary={fetchComplianceSummary}
+          scanConfig={scanConfig}
         />
     }
     <ComponentReferencedBy
@@ -486,6 +545,7 @@ ComponentDetails.propTypes = {
   ocmRepo: PropTypes.string,
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
+  scanConfig: PropTypes.object,
 }
 
 const Components = ({
@@ -582,16 +642,8 @@ const Artefacts = ({
   ocmRepo,
   complianceSummaryFetchDetails,
   fetchComplianceSummary,
+  scanConfig,
 }) => {
-  const searchParamContext = React.useContext(SearchParamContext)
-  const scanConfigName = searchParamContext.get('scanConfigName')
-  // eslint-disable-next-line no-unused-vars
-  const [scanConfigs, scanCfgState] = useFetchScanConfigurations()
-
-  const scanConfig = scanConfigName
-    ? scanConfigs?.find((scanConfig) => scanConfig.name === scanConfigName)
-    : scanConfigs?.length === 1 ? scanConfigs[0] : null
-
   const artefacts = React.useMemo(() => {
     return [{
       component_name: component.name,
@@ -688,6 +740,7 @@ Artefacts.propTypes = {
   ocmRepo: PropTypes.string,
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
+  scanConfig: PropTypes.object,
 }
 
 
