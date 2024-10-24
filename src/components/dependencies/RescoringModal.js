@@ -428,6 +428,15 @@ const RescoringFilterOption = ({
   const [selected, setSelected] = React.useState([])
 
   React.useEffect(() => {
+    // remote selected filter if option is not available anymore (e.g. last rescoring was deleted)
+    if (selected.every((s) => options.some((o) => o.name === s))) return
+    // ensure to only update state if required
+    setSelected(prev => prev.filter(s => options.some(o => o.name === s)))
+  }, [
+    options,
+  ])
+
+  React.useEffect(() => {
     updateFilterCallback((rescoring) => {
       if (selected.length === 0) return true
       return filterCallback(selected, rescoring)
