@@ -428,6 +428,21 @@ const RescoringFilterOption = ({
   const [selected, setSelected] = React.useState([])
 
   React.useEffect(() => {
+    const selectedSet = new Set(selected)
+    const optionsSet = new Set(options.map((option) => option.name))
+
+    // nothing to do
+    if (selectedSet.isSubsetOf(optionsSet)) return
+
+    // remove selected filter if option is not available anymore (e.g. last rescoring was deleted)
+    setSelected(prev => prev.filter(s => options.some(o => o.name === s)))
+  }, [
+    options,
+    selected,
+    setSelected,
+  ])
+
+  React.useEffect(() => {
     updateFilterCallback((rescoring) => {
       if (selected.length === 0) return true
       return filterCallback(selected, rescoring)
