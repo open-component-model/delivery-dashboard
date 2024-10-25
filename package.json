@@ -11,7 +11,7 @@
     "@mui/material": "^5.16.7",
     "@mui/x-charts": "^7.21.0",
     "@mui/x-data-grid": "^7.21.0",
-    "@uiw/codemirror-extensions-langs": "^4.23.5",
+    "@uiw/codemirror-extensions-langs": "^4.23.6",
     "@uiw/codemirror-theme-bbedit": "^4.23.5",
     "@uiw/codemirror-theme-vscode": "^4.23.5",
     "@uiw/react-codemirror": "^4.23.6",
