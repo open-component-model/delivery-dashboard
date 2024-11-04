@@ -422,12 +422,16 @@ const RescoringFilterOption = ({
   optionIdCallback,
   optionNameCallback,
   title,
+  defaultSelection,
   colorCallback = () => 'default',
 }) => {
   const theme = useTheme()
-  const [selected, setSelected] = React.useState([])
+  const [selected, setSelected] = React.useState(defaultSelection || [])
 
   React.useEffect(() => {
+    // options not yet fetched
+    if (isLoading) return
+
     const selectedSet = new Set(selected)
     const optionsSet = new Set(options.map((option) => option.name))
 
@@ -532,11 +536,13 @@ RescoringFilterOption.propTypes = {
   optionIdCallback: PropTypes.func.isRequired,
   optionNameCallback: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,
+  defaultSelection: PropTypes.array,
 }
 
 
 const RescoringFilter = ({
-  sprints,
+  availableSprints,
+  preSelectedSprints,
   findingTypes,
   updateFilter,
   rescoringsLoading,
@@ -583,10 +589,11 @@ const RescoringFilter = ({
         isLoading={sprintsLoading}
         filterCallback={React.useCallback((selected, rescoring) => selected.some((sprint) => sprintNameForRescoring(rescoring) === sprint), [])}
         countCallback={(sprint) => sprint.count}
-        options={sprints}
+        options={availableSprints}
         optionIdCallback={(sprint) => sprint.name}
         optionNameCallback={(sprint) => sprint.displayName}
         title='Due Date'
+        defaultSelection={preSelectedSprints}
       />
       <Divider
         orientation='vertical'
@@ -617,7 +624,8 @@ const RescoringFilter = ({
 }
 RescoringFilter.displayName = 'RescoringFilter'
 RescoringFilter.propTypes = {
-  sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
+  availableSprints: PropTypes.arrayOf(PropTypes.object).isRequired,
+  preSelectedSprints: PropTypes.arrayOf(PropTypes.string),
   findingTypes: PropTypes.arrayOf(PropTypes.object).isRequired,
   updateFilter: PropTypes.func.isRequired,
   rescoringsLoading: PropTypes.bool.isRequired,
@@ -2406,7 +2414,6 @@ const RescoringModal = ({
   const [openInput, setOpenInput] = React.useState(false)
 
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
-  const searchParamContext = React.useContext(SearchParamContext)
   const [rescoringFeature, setRescoringFeature] = React.useState()
   const [cveRescoringRuleSet, setCveRescoringRuleSet] = React.useState()
   const [rescorings, setRescorings] = React.useState([])
@@ -2417,11 +2424,6 @@ const RescoringModal = ({
   const [showProgress, setShowProgress] = React.useState(false)
   const [sprints, setSprints] = React.useState([])
   const [sprintsLoading, setSprintsLoading] = React.useState(true)
-  const [selectedSprints, setSelectedSprints] = React.useState(searchParamContext.getAll('sprints').map((sprint) => {
-    // since url parameters are interpreted as string, parse it to null again
-    if (sprint === 'null') return null
-    return sprint
-  }) ?? [])
 
   const [scope, setScope] = React.useState(scopeOptions.ARTEFACT)
   const [filters, setFilters] = React.useState({})
@@ -2545,14 +2547,6 @@ const RescoringModal = ({
     e.stopPropagation() // stop interaction with background
   }
 
-  // if there are any sprints selected which don't have any
-  // associated findings, remove them from the selection
-  if (selectedSprints.some((sprint) => !sprints.find((s) => sprint === s.name))) {
-    const updatedSprintSelection = selectedSprints.filter((sprint) => sprints.find((s) => sprint === s.name))
-    setSelectedSprints(updatedSprintSelection)
-    searchParamContext.update({'sprints': updatedSprintSelection})
-  }
-
   const uniqueTypedefs = (rescorings) => {
     if (rescorings.length === 0) return []
 
@@ -2581,6 +2575,17 @@ const RescoringModal = ({
       return rescoring.applicable_rescorings.length === 0
     })
   }, [updateFilter] )
+
+  const searchParamContext = React.useContext(SearchParamContext)
+  const preSelectedSprints = searchParamContext.getAll('sprints')
+
+  React.useEffect(() => {
+    return () => {
+      if (preSelectedSprints.length === 0) return
+      // clear sprints from URL again
+      searchParamContext.delete('sprints')
+    }
+  }, [])
 
   return <Dialog
     open
@@ -2642,7 +2647,8 @@ const RescoringModal = ({
           justifyContent='center'
         >
           <RescoringFilter
-            sprints={sprints.filter((sprint) => sprint.name !== META_SPRINT_NAMES.RESOLVED)}
+            availableSprints={sprints.filter((sprint) => sprint.name !== META_SPRINT_NAMES.RESOLVED)}
+            preSelectedSprints={preSelectedSprints}
             findingTypes={uniqueTypedefs(rescorings)}
             updateFilter={updateFilter}
             rescoringsLoading={rescoringsLoading}
