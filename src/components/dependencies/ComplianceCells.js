@@ -427,7 +427,11 @@ const ArtefactCell = ({
   const downloadUrl = new URL(routes.ocm.artefactsBlob)
   appendPresentParams(downloadUrl, {
     component: `${component.name}:${component.version}`,
-    artefact: artefact.name,
+    artefact: JSON.stringify({
+      name: artefact.name,
+      version: artefact.version,
+      ...artefact.extraIdentity
+    }),
     unzip: 'true',
   })
 
