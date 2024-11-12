@@ -258,6 +258,7 @@ const componentsComplianceSummary = async ({
   componentVersion,
   ocmRepo,
   recursionDepth,
+  headers,
 }) => {
   const url = new URL(routes.components.complianceSummary())
   appendPresentParams(url, {
@@ -267,8 +268,9 @@ const componentsComplianceSummary = async ({
     recursion_depth: recursionDepth,
   })
 
-
-  const resp = await withAuth(url)
+  const resp = await withAuth(url, {
+    headers,
+  })
 
   if (!resp.ok) {
     const status_text = resp.statusText
