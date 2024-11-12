@@ -94,7 +94,6 @@ export const features = {
   AUTHENTICATION: 'authentication',
   DELIVERY_DB: 'delivery-db',
   ELASTIC_SEARCH: 'elastic-search',
-  ISSUES: 'issues',
   TESTS: 'tests',
   REPO_CONTEXTS: 'repo-contexts',
   SPECIAL_COMPONENTS: 'special-components',
