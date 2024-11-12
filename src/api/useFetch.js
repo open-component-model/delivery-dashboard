@@ -148,7 +148,11 @@ const _useFetch = ({
         return
       }
 
-      const fetchPromise = fetchParams === null ? fetchFunction() : fetchFunction(fetchParams)
+      const headers = {
+        'Shortcut-Cache': Boolean(!honourCacheKey.current),
+      }
+
+      const fetchPromise = fetchParams === null ? fetchFunction({headers}) : fetchFunction({...fetchParams, ...{headers: headers}})
       if (
         cacheKey !== null
         && cacheCondition === null // cannot evaluate cache condition if promise is not resolved
