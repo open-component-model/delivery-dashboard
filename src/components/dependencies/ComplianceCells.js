@@ -249,8 +249,8 @@ const ComplianceCell = ({
     return (
       artefactSummary.artefact.artefact_kind === artefact.kind
       && artefactSummary.artefact.artefact.artefact_name === artefact.name
-      && artefactSummary.artefact.artefact.artefact_version == artefact.version
-      && artefactSummary.artefact.artefact.artefact_type == artefact.type
+      && artefactSummary.artefact.artefact.artefact_version === artefact.version
+      && artefactSummary.artefact.artefact.artefact_type === artefact.type
       && JSON.stringify(normaliseObject(artefactSummary.artefact.artefact.artefact_extra_id))
         === JSON.stringify(normaliseObject(artefact.extraIdentity))
     )
@@ -328,6 +328,7 @@ const ComplianceCell = ({
     artefactName: artefact.name,
     artefactVersion: artefact.version,
     artefactType: artefact.type,
+    artefactExtraId: artefact.extraIdentity,
   }))
 
   const structureInfos = complianceFiltered?.filter((d) => d.meta.type === artefactMetadataTypes.STRUCTURE_INFO)
