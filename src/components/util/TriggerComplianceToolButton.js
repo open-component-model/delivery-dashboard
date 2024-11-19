@@ -139,7 +139,7 @@ triggerComplianceTool.propTypes = {
 
 
 const TriggerComplianceToolButton = ({
-  ocmNode,
+  ocmNodes,
   cfgName,
   service,
 }) => {
@@ -151,7 +151,7 @@ const TriggerComplianceToolButton = ({
       triggerComplianceTool({
         service: service,
         cfgName: cfgName,
-        ocmNodes: [ocmNode],
+        ocmNodes: ocmNodes,
         enqueueSnackbar: enqueueSnackbar,
       })
     }}
@@ -167,7 +167,7 @@ const TriggerComplianceToolButton = ({
 }
 TriggerComplianceToolButton.displayName = 'TriggerComplianceToolButton'
 TriggerComplianceToolButton.propTypes = {
-  ocmNode: PropTypes.object.isRequired,
+  ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   cfgName: PropTypes.string.isRequired,
   service: PropTypes.string.isRequired,
 }

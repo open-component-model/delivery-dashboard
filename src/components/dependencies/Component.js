@@ -675,7 +675,7 @@ const Artefacts = ({
   const [complianceData, state] = useFetchQueryMetadata(params)
   const complianceDataFetchDetails = {complianceData, state}
 
-  const resources = component.resources.sort((left, right) => {
+  const resources = React.useMemo(() => component.resources.sort((left, right) => {
     const ltype = left.type
     const rtype = right.type
 
@@ -690,9 +690,9 @@ const Artefacts = ({
       ...resource,
       kind: ARTEFACT_KIND.RESOURCE,
     }
-  })
+  }), [component])
 
-  const sources = component.sources.sort((left, right) => {
+  const sources = React.useMemo(() => component.sources.sort((left, right) => {
     const ltype = left.type
     const rtype = right.type
 
@@ -705,7 +705,7 @@ const Artefacts = ({
       ...source,
       kind: ARTEFACT_KIND.SOURCE,
     }
-  })
+  }), [component])
 
   return <Stack spacing={8}>
     <ArtefactDetails
