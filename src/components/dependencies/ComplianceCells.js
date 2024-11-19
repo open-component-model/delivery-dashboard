@@ -36,6 +36,7 @@ import {
   appendPresentParams,
   artefactMetadatumSeverity,
   capitalise,
+  ExtraIdentityHover,
   findSeverityCfgByName,
   normaliseObject,
 } from '../../util'
@@ -448,7 +449,10 @@ const ArtefactCell = ({
         rel='noreferrer'
         color='inherit'
       >
-        {artefactDisplayName}
+        <ExtraIdentityHover
+          displayName={artefactDisplayName}
+          extraIdentity={artefact.extraIdentity}
+        />
       </Link>
     </TableCell>
   if (artefact.access.type.toLowerCase() === 'github') {
@@ -463,7 +467,10 @@ const ArtefactCell = ({
         rel='noreferrer'
         color='inherit'
       >
-        {artefactDisplayName}
+        <ExtraIdentityHover
+          displayName={artefactDisplayName}
+          extraIdentity={artefact.extraIdentity}
+        />
       </Link>
     </TableCell>
   }
@@ -477,27 +484,10 @@ const ArtefactCell = ({
         flexDirection='row'
         alignItems='center'
       >
-        {
-          Object.values(artefact.extraIdentity).length > 0
-            ? <Tooltip
-              title={
-                <Typography
-                  variant='inherit'
-                  sx={{
-                    whiteSpace: 'pre-wrap',
-                    maxWidth: 'none',
-                  }}
-                >
-                  {JSON.stringify(artefact.extraIdentity, null, 2)}
-                </Typography>
-              }
-              placement='top-start'
-              describeChild
-            >
-              <Typography variant='inherit'>{`${artefactDisplayName}*`}</Typography>
-            </Tooltip>
-            : <Typography variant='inherit'>{artefactDisplayName}</Typography>
-        }
+        <ExtraIdentityHover
+          displayName={artefactDisplayName}
+          extraIdentity={artefact.extraIdentity}
+        />
         <div style={{ padding: '0.3em' }} />
         <Tooltip
           title={
@@ -525,7 +515,12 @@ const ArtefactCell = ({
     </TableCell>
   }
 
-  return <TableCell>{artefactDisplayName}</TableCell>
+  return <TableCell>
+    <ExtraIdentityHover
+      displayName={artefactDisplayName}
+      extraIdentity={artefact.extraIdentity}
+    />
+  </TableCell>
 }
 ArtefactCell.displayName = 'ArtefactCell'
 ArtefactCell.propTypes = {
