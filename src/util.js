@@ -229,9 +229,9 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
       && rescoring.artefact.artefact.artefact_version !== finding.artefact.artefact.artefact_version
     ) return false
     if (
-      Object.keys(rescoring.artefact.artefact.artefact_extra_id) > 0
+      Object.keys(rescoring.artefact.artefact.artefact_extra_id).length > 0
       && JSON.stringify(normaliseObject(rescoring.artefact.artefact.artefact_extra_id))
-        === JSON.stringify(normaliseObject(finding.artefact.artefact.artefact_extra_id))
+        !== JSON.stringify(normaliseObject(finding.artefact.artefact.artefact_extra_id))
     ) return false
     if (
       finding.meta.type === artefactMetadataTypes.VULNERABILITY
