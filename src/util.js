@@ -3,7 +3,14 @@ import PropTypes from 'prop-types'
 
 import yaml from 'js-yaml'
 
-import { Box, CircularProgress, IconButton, tooltipClasses, Tooltip } from '@mui/material'
+import {
+  Box,
+  CircularProgress,
+  IconButton,
+  tooltipClasses,
+  Tooltip,
+  Typography,
+} from '@mui/material'
 import styled from '@emotion/styled'
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
 
@@ -510,6 +517,44 @@ PopoverButton.propTypes = {
   Popover: PropTypes.func,
   iconProps: PropTypes.object,
   Icon: PropTypes.object,
+}
+
+
+export const ExtraIdentityHover = ({
+  displayName,
+  extraIdentity,
+}) => {
+  if (!extraIdentity || Object.keys(extraIdentity).length === 0) {
+    return <Typography variant='inherit'>
+      {displayName}
+    </Typography>
+  }
+
+  return <Tooltip
+    title={
+      <Typography
+        variant='inherit'
+        sx={{
+          whiteSpace: 'pre-wrap',
+          maxWidth: 'none',
+        }}
+      >
+        {
+          JSON.stringify(extraIdentity, null, 2)
+        }
+      </Typography>
+    }
+    placement='top-start'
+  >
+    <Typography variant='inherit'>
+      {`${displayName}*`}
+    </Typography>
+  </Tooltip>
+}
+ExtraIdentityHover.displayName = 'ExtraIdentityHover'
+ExtraIdentityHover.propTypes = {
+  displayName: PropTypes.string.isRequired,
+  extraIdentity: PropTypes.object,
 }
 
 

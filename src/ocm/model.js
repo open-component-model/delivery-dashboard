@@ -37,6 +37,7 @@ import { SEVERITIES } from '../consts'
 import {
   artefactMetadataSeverityComparator,
   artefactMetadatumSeverity,
+  ExtraIdentityHover,
   findSeverityCfgByName,
   mixupFindingsWithRescorings,
   severityComparator,
@@ -564,7 +565,10 @@ const MetadataViewerAccordion = ({
     >
       <Grid container alignItems='center'>
         <Grid item xs={5}>
-          <Typography variant='body1'>{artefact.name}</Typography>
+          <ExtraIdentityHover
+            displayName={artefact.name}
+            extraIdentity={artefact.extraIdentity}
+          />
         </Grid>
         <Grid item xs={3}>
           <CopyOnClickChip
