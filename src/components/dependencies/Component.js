@@ -41,6 +41,7 @@ import { Responsibles } from './Responsibles'
 import {
   componentPathQuery,
   enhanceComponentRefFromPath,
+  normaliseObject,
   trimComponentName,
   trimLongString,
   updatePathFromComponentRef,
@@ -248,24 +249,35 @@ const Component = React.memo(({
     const artefactIds = searchParamContext.getAll('rescoreArtefacts')
     if (artefactIds.length === 0) return []
 
-    const artefactId = (artefact) => {
-      return `${artefact.name}:${artefact.version}`
+    const normalisedArtefactIds = artefactIds.map((artefactId) => {
+      /*
+        Artefacts specified via `rescoreArtefacts` URL parameter are expected to have the following
+        form: `<artefact-name>|<artefact-version>|<artefact-type>|<artefact-kind>`
+        Also, they may contain the optional suffix `|<artefact-extra-id>`
+      */
+      const idParts = artefactId.split('|')
+
+      if (idParts.length === 4) return artefactId // no artefact extra id included -> id can be left unchanged
+
+      const extraIdentity = idParts.pop()
+      const normalisedExtraIdentity = JSON.stringify(normaliseObject(JSON.parse(extraIdentity)))
+
+      return `${idParts.join('|')}|${normalisedExtraIdentity}`
+    })
+
+    const artefactId = (artefact, artefactKind) => {
+      const baseId = `${artefact.name}|${artefact.version}|${artefact.type}|${artefactKind}`
+
+      if (!artefact.extraIdentity || Object.keys(artefact.extraIdentity).length === 0) {
+        return baseId
+      }
+
+      return `${baseId}|${JSON.stringify(normaliseObject(artefact.extraIdentity))}`
     }
 
-    return component.resources.reduce((resources, resource) => {
-      return [
-        ...resources,
-        ...(
-          artefactIds.includes(artefactId(resource)) // resource selected via URL params
-          && !resources.map(r => artefactId(r)).includes(artefactId(resource)) // deduplicate resources (extra-id is ignored)
-            ? [resource]
-            : []
-        ),
-      ]
-    }, []).map((resource) => {
-      return new OcmNode([component], resource, ARTEFACT_KIND.RESOURCE)
-
-    })
+    return component.resources.filter((resource) => {
+      return normalisedArtefactIds.includes(artefactId(resource, ARTEFACT_KIND.RESOURCE)) // resource selected via URL params
+    }).map((resource) => new OcmNode([component], resource, ARTEFACT_KIND.RESOURCE))
   }, [
     searchParamContext,
     component.resources
