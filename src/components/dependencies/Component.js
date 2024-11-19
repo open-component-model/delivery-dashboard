@@ -279,7 +279,6 @@ const Component = React.memo(({
       return normalisedArtefactIds.includes(artefactId(resource, ARTEFACT_KIND.RESOURCE)) // resource selected via URL params
     }).map((resource) => new OcmNode([component], resource, ARTEFACT_KIND.RESOURCE))
   }, [
-    searchParamContext,
     component.resources
   ])
 
