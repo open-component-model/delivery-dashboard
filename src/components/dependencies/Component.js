@@ -275,11 +275,18 @@ const Component = React.memo(({
       return `${baseId}|${JSON.stringify(normaliseObject(artefact.extraIdentity))}`
     }
 
-    return component.resources.filter((resource) => {
+    const resourceNodes = component.resources.filter((resource) => {
       return normalisedArtefactIds.includes(artefactId(resource, ARTEFACT_KIND.RESOURCE)) // resource selected via URL params
     }).map((resource) => new OcmNode([component], resource, ARTEFACT_KIND.RESOURCE))
+
+    const sourceNodes = component.sources.filter((source) => {
+      return normalisedArtefactIds.includes(artefactId(source, ARTEFACT_KIND.SOURCE)) // source selected via URL params
+    }).map((source) => new OcmNode([component], source, ARTEFACT_KIND.SOURCE))
+
+    return resourceNodes.concat(sourceNodes)
   }, [
-    component.resources
+    component.resources,
+    component.sources,
   ])
 
   const handleRescoringClose = React.useCallback(() => {
