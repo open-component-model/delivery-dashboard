@@ -22,12 +22,10 @@ import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore'
 
 import SemVer from 'semver'
 
-import { OcmNode } from './../../ocm/iter'
 import { defaultTypedefForName, findTypedefByName } from '../../ocm/model'
 import { parseRelaxedSemver } from '../../osUtil'
 import { findSeverityCfgByName } from '../../util'
 import {
-  ARTEFACT_KIND,
   COMPLIANCE_TOOLS,
   REPORTING_MINIMUM_SEVERITY,
   SEVERITIES,
@@ -311,6 +309,7 @@ GolangChip.propTypes = {
 }
 
 const IssueChip = ({
+  ocmNodes,
   component,
   artefact,
   scanConfig,
@@ -322,7 +321,12 @@ const IssueChip = ({
     ? scanConfig.config.issueReplicator.artefact_types
     : scanConfig.config.defaults.artefact_types
 
-  if (artefactTypes && !artefactTypes.some((type) => type === artefact.type)) return
+  if (
+    artefactTypes
+    && !artefactTypes.some((type) => ocmNodes.map((ocmNode) => ocmNode.artefact.type).includes(type))
+  ) {
+    return
+  }
 
   const repoUrl = scanConfig.config.issueReplicator.github_issues_target_repository_url
   const issueState = encodeURIComponent('is:open')
@@ -333,7 +337,7 @@ const IssueChip = ({
     title={
       <List>
         <TriggerComplianceToolButton
-          ocmNode={new OcmNode([component], artefact, ARTEFACT_KIND.RESOURCE)}
+          ocmNodes={ocmNodes}
           cfgName={scanConfig.name}
           service={COMPLIANCE_TOOLS.ISSUE_REPLICATOR}
         />
@@ -371,6 +375,7 @@ const IssueChip = ({
 }
 IssueChip.displayName = 'IssueChip'
 IssueChip.propTypes = {
+  ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   component: PropTypes.object.isRequired,
   artefact: PropTypes.object.isRequired,
   scanConfig: PropTypes.object,

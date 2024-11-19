@@ -258,11 +258,14 @@ const ComplianceCell = ({
   })
 
   const handleRescoringClose = React.useCallback(() => setMountRescoring(false), [setMountRescoring])
+  const ocmNodes = React.useMemo(() => [
+    new OcmNode([component], artefact, ARTEFACT_KIND.RESOURCE),
+  ], [component, artefact])
 
   if (isSummaryError || state.error || (!isSummaryLoading && !artefactSummary)) return <TableCell>
     {
       mountRescoring && <RescoringModal
-        ocmNodes={[new OcmNode([component], artefact, ARTEFACT_KIND.RESOURCE)]}
+        ocmNodes={ocmNodes}
         ocmRepo={ocmRepo}
         handleClose={handleRescoringClose}
         fetchComplianceSummary={fetchComplianceSummary}
@@ -342,14 +345,14 @@ const ComplianceCell = ({
   return <TableCell>
     <Grid container direction='row-reverse' spacing={1}>
       <IssueChip
+        ocmNodes={ocmNodes}
         component={component}
         artefact={artefact}
         scanConfig={scanConfig?.config && COMPLIANCE_TOOLS.ISSUE_REPLICATOR in scanConfig.config ? scanConfig : null}
       />
       {
         artefact.kind === ARTEFACT_KIND.RESOURCE && <BDBACell
-          component={component}
-          artefact={artefact}
+          ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
           type={artefactMetadataTypes.LICENSE}
           severity={getMaxSeverity(artefactMetadataTypes.LICENSE)}
@@ -369,7 +372,7 @@ const ComplianceCell = ({
       }
       {
         artefact.kind === ARTEFACT_KIND.RESOURCE && <MalwareFindingCell
-          ocmNode={new OcmNode([component], artefact, ARTEFACT_KIND.RESOURCE)}
+          ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
           metadataTypedef={findTypedefByName({name: artefactMetadataTypes.FINDING_MALWARE})}
           scanConfig={scanConfig?.config && COMPLIANCE_TOOLS.CLAMAV in scanConfig.config ? scanConfig : null}
@@ -395,8 +398,7 @@ const ComplianceCell = ({
       }
       {
         artefact.kind === ARTEFACT_KIND.RESOURCE && <BDBACell
-          component={component}
-          artefact={artefact}
+          ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
           type={artefactMetadataTypes.VULNERABILITY}
           severity={getMaxSeverity(artefactMetadataTypes.VULNERABILITY)}
@@ -649,7 +651,7 @@ BDBAButton.propTypes = {
 
 
 const MalwareFindingCell = ({
-  ocmNode,
+  ocmNodes,
   ocmRepo,
   metadataTypedef,
   scanConfig,
@@ -670,7 +672,10 @@ const MalwareFindingCell = ({
       ? scanConfig.config.clamav.artefact_types
       : scanConfig.config.defaults.artefact_types
 
-    if (artefactTypes && !artefactTypes.some((type) => type === ocmNode.artefact.type)) {
+    if (
+      artefactTypes
+      && !artefactTypes.some((type) => ocmNodes.map((ocmNode) => ocmNode.artefact.type).includes(type))
+    ) {
       return null
     }
   }
@@ -680,7 +685,7 @@ const MalwareFindingCell = ({
   return <Grid item onClick={(e) => e.stopPropagation()}>
     {
       mountRescoring && <RescoringModal
-        ocmNodes={[ocmNode]}
+        ocmNodes={ocmNodes}
         ocmRepo={ocmRepo}
         handleClose={handleRescoringClose}
         fetchComplianceSummary={fetchComplianceSummary}
@@ -693,7 +698,7 @@ const MalwareFindingCell = ({
           <List>
             {
               scanConfig && <TriggerComplianceToolButton
-                ocmNode={ocmNode}
+                ocmNodes={ocmNodes}
                 cfgName={scanConfig.name}
                 service={COMPLIANCE_TOOLS.CLAMAV}
               />
@@ -738,7 +743,7 @@ const MalwareFindingCell = ({
 }
 MalwareFindingCell.displayName = 'MalwareFindingCell'
 MalwareFindingCell.propTypes = {
-  ocmNode: PropTypes.object.isRequired,
+  ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   ocmRepo: PropTypes.string,
   metadataTypedef: PropTypes.object.isRequired,
   severity: PropTypes.object.isRequired,
@@ -750,8 +755,7 @@ MalwareFindingCell.propTypes = {
 
 
 const BDBACell = ({
-  component,
-  artefact,
+  ocmNodes,
   ocmRepo,
   type,
   severity,
@@ -772,19 +776,21 @@ const BDBACell = ({
       ? scanConfig.config.bdba.artefact_types
       : scanConfig.config.defaults.artefact_types
 
-    if (artefactTypes && !artefactTypes.some((type) => type === artefact.type)) {
+    if (
+      artefactTypes
+      && !artefactTypes.some((type) => ocmNodes.map((ocmNode) => ocmNode.artefact.type).includes(type))
+    ) {
       return null
     }
   }
 
-  const ocmNode = new OcmNode([component], artefact, ARTEFACT_KIND.RESOURCE)
   const title = findTypedefByName({name: type}).friendlyName
   const reportUrl = lastScan?.data.report_url
 
   return <Grid item onClick={(e) => e.stopPropagation()}>
     {
       mountRescoring && <RescoringModal
-        ocmNodes={[ocmNode]}
+        ocmNodes={ocmNodes}
         ocmRepo={ocmRepo}
         handleClose={handleRescoringClose}
         fetchComplianceSummary={fetchComplianceSummary}
@@ -797,7 +803,7 @@ const BDBACell = ({
           <List>
             {
               scanConfig && <TriggerComplianceToolButton
-                ocmNode={ocmNode}
+                ocmNodes={ocmNodes}
                 cfgName={scanConfig.name}
                 service={COMPLIANCE_TOOLS.BDBA}
               />
@@ -845,8 +851,7 @@ const BDBACell = ({
 }
 BDBACell.displayName = 'BDBACell'
 BDBACell.propTypes = {
-  component: PropTypes.object.isRequired,
-  artefact: PropTypes.object.isRequired,
+  ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   ocmRepo: PropTypes.string,
   type: PropTypes.string.isRequired,
   severity: PropTypes.object.isRequired,
