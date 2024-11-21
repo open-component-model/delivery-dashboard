@@ -146,6 +146,15 @@ const rescoringIdentity = (rescoring) => {
 }
 
 
+const rescoringNeedsComment = (rescoring) => {
+  return (
+    rescoring.matching_rules.includes(META_RESCORING_RULES.CUSTOM_RESCORING)
+    && rescoring.severity !== rescoring.originalSeverityProposal
+    && !rescoring.comment
+  )
+}
+
+
 const LinearProgressWithLabel = ({value}) => {
   return <Box sx={{ display: 'flex', alignItems: 'center' }}>
     <Box sx={{ width: '100%', mr: 1 }}>
@@ -1401,7 +1410,6 @@ const RescoringContentTableRow = ({
   const matchingRules = matching_rules
   const applicableRescorings = applicable_rescorings
 
-  const severityCfg = findSeverityCfgByName({name: severity})
   const currentSeverity = rescoringProposalSeverity(rescoring)
   const currentSeverityCfg = findSeverityCfgByName({name: currentSeverity})
 
@@ -1531,8 +1539,7 @@ const RescoringContentTableRow = ({
           <div>
             <Typography variant='inherit' visibility='hidden'>Dummy</Typography>
             <Select
-              // unless it is a custom rescoring, don't propose increasing the severity
-              value={!matchingRules.includes(META_RESCORING_RULES.CUSTOM_RESCORING) && currentSeverityCfg.value < severityCfg.value ? currentSeverity : severity}
+              value={severity}
               onChange={(e) => {
                 editRescoring({
                   rescoring: rescoring,
@@ -1565,7 +1572,7 @@ const RescoringContentTableRow = ({
             }
           </div>
           {
-            matchingRules.includes(META_RESCORING_RULES.CUSTOM_RESCORING) && <Tooltip
+            severity !== originalSeverityProposal && <Tooltip
               title={`Reset to ${originalSeverityProposal}`}
             >
               <IconButton
@@ -1593,7 +1600,7 @@ const RescoringContentTableRow = ({
           defaultValue={rescoring.comment}
           onChange={(e) => delayCommentUpdate(e.target.value)}
           onClick={(e) => e.stopPropagation()}
-          error={!rescoring.comment && rescoring.matching_rules.includes(META_RESCORING_RULES.CUSTOM_RESCORING)}
+          error={rescoringNeedsComment(rescoring)}
           disabled={!isAuthenticated}
           size='small'
           maxRows={4}
@@ -2278,9 +2285,7 @@ const Rescore = ({
     Apply Rescoring
   </Button>
 
-  const customRescoringsWithoutComment = rescorings.filter((rescoring) => {
-    return rescoring.matching_rules.includes(META_RESCORING_RULES.CUSTOM_RESCORING) && (!rescoring.comment)
-  })
+  const customRescoringsWithoutComment = rescorings.filter(rescoringNeedsComment)
 
   if (customRescoringsWithoutComment.length > 0) return <Tooltip
     title={
@@ -2452,22 +2457,16 @@ const RescoringModal = ({
     comment,
   }) => {
     setRescorings((prev) => {
-      // explicitly check for `undefined` as `null` is a valid value
-      const newRescoreProposal = severity === rescoring.originalSeverityProposal ? {
-        severity: rescoring.originalSeverityProposal,
-        matching_rules: matchingRules === undefined ? rescoring.matching_rules : matchingRules,
-        comment: comment === undefined ? rescoring.comment : comment,
-      } : {
-        severity: severity === undefined ? rescoring.severity : severity,
-        matching_rules: matchingRules === undefined ? rescoring.matching_rules : matchingRules,
-        comment: comment === undefined ? rescoring.comment : comment,
-      }
-
       // don't mess up table sorting, therefore insert at index
       const index = prev.findIndex((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))
+      // explicitly check for `undefined` as `null` is a valid value
       prev[index] = {
         ...rescoring,
-        ...newRescoreProposal,
+        ...severity !== undefined && {severity: severity},
+        ...matchingRules !== undefined && {
+          matching_rules: severity === rescoring.originalSeverityProposal ? rescoring.originalMatchingRules : matchingRules,
+        },
+        ...comment !== undefined && {comment: comment},
       }
 
       // reconstruct array to trigger state-update (thus re-render)
