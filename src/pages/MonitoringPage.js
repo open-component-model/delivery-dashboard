@@ -699,7 +699,7 @@ const BacklogItemRow = ({
   backlogItem,
   selectedBacklogItems,
   setSelectedBacklogItems,
-  setRefreshBacklogItems,
+  refreshBacklogItems,
 }) => {
   const theme = useTheme()
   const { enqueueSnackbar } = useSnackbar()
@@ -713,7 +713,7 @@ const BacklogItemRow = ({
           priority: priority.value,
         },
       })
-      setRefreshBacklogItems({})
+      refreshBacklogItems()
     } catch(error) {
       enqueueSnackbar(
         `Could not update priority of backlog item to ${priority.name}`,
@@ -818,7 +818,7 @@ BacklogItemRow.propTypes = {
   backlogItem: PropTypes.object.isRequired,
   selectedBacklogItems: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedBacklogItems: PropTypes.func.isRequired,
-  setRefreshBacklogItems: PropTypes.func.isRequired,
+  refreshBacklogItems: PropTypes.func.isRequired,
 }
 
 
