@@ -34,6 +34,7 @@ import { FeatureProvider } from './feature'
 import { auth } from './api'
 import { isTokenExpired } from './util'
 import SnackbarWithDetails from './components/util/SnackbarWithDetails'
+import Snowfall from 'react-snowfall'
 
 
 export let originalGetContrastText
@@ -47,6 +48,7 @@ export const SearchParamContext = React.createContext()
 const App = () => {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
   const [themeMode, setThemeMode] = React.useState(prefersDarkMode)
+  const [showSnowflakes, setShowSnowflakes] = React.useState(true)
 
   React.useEffect(() => {
     setThemeMode(prefersDarkMode)
@@ -120,6 +122,14 @@ const App = () => {
       lightRed: {
         main: '#d32f2f',
       },
+      snowflake: {
+        main: themeMode ? '#ffffff' : '#6994b7',
+      },
+      snowflakeIcon: palette.augmentColor({
+        color: {
+          main: '#65adff',
+        }
+      }),
       mode: themeMode ? 'dark' : 'light',
     },
     bomButton: {
@@ -134,6 +144,8 @@ const App = () => {
     prefersDarkMode: themeMode,
     switchThemeMode: switchThemeMode,
     getContrastText: theme.palette.getContrastText,
+    toggleSnowflakes: () => setShowSnowflakes(prev => !prev),
+    showSnowflakes: showSnowflakes,
   }
 
   const featureListenerRegistrationHandler = (state, action) => {
@@ -225,6 +237,12 @@ const App = () => {
               <FeatureProvider/>
               <CssBaseline/>
               <Router/>
+              {showSnowflakes && <Snowfall
+                color={theme.palette.snowflake.main}
+                snowflakeCount={80}
+                speed={[2.0, 4.0]}
+                radius={[1.0, 4.0]}
+              />}
             </FeatureRegistrationContext.Provider>
           </FeatureContext.Provider>
         </ConfigContext.Provider>

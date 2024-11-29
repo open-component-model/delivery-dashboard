@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 
-import { Logout, Login, Settings } from '@mui/icons-material'
+import { Logout, Login, Settings, AcUnit } from '@mui/icons-material'
 import MenuBookIcon from '@mui/icons-material/MenuBook'
 
 import {
@@ -15,7 +15,9 @@ import {
   ListItemButton,
   ListItemText,
   Popover,
+  Switch,
   Tooltip,
+  Typography,
 } from '@mui/material'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 
@@ -27,13 +29,14 @@ import { features, TOKEN_KEY, errorSnackbarProps } from '../../consts.js'
 import { auth } from '../../api.js'
 import DarkModeSwitch from './DarkModeSwitch.js'
 import FeatureDependent from './FeatureDependent.js'
-import { FeatureRegistrationContext } from '../../App.js'
+import { ConfigContext, FeatureRegistrationContext } from '../../App.js'
 import { registerCallbackHandler } from '../../feature.js'
 
 
 export const SettingsMenu = () => {
   const theme = useTheme()
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
+  const context = React.useContext(ConfigContext)
 
   const [dashboardCreateIssueUrlFeature, setDashboardCreateIssueUrlFeature] = React.useState()
   const [anchorElement, setAnchorElement] = React.useState(null)
@@ -97,6 +100,25 @@ export const SettingsMenu = () => {
     >
       <Box sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}>
         <List>
+          <ListItem
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography>Winter is coming</Typography>
+            <Switch
+              checked={context.showSnowflakes}
+              onChange={context.toggleSnowflakes}
+              icon={<AcUnit
+                color='snowflakeIcon'
+              />}
+              checkedIcon={<AcUnit
+                color='snowflakeIcon'
+              />}
+            />
+          </ListItem>
           <ListItem
             sx={{
               display: 'flex',
