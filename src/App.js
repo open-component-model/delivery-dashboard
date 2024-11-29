@@ -127,7 +127,7 @@ const App = () => {
       },
       snowflakeIcon: palette.augmentColor({
         color: {
-          main: '#65adff',
+          main: themeMode ? '#65adff' : '#19518d',
         }
       }),
       mode: themeMode ? 'dark' : 'light',
