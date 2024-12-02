@@ -121,6 +121,7 @@ export const TOKEN_KEY = 'delivery_dashboard_jwt'
 export const FEATURES_CFG_KEY = 'features'
 export const PATH_KEY = 'path'
 export const PATH_POS_KEY = 'path_pos'
+export const SHOW_SNOWFLAKES = 'show_snowflakes'
 
 export const OCM_REPO_AUTO_OPTION = '<auto>'
 

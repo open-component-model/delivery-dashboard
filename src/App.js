@@ -25,6 +25,7 @@ import {
   servicesTabConfig,
   tabConfig,
   TOKEN_KEY,
+  SHOW_SNOWFLAKES,
 } from './consts'
 import { LoginPage } from './pages/LoginPage'
 import { LandingPage } from './pages/LandingPage'
@@ -48,7 +49,11 @@ export const SearchParamContext = React.createContext()
 const App = () => {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
   const [themeMode, setThemeMode] = React.useState(prefersDarkMode)
-  const [showSnowflakes, setShowSnowflakes] = React.useState(true)
+  const [showSnowflakes, setShowSnowflakes] = React.useState(JSON.parse(localStorage.getItem(SHOW_SNOWFLAKES)))
+
+  React.useEffect(() => {
+    localStorage.setItem(SHOW_SNOWFLAKES, showSnowflakes)
+  }, [showSnowflakes])
 
   React.useEffect(() => {
     setThemeMode(prefersDarkMode)
