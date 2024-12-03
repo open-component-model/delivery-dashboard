@@ -31,6 +31,7 @@ import DarkModeSwitch from './DarkModeSwitch.js'
 import FeatureDependent from './FeatureDependent.js'
 import { ConfigContext, FeatureRegistrationContext } from '../../App.js'
 import { registerCallbackHandler } from '../../feature.js'
+import { isWinterComing } from '../../util.js'
 
 
 export const SettingsMenu = () => {
@@ -100,25 +101,27 @@ export const SettingsMenu = () => {
     >
       <Box sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}>
         <List>
-          <ListItem
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Typography>Winter is coming</Typography>
-            <Switch
-              checked={context.showSnowflakes}
-              onChange={context.toggleSnowflakes}
-              icon={<AcUnit
-                color='snowflakeIcon'
-              />}
-              checkedIcon={<AcUnit
-                color='snowflakeIcon'
-              />}
-            />
-          </ListItem>
+          {
+            isWinterComing() && <ListItem
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Typography>Winter is coming</Typography>
+              <Switch
+                checked={context.showSnowflakes}
+                onChange={context.toggleSnowflakes}
+                icon={<AcUnit
+                  color='snowflakeIcon'
+                />}
+                checkedIcon={<AcUnit
+                  color='snowflakeIcon'
+                />}
+              />
+            </ListItem>
+          }
           <ListItem
             sx={{
               display: 'flex',

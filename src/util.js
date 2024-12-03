@@ -626,6 +626,11 @@ export const isTokenExpired = (token) => {
 }
 
 
+export const isWinterComing = () => {
+  return new Date().getMonth() === 11 // is december
+}
+
+
 export const updatePathFromComponentRef = (componentRef) => {
   const pathItem = localStorage.getItem(PATH_KEY)
   const path = pathItem ? JSON.parse(pathItem) : null

@@ -33,7 +33,7 @@ import { MonitoringPage } from './pages/MonitoringPage'
 import { ServicesPage } from './pages/ServicesPage'
 import { FeatureProvider } from './feature'
 import { auth } from './api'
-import { isTokenExpired } from './util'
+import { isTokenExpired, isWinterComing } from './util'
 import SnackbarWithDetails from './components/util/SnackbarWithDetails'
 import Snowfall from 'react-snowfall'
 
@@ -246,7 +246,7 @@ const App = () => {
               <FeatureProvider/>
               <CssBaseline/>
               <Router/>
-              {showSnowflakes && <Snowfall
+              {(showSnowflakes && isWinterComing()) && <Snowfall
                 color={theme.palette.snowflake.main}
                 snowflakeCount={80}
                 speed={[2.0, 4.0]}
