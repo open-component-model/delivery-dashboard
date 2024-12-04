@@ -50,9 +50,9 @@ const App = () => {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
   const [themeMode, setThemeMode] = React.useState(prefersDarkMode)
   const [showSnowflakes, setShowSnowflakes] = React.useState(() => {
-    // default to true if user did not explicitly disable snowflakes
+    // default to false if user did not explicitly enable snowflakes
     const storedValue = JSON.parse(localStorage.getItem(SHOW_SNOWFLAKES))
-    return storedValue === null ? true : storedValue
+    return storedValue === null ? false : storedValue
   })
 
   React.useEffect(() => {
