@@ -39,9 +39,22 @@ const withAuth = async (url, config) => {
   return resp
 }
 
+
+const raiseIfNotOk = async (resp) => {
+  if (resp.ok) return resp
+
+  const statusText = resp.statusText
+  const statusBody = await resp.text()
+
+  throw Error(`${statusText} - ${statusBody}`)
+}
+
+
 const _toJson = async (responsePromise) => {
   const resp = await responsePromise
-  if (!resp.ok) throw Error(resp.statusText)
+
+  await raiseIfNotOk(resp)
+
   return await resp.json()
 }
 
@@ -122,14 +135,7 @@ const ocmComponent = async ({
     raw: raw,
   })
 
-  const resp = await withAuth(url)
-
-  if (!resp.ok) {
-    const statusBody = await resp.json()
-    throw Error(`${statusBody.description}`)
-  }
-
-  return await resp.json()
+  return await _toJson(withAuth(url))
 }
 
 
@@ -147,16 +153,7 @@ const ocmComponentDependencies = async ({
     populate: populate,
   })
 
-  const resp = await withAuth(url)
-
-  if (!resp.ok) {
-    const status_text = resp.statusText
-    const status_body = await resp.json()
-    throw Error(`${status_text} - ${status_body.title}`)
-  }
-
-  const result = await resp.json()
-  return result
+  return await _toJson(withAuth(url))
 }
 ocmComponentDependencies.propTypes = {
   componentName: PropTypes.string.isRequired,
@@ -213,11 +210,7 @@ const componentUpgradePRs = async ({
     state,
   })
 
-  const resp = await withAuth(url)
-  if (!resp.ok) throw Error(resp.statusText)
-
-  return await resp.json()
-
+  return await _toJson(withAuth(url))
 }
 
 const fetchJoke = async () => {
@@ -268,18 +261,9 @@ const componentsComplianceSummary = async ({
     recursion_depth: recursionDepth,
   })
 
-  const resp = await withAuth(url, {
+  return await _toJson(withAuth(url, {
     headers,
-  })
-
-  if (!resp.ok) {
-    const status_text = resp.statusText
-    const status_body = await resp.json()
-    throw Error(`${status_text} - ${status_body.title}`)
-  }
-
-  const result = await resp.json()
-  return result
+  }))
 }
 
 
@@ -330,30 +314,21 @@ const osBranches = async (name) => {
   // Temporarily, 400 instead of 404 is returned.
   // TODO: 400 should raise an expception (once adjusted in service)
   if ([400, 404].includes(resp.status)) return null
-  if (!resp.ok) throw Error(resp.statusText)
-  return await resp.json()
+
+  return _toJson(resp)
 }
 
 const specialComponentCurrentDependencies = async ({componentName}) => {
   const url = new URL(routes.specialComponent.currentDependencies)
   appendPresentParams(url, {component_name: componentName})
 
-
-  const resp = await withAuth(url)
-
-  if (!resp.ok) throw Error(resp.statusText)
-
-  const result = await resp.json()
-  return result
+  return await _toJson(await withAuth(url))
 }
 
 const deliverySprintInfosCurrent = async () => {
   const url = new URL(routes.delivery.sprintInfos.current)
-  const resp = await withAuth(url)
-  if (!resp.ok) throw Error(resp.statusText)
 
-  const result = await resp.json()
-  return result
+  return await _toJson(withAuth(url))
 }
 
 
@@ -400,14 +375,7 @@ const rescore = {
       body: JSON.stringify(rescorings),
     })
 
-    if (!resp.ok) {
-      const content = await resp.json()
-
-      if (content.title)
-        throw Error(content.title)
-
-      throw Error(resp.statusText)
-    }
+    await raiseIfNotOk(resp)
 
     return true
   },
@@ -422,7 +390,7 @@ const rescore = {
       method: 'DELETE',
     })
 
-    if (!resp.ok) throw Error(resp.statusText)
+    await raiseIfNotOk(resp)
 
     return true
   },
@@ -441,15 +409,7 @@ const components = {
 
 const auth = {
   authConfigs: async () => {
-    const resp = await fetch(routes.auth.configs())
-    const body = await resp.json()
-
-    if (!resp.ok) {
-      const statusText = resp.statusText
-      throw Error(`${statusText} - ${JSON.stringify(body)}`)
-    }
-
-    return body
+    return await _toJson(fetch(routes.auth.configs()))
   },
   auth: async ({code, clientId, accessToken, apiUrl}) => {
     const authUrl = new URL(routes.auth.base)
@@ -464,9 +424,8 @@ const auth = {
   },
   logout: async () => {
     const resp = await withAuth(routes.auth.logout())
-    if (!resp.ok) {
-      throw Error(resp.statusText)
-    }
+
+    await raiseIfNotOk(resp)
   },
 }
 
@@ -474,10 +433,7 @@ const serviceExtensions = {
   services: async () => {
     const url = new URL(routes.serviceExtensions.base)
 
-    const resp = await withAuth(url)
-    if (!resp.ok) throw Error(resp.statusText)
-
-    return (await resp.json()).sort()
+    return (await _toJson(withAuth(url))).sort()
   },
   logCollections: async ({
     service,
@@ -489,28 +445,18 @@ const serviceExtensions = {
       log_level: logLevel,
     })
 
-    const resp = await withAuth(url)
-    if (!resp.ok) throw Error(resp.statusText)
-
-    return await resp.json()
-
+    return await _toJson(withAuth(url))
   },
   containerStatuses: async ({service}) => {
     const url = new URL(routes.serviceExtensions.containerStatuses())
     appendPresentParams(url, {service})
 
-    const resp = await withAuth(url)
-    if (!resp.ok) throw Error(resp.statusText)
-
-    return await resp.json()
+    return await _toJson(withAuth(url))
   },
   scanConfigurations: async () => {
     const url = new URL(routes.serviceExtensions.scanConfigurations())
 
-    const resp = await withAuth(url)
-    if (!resp.ok) throw Error(resp.statusText)
-
-    return await resp.json()
+    return await _toJson(withAuth(url))
   },
   backlogItems: {
     get: async ({service, cfgName}) => {
@@ -520,11 +466,7 @@ const serviceExtensions = {
         cfg_name: cfgName,
       })
 
-      const resp = await withAuth(url)
-
-      if (!resp.ok) throw Error(resp.statusText)
-
-      return await resp.json()
+      return await _toJson(withAuth(url))
     },
     create: async ({service, cfgName, priority, artefacts}) => {
       const url = new URL(routes.serviceExtensions.backlogItems())
@@ -542,7 +484,7 @@ const serviceExtensions = {
         body: JSON.stringify({artefacts}),
       })
 
-      if (!resp.ok) throw Error(resp.statusText)
+      await raiseIfNotOk(resp)
 
       return true
     },
@@ -558,7 +500,7 @@ const serviceExtensions = {
         body: JSON.stringify({spec}),
       })
 
-      if (!resp.ok) throw Error(resp.statusText)
+      await raiseIfNotOk(resp)
 
       return true
     },
@@ -570,7 +512,7 @@ const serviceExtensions = {
         method: 'DELETE',
       })
 
-      if (!resp.ok) throw Error(resp.statusText)
+      await raiseIfNotOk(resp)
 
       return true
     },
@@ -595,8 +537,6 @@ const dora = {
 
     const resp = await withAuth(url)
     if (resp.status === 202) return API_RESPONSES.RETRY // caller is supposed to retry
-
-    if (!resp.ok) throw Error(resp.statusText)
 
     return await _toJson(resp)
   },
