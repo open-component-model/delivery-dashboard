@@ -619,15 +619,18 @@ const useFetchBacklogItems = ({
 const useFetchComponentResponsibles = ({
   componentName,
   componentVersion,
+  artefactName,
   ocmRepo,
 }) => {
   const params = React.useMemo(() => ({
     componentName,
     componentVersion,
+    artefactName,
     ocmRepo,
   }), [
     componentName,
     componentVersion,
+    artefactName,
     ocmRepo,
   ])
 

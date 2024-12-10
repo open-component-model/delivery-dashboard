@@ -165,12 +165,14 @@ ocmComponentDependencies.propTypes = {
 const ocmComponentResponsibles = async ({
   componentName,
   componentVersion,
+  artefactName,
   ocmRepo,
 }) => {
   const url = new URL(routes.ocm.component.responsibles())
   appendPresentParams(url, {
     component_name: componentName,
     version: componentVersion,
+    artifact_name: artefactName,
     ocm_repo_url: ocmRepo,
   })
 
