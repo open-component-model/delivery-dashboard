@@ -242,3 +242,11 @@ export const CRYPTO_ASSET_TYPES = {
   RELATED_CRYPTO_MATERIAL: 'related-crypto-material',
 }
 Object.freeze(CRYPTO_ASSET_TYPES)
+
+
+export const USER_IDENTITIES = {
+  EMAIL_ADDRESS: 'emailAddress',
+  GITHUB_USER: 'githubUser',
+  PERSONAL_NAME: 'personalName',
+}
+Object.freeze(USER_IDENTITIES)
