@@ -31,6 +31,8 @@ import PropTypes from 'prop-types'
 import React from 'react'
 import { useTheme } from '@mui/material/styles'
 
+import { USER_IDENTITIES } from '../../consts'
+
 
 const Responsibles = ({ componentResponsibles, isResponsibleDataLoading }) => {
   const [page, setPage] = React.useState(0)
@@ -264,13 +266,13 @@ TablePaginationActions.propTypes = {
 
 const Responsible = ({ responsible }) => {
   const githubUsers = responsible.filter(
-    (identifier) => identifier.type === 'githubUser'
+    (identifier) => identifier.type === USER_IDENTITIES.GITHUB_USER
   )
   const emailAddress = responsible.find(
-    (identifier) => identifier.type === 'emailAddress'
+    (identifier) => identifier.type === USER_IDENTITIES.EMAIL_ADDRESS
   )
   const personalName = responsible.find(
-    (identifier) => identifier.type === 'personalName'
+    (identifier) => identifier.type === USER_IDENTITIES.PERSONAL_NAME
   )
 
   return (
