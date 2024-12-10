@@ -30,6 +30,7 @@ import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore'
 import {
   evaluateResourceBranch,
   GolangChip,
+  CryptoAssetsChip,
   IssueChip,
 } from './ComplianceChips'
 import {
@@ -338,9 +339,11 @@ const ComplianceCell = ({
   const structureInfos = complianceFiltered?.filter((d) => d.meta.type === artefactMetadataTypes.STRUCTURE_INFO)
   const osData = complianceFiltered?.find((d) => d.meta.type === artefactMetadataTypes.OS_IDS)
   const codecheckData = complianceFiltered?.find((d) => d.meta.type === artefactMetadataTypes.CODECHECKS_AGGREGATED)
+  const cryptoAssets = complianceFiltered?.filter((d) => d.meta.type === artefactMetadataTypes.CRYPTO_ASSET)
 
   const lastBdbaScan = findLastScan(complianceFiltered, datasources.BDBA)
   const lastMalwareScan = findLastScan(complianceFiltered, datasources.CLAMAV)
+  const lastCryptoScan = findLastScan(complianceFiltered, datasources.CRYPTO)
 
   return <TableCell>
     <Grid container direction='row-reverse' spacing={1}>
@@ -368,6 +371,12 @@ const ComplianceCell = ({
             return structureInfo.data.package_name === PACKAGES.GOLANG
           }).map((structureInfo) => structureInfo.data.package_version)}
           timestamp={lastScanTimestampStr(lastBdbaScan)}
+        />
+      }
+      {
+        artefact.kind === ARTEFACT_KIND.RESOURCE && <CryptoAssetsChip
+          cryptoAssets={cryptoAssets}
+          timestamp={lastScanTimestampStr(lastCryptoScan)}
         />
       }
       {

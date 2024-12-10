@@ -678,12 +678,14 @@ const Artefacts = ({
       artefactMetadataTypes.CODECHECKS_AGGREGATED,
       artefactMetadataTypes.OS_IDS,
       artefactMetadataTypes.STRUCTURE_INFO,
+      artefactMetadataTypes.CRYPTO_ASSET,
     ]
   }, [
     artefactMetadataTypes.ARTEFACT_SCAN_INFO,
     artefactMetadataTypes.CODECHECKS_AGGREGATED,
     artefactMetadataTypes.OS_IDS,
     artefactMetadataTypes.STRUCTURE_INFO,
+    artefactMetadataTypes.CRYPTO_ASSET,
   ])
 
   const params = React.useMemo(() => {

@@ -27,6 +27,7 @@ import { parseRelaxedSemver } from '../../osUtil'
 import { findSeverityCfgByName } from '../../util'
 import {
   COMPLIANCE_TOOLS,
+  CRYPTO_ASSET_TYPES,
   REPORTING_MINIMUM_SEVERITY,
   SEVERITIES,
 } from './../../consts'
@@ -308,6 +309,61 @@ GolangChip.propTypes = {
   timestamp: PropTypes.string,
 }
 
+
+const CryptoAssetsChip = ({
+  cryptoAssets,
+  timestamp,
+}) => {
+  if (!cryptoAssets?.length > 0) return null
+
+  const cryptoLibraries = cryptoAssets.filter((cryptoAsset) => {
+    return cryptoAsset.data.asset_type === CRYPTO_ASSET_TYPES.LIBRARY
+  }).map((cryptoAsset) => cryptoAsset.data.properties).sort((left, right) => {
+    return left.name === right.name
+      ? left.version.localeCompare(right.version)
+      : left.name.localeCompare(right.name)
+  })
+
+  return <Tooltip
+    title={
+      <Stack direction='column' spacing={1}>
+        <Typography
+          variant='inherit'
+          sx={{
+            whiteSpace: 'pre-wrap',
+            maxWidth: 'none',
+          }}
+        >
+          {
+            cryptoLibraries.map((cryptoLibrary) => `${cryptoLibrary.name}:${cryptoLibrary.version}\n`)
+          }
+        </Typography>
+        <Divider/>
+        <Typography variant='inherit'>
+          {
+            timestamp
+          }
+        </Typography>
+      </Stack>
+    }
+  >
+    <Grid item>
+      <Chip
+        label='Crypto'
+        variant='outlined'
+        size='small'
+        color='default'
+      />
+    </Grid>
+  </Tooltip>
+}
+CryptoAssetsChip.displayName = 'CryptoAssetsChip'
+CryptoAssetsChip.propTypes = {
+  cryptoAssets: PropTypes.arrayOf(PropTypes.object),
+  timestamp: PropTypes.string,
+}
+
+
 const IssueChip = ({
   ocmNodes,
   component,
@@ -384,6 +440,7 @@ IssueChip.propTypes = {
 export {
   ComponentChip,
   GolangChip,
+  CryptoAssetsChip,
   IssueChip,
   evaluateResourceBranch,
 }

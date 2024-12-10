@@ -232,3 +232,13 @@ export const PACKAGES = {
   GOLANG: 'golang-runtime',
 }
 Object.freeze(PACKAGES)
+
+
+export const CRYPTO_ASSET_TYPES = {
+  ALGORITHM: 'algorithm',
+  CERTIFICATE: 'certificate',
+  LIBRARY: 'library',
+  PROTOCOL: 'protocol',
+  RELATED_CRYPTO_MATERIAL: 'related-crypto-material',
+}
+Object.freeze(CRYPTO_ASSET_TYPES)

@@ -75,6 +75,7 @@ const artefactMetadataTypes = {
   MALWARE: 'malware',
   OS_IDS: 'os_ids',
   CODECHECKS_AGGREGATED: 'codechecks/aggregated',
+  CRYPTO_ASSET: 'crypto_asset',
   RESCORINGS: 'rescorings',
 }
 Object.freeze(artefactMetadataTypes)
@@ -84,6 +85,7 @@ const datasources = {
   BDBA: 'bdba',
   CLAMAV: 'clamav',
   CC_UTILS: 'cc-utils',
+  CRYPTO: 'crypto',
 }
 Object.freeze(datasources)
 
@@ -293,6 +295,12 @@ const knownMetadataTypes = [
     friendlyName: 'Malware',
     SpecificTypeHandler: MultilineTextViewer,
     Icon: CoronavirusIcon
+  },
+  {
+    name: 'crypto_asset',
+    friendlyName: 'Crypto Asset',
+    SpecificTypeHandler: MultilineTextViewer,
+    Icon: ArticleIcon,
   },
 ]
 
