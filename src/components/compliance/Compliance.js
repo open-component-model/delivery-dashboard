@@ -36,39 +36,35 @@ import { alpha } from '@mui/material/styles'
 import SearchIcon from '@mui/icons-material/Search'
 import SendIcon from '@mui/icons-material/Send'
 
-import { useSnackbar } from 'notistack'
 import { useTheme } from '@emotion/react'
 
 import { SearchParamContext } from '../../App'
-import { artefactsQueryMetadata } from '../../api'
-import { useFetchBom, useFetchScanConfigurations } from '../../api/useFetch'
+import {
+  useFetchComplianceSummary,
+  useFetchComponentResponsibles,
+  useFetchScanConfigurations,
+} from '../../api/useFetch'
 import {
   artefactMetadataTypes,
   findTypedefByName,
-  knownLabelNames,
   severityConfigs,
   SeverityIndicator,
 } from '../../ocm/model'
 import {
-  artefactMetadatumSeverity,
   findSeverityCfgByName,
   matchObjectWithSearchQuery,
-  mixupFindingsWithRescorings,
   NoMaxWidthTooltip,
   pluralise,
   trimLongString,
 } from '../../util'
 import CopyOnClickChip from '../util/CopyOnClickChip'
 import {
-  ARTEFACT_KIND,
-  errorSnackbarProps,
-  fetchBomPopulate,
   SEVERITIES,
   TOKEN_KEY,
+  USER_IDENTITIES,
 } from '../../consts'
 import { OcmNode, OcmNodeDetails } from '../../ocm/iter'
 import { RescoringModal } from '../dependencies/RescoringModal'
-import { sanitiseArtefactExtraId } from '../../ocm/util'
 
 
 const filterModes = {
@@ -80,52 +76,38 @@ Object.freeze(filterModes)
 
 const filterForSeverity = ({
   severity,
-  ocmNode,
-  artefactMetadata,
+  aggregatedOcmNode,
 }) => {
-  const artefactMetadatum = findArtefactMetadatumForOcmNode(
-    ocmNode,
-    artefactMetadata,
-  )
-
   const severityCfg = findSeverityCfgByName({name: severity})
+  const ocmNodeSeverityCfg = findSeverityCfgByName({name: aggregatedOcmNode.severity})
 
-  if (!artefactMetadatum) {
-    const cfg = findSeverityCfgByName({name: SEVERITIES.UNKNOWN})
-    return cfg.value >= severityCfg.value
-  }
-
-  const cfg = artefactMetadatumSeverity(artefactMetadatum)
-  return cfg.value >= severityCfg.value
+  return ocmNodeSeverityCfg.value >= severityCfg.value
 }
 
 
 const SeverityFilter = ({
   setSeverityFilter,
-  artefactMetadata,
   disabled,
 }) => {
   const [severity, setSeverity] = React.useState(SEVERITIES.MEDIUM)
 
   React.useEffect(() => {
-    if (!artefactMetadata) return // while loading
-    setSeverityFilter(() => (ocmNode) => filterForSeverity({
+    setSeverityFilter(() => (aggregatedOcmNode) => filterForSeverity({
       severity: severity,
-      ocmNode: ocmNode,
-      artefactMetadata: artefactMetadata,
+      aggregatedOcmNode: aggregatedOcmNode,
     }))
-  }, [setSeverityFilter, severity, artefactMetadata])
+  }, [setSeverityFilter, severity])
 
   return <FormControl variant='standard' fullWidth>
     <InputLabel>Minimum Severity</InputLabel>
     <Select
-      value={artefactMetadata ? severity : 'loading'}
+      value={severity}
       label='Minimum Severity'
       onChange={(e) => setSeverity(e.target.value)}
-      disabled={!artefactMetadata || disabled}
+      disabled={disabled}
     >
       {
-        artefactMetadata ? severityConfigs.filter(cfg => cfg.name !== SEVERITIES.UNKNOWN).map(severityCfg => {
+        severityConfigs.filter(cfg => cfg.name !== SEVERITIES.UNKNOWN).map(severityCfg => {
           return <MenuItem
             key={severityCfg.name}
             value={severityCfg.name}
@@ -138,11 +120,7 @@ const SeverityFilter = ({
               {severityCfg.name}
             </Typography>
           </MenuItem>
-        }) : <MenuItem
-          value='loading'
-        >
-          <Skeleton/>
-        </MenuItem>
+        })
       }
     </Select>
   </FormControl>
@@ -150,7 +128,6 @@ const SeverityFilter = ({
 SeverityFilter.displayName = 'SeverityFilter'
 SeverityFilter.propTypes = {
   setSeverityFilter: PropTypes.func.isRequired,
-  artefactMetadata: PropTypes.arrayOf(PropTypes.object),
   disabled: PropTypes.bool.isRequired,
 }
 
@@ -168,7 +145,7 @@ const TypeFilter = ({
   return <FormControl variant='standard' fullWidth>
     <InputLabel>Finding Type</InputLabel>
     <Select
-      value={type ?? artefactMetadataTypes.VULNERABILITY}
+      value={type}
       label='Finding Type'
       onChange={(e) => setType(e.target.value)}
     >
@@ -189,8 +166,8 @@ const TypeFilter = ({
 }
 TypeFilter.displayName = 'TypeFilter'
 TypeFilter.propTypes = {
-  type: PropTypes.string,
-  setType: PropTypes.func,
+  type: PropTypes.string.isRequired,
+  setType: PropTypes.func.isRequired,
 }
 
 
@@ -206,11 +183,11 @@ const FreeTextFilter = ({
       return
     }
 
-    setFreeTextFilter(() => (ocmNode) => matchObjectWithSearchQuery(
+    setFreeTextFilter(() => (aggregatedOcmNode) => matchObjectWithSearchQuery(
       {
-        artefact: ocmNode.artefact,
+        artefact: aggregatedOcmNode.ocmNode.artefact,
         component: {
-          name: ocmNode.component.name
+          name: aggregatedOcmNode.ocmNode.component.name
         },
       },
       freeText,
@@ -259,7 +236,6 @@ FreeTextFilter.propTypes = {
 const Filters = ({
   addOrUpdateFilter,
   removeFilter,
-  artefactMetadata,
   disabled,
   type,
   setType,
@@ -302,7 +278,6 @@ const Filters = ({
     <Grid item xs={1.5}>
       <SeverityFilter
         setSeverityFilter={setSeverityFilter}
-        artefactMetadata={artefactMetadata}
         disabled={disabled}
       />
     </Grid>
@@ -312,88 +287,36 @@ Filters.displayName = 'Filters'
 Filters.propTypes = {
   addOrUpdateFilter: PropTypes.func.isRequired,
   removeFilter: PropTypes.func.isRequired,
-  artefactMetadata: PropTypes.arrayOf(PropTypes.object),
   disabled: PropTypes.bool.isRequired,
-  type: PropTypes.string,
-  setType: PropTypes.func,
-}
-
-
-const ocmNodeResponsibles = (ocmNode) => {
-  const label = ocmNode.findLabel(knownLabelNames.responsible)
-
-  return label?.value.reduce((usernames, responsible) => {
-    if (responsible.type === 'emailAddress') return [
-      ...usernames,
-      responsible.email
-    ]
-
-    if (responsible.type === 'githubUser') return [
-      ...usernames,
-      responsible.username
-    ]
-
-    return usernames
-  }, [])
-}
-
-
-const findArtefactMetadatumForOcmNode = (ocmNode, artefactMetadata) => {
-  return artefactMetadata.filter(am => {
-    const artefactMetadataOcmNode = new OcmNode(
-      [
-        {
-          name: am.artefact.component_name,
-          version: am.artefact.component_version ?? ocmNode.component.version,
-        },
-      ],
-      {
-        name: am.artefact.artefact.artefact_name,
-        version: am.artefact.artefact.artefact_version,
-        extraIdentity: sanitiseArtefactExtraId(am.artefact.artefact.artefact_extra_id),
-      },
-      am.artefact.artefact_kind,
-    )
-
-    return artefactMetadataOcmNode.identity() === ocmNode.identity()
-  }).reduce((prevAm, curAm) => {
-    if (!prevAm) return curAm
-    const prevSeverity = artefactMetadatumSeverity(prevAm)
-    const curSeverity = artefactMetadatumSeverity(curAm)
-
-    return curSeverity.value > prevSeverity.value ? curAm : prevAm
-  }, null)
+  type: PropTypes.string.isRequired,
+  setType: PropTypes.func.isRequired,
 }
 
 
 const ArtefactRow = ({
-  ocmNode,
-  artefactMetadata,
-  selectedOcmNodes,
-  setSelectedOcmNodes,
+  aggregatedOcmNode,
+  selectedAggregatedOcmNodes,
+  setSelectedAggregatedOcmNodes,
   ocmRepo,
 }) => {
   const theme = useTheme()
 
-  const findSeverityName = (ocmNode, artefactMetadata) => {
-    const artefactMetadatum = findArtefactMetadatumForOcmNode(
-      ocmNode,
-      artefactMetadata,
-    )
-
-    return artefactMetadatumSeverity(artefactMetadatum).name
-  }
-
   return <TableRow
     onClick={() => {
-      if (!ocmNode || !artefactMetadata) return // still loading
+      if (!aggregatedOcmNode) return // still loading
 
-      if (selectedOcmNodes.find(selectedOcmNode => selectedOcmNode.identity() === ocmNode.identity())) {
-        setSelectedOcmNodes(prev => prev.filter(selectedOcmNode => selectedOcmNode.identity() !== ocmNode.identity()))
+      if (selectedAggregatedOcmNodes.some((selectedAggregatedOcmNode) => {
+        return selectedAggregatedOcmNode.ocmNode.identity() === aggregatedOcmNode.ocmNode.identity()
+      })) {
+        // node has already been selected, thus remove selection
+        setSelectedAggregatedOcmNodes((prev) => prev.filter((selectedAggregatedOcmNode) => {
+          return selectedAggregatedOcmNode.ocmNode.identity() !== aggregatedOcmNode.ocmNode.identity()
+        }))
       } else {
-        setSelectedOcmNodes(prev => [
+        // node has not been selected yet, thus add selection
+        setSelectedAggregatedOcmNodes((prev) => [
           ...prev,
-          ocmNode,
+          aggregatedOcmNode,
         ])
       }
     }}
@@ -405,87 +328,82 @@ const ArtefactRow = ({
     }}
   >
     <TableCell>
-      {
-        ocmNode && artefactMetadata
-          ? <Checkbox checked={Boolean(selectedOcmNodes.find(selectedOcmNode => selectedOcmNode.identity() === ocmNode.identity()))}/>
-          : <Skeleton/>
-      }
+      <Checkbox
+        checked={aggregatedOcmNode && selectedAggregatedOcmNodes.some((selectedAggregatedOcmNode) => {
+          return selectedAggregatedOcmNode.ocmNode.identity() === aggregatedOcmNode.ocmNode.identity()
+        })}
+      />
     </TableCell>
     <TableCell>
       {
-        ocmNode
-          ? <Stack
-            direction='row' spacing={1}
+        aggregatedOcmNode ? <Stack direction='row' spacing={1}>
+          <Box
+            display='flex'
+            justifyContent='center'
+            alignItems='center'
           >
-            <Box
-              display='flex'
-              justifyContent='center'
-              alignItems='center'
-            >
-              <Typography variant='inherit'>{ocmNode.artefact.name}</Typography>
-            </Box>
-            <Box
-              display='flex'
-              justifyContent='center'
-              alignItems='center'
-            >
-              <OcmNodeDetails
-                ocmNode={ocmNode}
-                ocmRepo={ocmRepo}
-              />
-            </Box>
-          </Stack>
-          : <Skeleton/>
+            <Typography variant='inherit'>{aggregatedOcmNode.ocmNode.artefact.name}</Typography>
+          </Box>
+          <Box
+            display='flex'
+            justifyContent='center'
+            alignItems='center'
+          >
+            <OcmNodeDetails
+              ocmNode={aggregatedOcmNode.ocmNode}
+              ocmRepo={ocmRepo}
+            />
+          </Box>
+        </Stack> : <Skeleton/>
       }
     </TableCell>
     <TableCell>
       {
-        ocmNode
-          ? <CopyOnClickChip
-            value={ocmNode.artefact.version}
-            label={trimLongString(ocmNode.artefact.version, 12)}
-            chipProps={{
-              variant: 'outlined',
-            }}
-          />
-          : <Skeleton/>
+        aggregatedOcmNode ? <CopyOnClickChip
+          value={aggregatedOcmNode.ocmNode.artefact.version}
+          label={trimLongString(aggregatedOcmNode.ocmNode.artefact.version, 12)}
+          chipProps={{
+            variant: 'outlined',
+          }}
+        /> : <Skeleton/>
       }
     </TableCell>
     <TableCell>
       {
-        ocmNode && artefactMetadata
-          ? <SeverityIndicator
-            severity={findSeverityCfgByName({name: findSeverityName(ocmNode, artefactMetadata)})}
-          />
-          : <Skeleton/>
+        aggregatedOcmNode ? <SeverityIndicator
+          severity={findSeverityCfgByName({name: aggregatedOcmNode.severity})}
+        /> : <Skeleton/>
       }
     </TableCell>
     <TableCell>
       {
-        ocmNode
-          ? <Typography>{ocmNodeResponsibles(ocmNode)?.join(', ')}</Typography>
-          : <Skeleton/>
+        aggregatedOcmNode?.responsibles ? <Typography>
+          {
+            aggregatedOcmNode.responsibles.filter((responsible) => {
+              return responsible.personalName
+            }).map((responsible) => {
+              return responsible.personalName
+            }).join(', ')
+          }
+        </Typography> : <Skeleton/>
       }
     </TableCell>
   </TableRow>
 }
 ArtefactRow.displayName = 'ArtefactRow'
 ArtefactRow.propTypes = {
-  ocmNode: PropTypes.object,
-  artefactMetadata: PropTypes.arrayOf(PropTypes.object),
-  selectedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
-  setSelectedOcmNodes: PropTypes.func.isRequired,
+  aggregatedOcmNode: PropTypes.object,
+  selectedAggregatedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
+  setSelectedAggregatedOcmNodes: PropTypes.func.isRequired,
   ocmRepo: PropTypes.string,
 }
 
 
 const ArtefactList = ({
-  ocmNodes,
-  artefactMetadata,
-  selectedOcmNodes,
-  setSelectedOcmNodes,
+  aggregatedOcmNodes,
+  selectedAggregatedOcmNodes,
+  setSelectedAggregatedOcmNodes,
   ocmRepo,
-  filterMode,
 }) => {
   const [order, setOrder] = React.useState('asc')
   const [orderBy, setOrderBy] = React.useState('artefact')
@@ -493,68 +411,31 @@ const ArtefactList = ({
   const orderAttributes = {
     ARTEFACT: 'artefact',
     SEVERITY: 'severity',
-    RESPONSIBILITY: 'responsibility',
   }
 
+  const initialRowsPerPage = 10
   const [page, setPage] = React.useState(0)
-  const [rowsPerPage, setRowsPerPage] = React.useState(5)
-
-  const [allowEmptySelection, setAllowEmptySelection] = React.useState(false)
-
-  const havePersonalFilters = React.useCallback(() => {
-    return (
-      filterMode === filterModes.PERSONAL
-      && ocmNodes
-      && artefactMetadata
-      && ocmNodes.length !== selectedOcmNodes.length
-      && selectedOcmNodes.length === 0
-    )
-  }, [artefactMetadata, ocmNodes, filterMode, selectedOcmNodes.length])
-
-  React.useEffect(() => {
-    if (!havePersonalFilters()) return
-    if (allowEmptySelection) return
-
-    setSelectedOcmNodes(ocmNodes)
-    setAllowEmptySelection(true)
-  }, [allowEmptySelection, ocmNodes, havePersonalFilters, setSelectedOcmNodes])
-
-  const calculateMaxPage = () => {
-    if (!ocmNodes) return 0
-
-    return parseInt(ocmNodes.length / rowsPerPage)
-  }
+  const [rowsPerPage, setRowsPerPage] = React.useState(initialRowsPerPage)
+  const maxPage = aggregatedOcmNodes ? parseInt(aggregatedOcmNodes.length / rowsPerPage) : 0
 
   const resetPagination = () => {
-    setRowsPerPage(5)
+    setRowsPerPage(initialRowsPerPage)
     setPage(0)
   }
 
-  if (page > calculateMaxPage()) resetPagination()
+  if (page > maxPage) resetPagination()
 
   const descendingComparator = (l, r) => {
-    if (r < l) {
-      return -1
-    }
-    if (r > l) {
-      return 1
-    }
+    if (r < l) return -1
+    if (r > l) return 1
     return 0
   }
 
   const getAccessMethod = (orderBy) => {
     if (orderBy === orderAttributes.ARTEFACT) {
-      return (ocmNode) => `${ocmNode.artefact.name}:${ocmNode.artefact.version}`
+      return (aggregatedOcmNode) => `${aggregatedOcmNode.ocmNode.artefact.name}:${aggregatedOcmNode.ocmNode.artefact.version}`
     } else if (orderBy === orderAttributes.SEVERITY) {
-      return (ocmNode) => {
-        const artefactMetadatum = findArtefactMetadatumForOcmNode(
-          ocmNode,
-          artefactMetadata,
-        )
-        return artefactMetadatumSeverity(artefactMetadatum).value
-      }
-    } else if (orderBy === orderAttributes.RESPONSIBILITY) {
-      return (ocmNode) => ocmNodeResponsibles(ocmNode)?.length || 0
+      return (aggregatedOcmNode) => findSeverityCfgByName({name: aggregatedOcmNode.severity}).value
     }
   }
 
@@ -585,14 +466,14 @@ const ArtefactList = ({
     setPage(0)
   }
 
-
-  const countEmptyRows = (ocmNodes) => {
-    if (!ocmNodes) return 0
-    return page > 0 ? Math.max(0, (1 + page) * rowsPerPage - ocmNodes.length) : 0
+  const countEmptyRows = (aggregatedOcmNodes) => {
+    return page > 0 ? Math.max(0, (1 + page) * rowsPerPage - aggregatedOcmNodes.length) : 0
   }
 
-  const allSelected = (ocmNodes, selectedOcmNodes) => {
-    return ocmNodes.every(ocmNode => selectedOcmNodes.map(s => s.identity()).includes(ocmNode.identity()))
+  const allSelected = (aggregatedOcmNodes, selectedAggregatedOcmNodes) => {
+    return aggregatedOcmNodes.every((aggregatedOcmNode) => {
+      return selectedAggregatedOcmNodes.map((s) => s.ocmNode.identity()).includes(aggregatedOcmNode.ocmNode.identity())
+    })
   }
 
   return <Paper>
@@ -608,16 +489,13 @@ const ArtefactList = ({
             <TableCell
               width='70em'
               onClick={() => {
-                if (!ocmNodes || !artefactMetadata) return // still loading
+                if (!aggregatedOcmNodes) return // still loading
 
-                if (allSelected(ocmNodes, selectedOcmNodes)) {
-                  setSelectedOcmNodes(prev => prev.filter(ocmNode => !ocmNodes.map(s => s.identity()).includes(ocmNode.identity())))
-                  return
+                if (allSelected(aggregatedOcmNodes, selectedAggregatedOcmNodes)) {
+                  setSelectedAggregatedOcmNodes([])
+                } else {
+                  setSelectedAggregatedOcmNodes([...aggregatedOcmNodes])
                 }
-                setSelectedOcmNodes(prev => [
-                  ...prev,
-                  ...ocmNodes.filter(ocmNode => !selectedOcmNodes.map(s => s.identity()).includes(ocmNode.identity()))
-                ])
               }}
               sx={{
                 '&:hover': {
@@ -625,11 +503,7 @@ const ArtefactList = ({
                 },
               }}
             >
-              {
-                ocmNodes && artefactMetadata
-                  ? <Checkbox checked={ocmNodes && allSelected(ocmNodes, selectedOcmNodes)}/>
-                  : <Skeleton/>
-              }
+              <Checkbox checked={aggregatedOcmNodes && allSelected(aggregatedOcmNodes, selectedAggregatedOcmNodes)}/>
             </TableCell>
             <TableCell>
               <TableSortLabel
@@ -651,46 +525,33 @@ const ArtefactList = ({
               </TableSortLabel>
             </TableCell>
             <TableCell>
-              <TableSortLabel
-                onClick={() => handleSort(orderAttributes.RESPONSIBILITY)}
-                active={orderBy === orderAttributes.RESPONSIBILITY ? true : false}
-                direction={order}
-              >
-                Responsibility
-              </TableSortLabel>
+              Responsibility
             </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {
-            ocmNodes ? sortData(
-              [...ocmNodes], // do not sort in place so sort stays stable
+            aggregatedOcmNodes ? sortData(
+              [...aggregatedOcmNodes], // do not sort in place so sort stays stable
               getComparator(order, orderBy),
-            )
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((ocmNode, idx) => {
-                return <ArtefactRow
-                  key={`${ocmNode.identity()}${idx}`}
-                  ocmNode={ocmNode}
-                  artefactMetadata={artefactMetadata}
-                  selectedOcmNodes={selectedOcmNodes}
-                  setSelectedOcmNodes={setSelectedOcmNodes}
-                  ocmRepo={ocmRepo}
-                />
-              }) : [...Array(10).keys()].map(e => {
-              return <ArtefactRow
-                key={e}
-                selectedOcmNodes={selectedOcmNodes}
-                setSelectedOcmNodes={setSelectedOcmNodes}
-                ocmRepo={ocmRepo}
-              />
-            })
+            ).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((aggregatedOcmNode) => <ArtefactRow
+              key={aggregatedOcmNode.ocmNode.identity()}
+              aggregatedOcmNode={aggregatedOcmNode}
+              selectedAggregatedOcmNodes={selectedAggregatedOcmNodes}
+              setSelectedAggregatedOcmNodes={setSelectedAggregatedOcmNodes}
+              ocmRepo={ocmRepo}
+            />) : Array.from(Array(initialRowsPerPage).keys()).map((key) => <ArtefactRow
+              key={key}
+              selectedAggregatedOcmNodes={selectedAggregatedOcmNodes}
+              setSelectedAggregatedOcmNodes={setSelectedAggregatedOcmNodes}
+              ocmRepo={ocmRepo}
+            />)
           }
           {
             // avoid a layout jump when reaching the last page with empty rows
-            countEmptyRows(ocmNodes) > 0 && <TableRow
+            countEmptyRows(aggregatedOcmNodes) > 0 && <TableRow
               sx={{
-                height: 75 * countEmptyRows(ocmNodes),
+                height: 75 * countEmptyRows(aggregatedOcmNodes),
               }}
             >
               <TableCell colSpan={5}/>
@@ -699,35 +560,30 @@ const ArtefactList = ({
         </TableBody>
       </Table>
     </TableContainer>
-    {
-      ocmNodes ? <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
-        component='div'
-        count={ocmNodes.length}
-        rowsPerPage={rowsPerPage}
-        page={page > calculateMaxPage() ? 0 : page} // ensure page does not exceed limit
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      /> : <Skeleton/>
-    }
+    <TablePagination
+      rowsPerPageOptions={[10, 25, 50]}
+      component='div'
+      count={aggregatedOcmNodes ? aggregatedOcmNodes.length : initialRowsPerPage}
+      rowsPerPage={rowsPerPage}
+      page={page > maxPage ? 0 : page} // ensure page does not exceed limit
+      onPageChange={handleChangePage}
+      onRowsPerPageChange={handleChangeRowsPerPage}
+    />
   </Paper>
 }
 ArtefactList.displayName = 'ArtefactList'
 ArtefactList.propTypes = {
-  ocmNodes: PropTypes.arrayOf(PropTypes.object),
-  artefactMetadata: PropTypes.arrayOf(PropTypes.object),
-  selectedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
-  setSelectedOcmNodes: PropTypes.func.isRequired,
+  aggregatedOcmNodes: PropTypes.arrayOf(PropTypes.object),
+  selectedAggregatedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
+  setSelectedAggregatedOcmNodes: PropTypes.func.isRequired,
   ocmRepo: PropTypes.string,
-  filterMode: PropTypes.string.isRequired,
 }
 
 
 const Header = ({
   addOrUpdateFilter,
   removeFilter,
-  artefactMetadata,
-  selectedOcmNodes,
+  selectedAggregatedOcmNodes,
   filterMode,
   toggleFilterMode,
   setMountRescoring,
@@ -741,7 +597,6 @@ const Header = ({
       <Filters
         addOrUpdateFilter={addOrUpdateFilter}
         removeFilter={removeFilter}
-        artefactMetadata={artefactMetadata}
         disabled={filterMode === filterModes.PERSONAL}
         type={type}
         setType={setType}
@@ -754,7 +609,7 @@ const Header = ({
         >
           <FormGroup>
             <Tooltip
-              title={`Filter Artefacts for Component-Descriptor Responsibility-Label (${token?.sub}, ${token?.github_oAuth.email_address}) and Severity of MEDIUM or worse.`}
+              title={`Filter artefacts for your responsibility (${token?.sub}, ${token?.github_oAuth.email_address}) and severity of MEDIUM or worse.`}
             >
               <FormControlLabel
                 control={
@@ -771,14 +626,16 @@ const Header = ({
       </Grid>
       <Grid item xs={3} justifyContent='center' alignItems='center' display='flex'>
         <NoMaxWidthTooltip
-          title={selectedOcmNodes.length === 0 ? 'Select at least one Artefact' : <Box
+          title={selectedAggregatedOcmNodes.length === 0 ? 'Select at least one artefact' : <Box
             maxHeight='50vh'
             overflow='auto'
           >
             <List>
               {
-                selectedOcmNodes.sort((left, right) => left.name().localeCompare(right.name())).map((ocmNode, idx) => <ListItem
-                  key={`${ocmNode.identity()}${idx}`}
+                selectedAggregatedOcmNodes.sort((left, right) => {
+                  return left.ocmNode.name().localeCompare(right.ocmNode.name())
+                }).map((aggregatedOcmNode) => <ListItem
+                  key={aggregatedOcmNode.ocmNode.identity()}
                 >
                   <Stack
                     direction='row'
@@ -789,7 +646,7 @@ const Header = ({
                       justifyContent='center'
                       alignItems='center'
                     >
-                      <Typography variant='body2'>{ocmNode.artefact.name}</Typography>
+                      <Typography variant='body2'>{aggregatedOcmNode.ocmNode.artefact.name}</Typography>
                     </Box>
                     <Box
                       display='flex'
@@ -797,8 +654,8 @@ const Header = ({
                       alignItems='center'
                     >
                       <CopyOnClickChip
-                        value={ocmNode.artefact.version}
-                        label={trimLongString(ocmNode.artefact.version, 12)}
+                        value={aggregatedOcmNode.ocmNode.artefact.version}
+                        label={trimLongString(aggregatedOcmNode.ocmNode.artefact.version, 12)}
                         chipProps={{
                           variant: 'filled',
                           size: 'small',
@@ -819,13 +676,13 @@ const Header = ({
           <span>
             <Button
               color='secondary'
-              disabled={selectedOcmNodes.length === 0}
+              disabled={selectedAggregatedOcmNodes.length === 0}
               fullWidth
               onClick={() => setMountRescoring(true)}
               endIcon={<SendIcon/>}
             >
               {
-                `Rescore Selected Artefacts (${selectedOcmNodes.length})`
+                `Rescore Selected Artefacts (${selectedAggregatedOcmNodes.length})`
               }
             </Button>
           </span>
@@ -838,150 +695,115 @@ Header.displayName = 'Header'
 Header.propTypes = {
   addOrUpdateFilter: PropTypes.func.isRequired,
   removeFilter: PropTypes.func.isRequired,
-  artefactMetadata: PropTypes.arrayOf(PropTypes.object),
-  selectedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
+  selectedAggregatedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   filterMode: PropTypes.string.isRequired,
   toggleFilterMode: PropTypes.func.isRequired,
   setMountRescoring: PropTypes.func.isRequired,
-  type: PropTypes.string,
-  setType: PropTypes.func,
+  type: PropTypes.string.isRequired,
+  setType: PropTypes.func.isRequired,
+}
+
+
+const FetchResponsibles = ({
+  aggregatedOcmNode,
+  setAggregatedOcmNodes,
+  ocmRepo,
+}) => {
+  const [responsibles] = useFetchComponentResponsibles({
+    componentName: aggregatedOcmNode.ocmNode.component.name,
+    componentVersion: aggregatedOcmNode.ocmNode.component.version,
+    artefactName: aggregatedOcmNode.ocmNode.artefact.name,
+    ocmRepo: ocmRepo,
+  })
+
+  React.useEffect(() => {
+    if (!responsibles) return
+
+    aggregatedOcmNode['responsibles'] = responsibles.responsibles.map((responsible) => {
+      return responsible.reduce((identity, identifier) => {
+        if (identifier.type === USER_IDENTITIES.GITHUB_USER && identifier.username) return {
+          ...identity,
+          githubUsers: [
+            ...identity.githubUsers,
+            {
+              username: identifier.username,
+              host: identifier.github_hostname,
+            },
+          ],
+        }
+
+        if (identifier.type === USER_IDENTITIES.EMAIL_ADDRESS && identifier.email) return {
+          ...identity,
+          emails: [
+            ...identity.emails,
+            identifier.email,
+          ],
+        }
+
+        if (identifier.type === USER_IDENTITIES.PERSONAL_NAME) return {
+          ...identity,
+          personalName: `${identifier.firstName} ${identifier.lastName}`,
+        }
+
+        return identity
+      }, {
+        githubUsers: [],
+        emails: []
+      })
+    }).filter((responsible) => Boolean(responsible))
+
+    setAggregatedOcmNodes((prev) => [
+      ...prev.filter((aom) => aom.ocmNode.identity() !== aggregatedOcmNode.ocmNode.identity()),
+      aggregatedOcmNode,
+    ])
+  }, [responsibles])
+}
+FetchResponsibles.displayName = 'FetchResponsibles'
+FetchResponsibles.propTypes = {
+  aggregatedOcmNode: PropTypes.object.isRequired,
+  setAggregatedOcmNodes: PropTypes.func.isRequired,
+  ocmRepo: PropTypes.string,
 }
 
 
 const Artefacts = ({
-  components,
-  ocmNodes,
-  addOrUpdateFilter,
-  selectedOcmNodes,
-  setSelectedOcmNodes,
-  ocmRepo,
-  filterMode,
-  toggleFilterMode,
-  personalFilters,
-  setPersonalFilters,
-  mountRescoring,
-  setMountRescoring,
-  removeFilter,
+  aggregatedOcmNodes,
+  setAggregatedOcmNodes,
+  selectedAggregatedOcmNodes,
+  setSelectedAggregatedOcmNodes,
   type,
   setType,
+  ocmRepo,
+  addOrUpdateFilter,
+  removeFilter,
+  filterMode,
+  toggleFilterMode,
+  mountRescoring,
+  setMountRescoring,
+  refreshComplianceSummary,
 }) => {
-  const { enqueueSnackbar } = useSnackbar()
-
   const searchParamContext = React.useContext(SearchParamContext)
   const scanConfigName = searchParamContext.get('scanConfigName')
-  const [artefactMetadata, setArtefactMetadata] = React.useState()
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [isError, setIsError] = React.useState(false)
-  // eslint-disable-next-line no-unused-vars
-  const [scanConfigs, state] = useFetchScanConfigurations()
+  const [scanConfigs] = useFetchScanConfigurations()
 
   const scanConfig = scanConfigName
     ? scanConfigs?.find((scanConfig) => scanConfig.name === scanConfigName)
     : scanConfigs?.length === 1 ? scanConfigs[0] : null
 
-  const fetchQueryMetadata = React.useCallback(async () => {
-    try {
-      const artefacts = components.map((component) => {
-        return {
-          component_name: component.name,
-          component_version: component.version,
-        }
-      })
-      const findings = await artefactsQueryMetadata({
-        artefacts: artefacts,
-        types: [type],
-      })
-      const rescorings = await artefactsQueryMetadata({
-        artefacts: artefacts,
-        types: [artefactMetadataTypes.RESCORINGS],
-        referenced_types: [type],
-      })
-
-      setArtefactMetadata(mixupFindingsWithRescorings(findings, rescorings))
-      setIsLoading(false)
-      setIsError(false)
-    } catch (error) {
-      setIsLoading(false)
-      setIsError(true)
-
-      enqueueSnackbar('Unable to fetch artefact metadata', {
-        ...errorSnackbarProps,
-        details: error.toString(),
-        onRetry: () => fetchQueryMetadata(),
-      })
-    }
-  }, [components, type, enqueueSnackbar])
-
-  React.useEffect(() => {
-    fetchQueryMetadata()
-  }, [fetchQueryMetadata])
-
-  React.useEffect(() => {
-    if (!artefactMetadata) return
-
-    const token = JSON.parse(localStorage.getItem(TOKEN_KEY))
-    setPersonalFilters([
-      {
-        id: 'filter-responsibility',
-        filter: (ocmNode) => {
-          const label = ocmNode.findLabel(knownLabelNames.responsible)
-          if (!label) return false
-
-          return label.value.some(v => (
-            v.username === token.sub
-            || v.email === token.github_oAuth.email_address
-          ))
-        }
-      },
-      {
-        id: 'filter-severity',
-        filter: (an) => filterForSeverity({
-          severity: SEVERITIES.MEDIUM,
-          ocmNode: an,
-          artefactMetadata: artefactMetadata,
-        }),
-      },
-    ])
-  }, [artefactMetadata, setPersonalFilters])
-
-  if (isError) return <Alert severity='error'>Unable to load Artefact Metadata</Alert>
-
-  if (isLoading || personalFilters.length === 0) return <Box>
-    <Header
-      addOrUpdateFilter={addOrUpdateFilter}
-      removeFilter={removeFilter}
-      selectedOcmNodes={selectedOcmNodes}
-      filterMode={filterMode}
-      toggleFilterMode={toggleFilterMode}
-      setMountRescoring={setMountRescoring}
-    />
-    <div style={{ padding: '1em' }} />
-    <ArtefactList
-      ocmNodes={ocmNodes}
-      selectedOcmNodes={selectedOcmNodes}
-      setSelectedOcmNodes={setSelectedOcmNodes}
-      ocmRepo={ocmRepo}
-      toggleFilterMode={toggleFilterMode}
-      filterMode={filterMode}
-    />
-  </Box>
-
   return <Box>
     {
       mountRescoring && <RescoringModal
-        ocmNodes={selectedOcmNodes}
+        ocmNodes={selectedAggregatedOcmNodes.map((aggregatedOcmNode) => aggregatedOcmNode.ocmNode)}
         ocmRepo={ocmRepo}
-        type={type}
         handleClose={() => setMountRescoring(false)}
-        fetchComplianceData={fetchQueryMetadata}
+        fetchComplianceSummary={refreshComplianceSummary}
         scanConfig={scanConfig}
       />
     }
     <Header
       addOrUpdateFilter={addOrUpdateFilter}
       removeFilter={removeFilter}
-      artefactMetadata={artefactMetadata}
-      selectedOcmNodes={selectedOcmNodes}
+      selectedAggregatedOcmNodes={selectedAggregatedOcmNodes}
       filterMode={filterMode}
       toggleFilterMode={toggleFilterMode}
       setMountRescoring={setMountRescoring}
@@ -990,13 +812,11 @@ const Artefacts = ({
     />
     <div style={{ padding: '1em' }} />
     {
-      ocmNodes.length > 0 ? <ArtefactList
-        ocmNodes={ocmNodes}
-        artefactMetadata={artefactMetadata}
-        selectedOcmNodes={selectedOcmNodes}
-        setSelectedOcmNodes={setSelectedOcmNodes}
+      aggregatedOcmNodes.length > 0 ? <ArtefactList
+        aggregatedOcmNodes={aggregatedOcmNodes}
+        selectedAggregatedOcmNodes={selectedAggregatedOcmNodes}
+        setSelectedAggregatedOcmNodes={setSelectedAggregatedOcmNodes}
         ocmRepo={ocmRepo}
-        filterMode={filterMode}
       /> : <Box
         display='flex'
         justifyContent='center'
@@ -1004,29 +824,36 @@ const Artefacts = ({
         {
           filterMode === filterModes.PERSONAL
             ? <Typography>No open findings, good job! {String.fromCodePoint('0x1F973')} {/* "Party-Face" symbol */}</Typography>
-            : <Typography>No Artefacts matching Filters</Typography>
+            : <Typography>No artefacts matching filters</Typography>
         }
       </Box>
+    }
+    {
+      aggregatedOcmNodes.map((aggregatedOcmNode) => <FetchResponsibles
+        key={aggregatedOcmNode.ocmNode.identity()}
+        aggregatedOcmNode={aggregatedOcmNode}
+        setAggregatedOcmNodes={setAggregatedOcmNodes}
+        ocmRepo={ocmRepo}
+      />)
     }
   </Box>
 }
 Artefacts.displayName = 'Artefacts'
 Artefacts.propTypes = {
-  components: PropTypes.arrayOf(PropTypes.object).isRequired,
-  ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
+  aggregatedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
+  setAggregatedOcmNodes: PropTypes.func.isRequired,
+  selectedAggregatedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
+  setSelectedAggregatedOcmNodes: PropTypes.func.isRequired,
+  type: PropTypes.string.isRequired,
+  setType: PropTypes.func.isRequired,
+  ocmRepo: PropTypes.string,
   addOrUpdateFilter: PropTypes.func.isRequired,
   removeFilter: PropTypes.func.isRequired,
-  selectedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
-  setSelectedOcmNodes: PropTypes.func.isRequired,
-  ocmRepo: PropTypes.string,
   filterMode: PropTypes.string.isRequired,
   toggleFilterMode: PropTypes.func.isRequired,
-  setPersonalFilters: PropTypes.func.isRequired,
-  setMountRescoring: PropTypes.func.isRequired,
   mountRescoring: PropTypes.bool.isRequired,
-  personalFilters: PropTypes.arrayOf(PropTypes.object).isRequired,
-  type: PropTypes.string,
-  setType: PropTypes.func,
+  setMountRescoring: PropTypes.func.isRequired,
+  refreshComplianceSummary: PropTypes.func.isRequired,
 }
 
 
@@ -1034,121 +861,154 @@ const ComplianceTab = ({
   component,
   ocmRepo,
 }) => {
-  const [dependencies, state] = useFetchBom({
+  const token = JSON.parse(localStorage.getItem(TOKEN_KEY))
+
+  const [complianceSummary, complianceSummaryState, refreshComplianceSummary] = useFetchComplianceSummary({
     componentName: component.name,
     componentVersion: component.version,
     ocmRepo: ocmRepo,
-    populate: fetchBomPopulate.ALL,
   })
 
   const [type, setType] = React.useState(artefactMetadataTypes.VULNERABILITY)
   const [filterMode, setFilterMode] = React.useState(filterModes.CUSTOM)
 
-  const [personalFilters, setPersonalFilters] = React.useState([]) // init "lazy" as artefact-metadata must be present
+  const personalFilters = [
+    {
+      id: 'filter-responsibility',
+      filter: (aggregatedOcmNode) => {
+        // If responsibles are still loading (i.e. undefined), evaluate to true to pessimistically
+        // determine responsibility. If responsibles have been loaded, those falsy declared artefacts
+        // will be filtered out.
+        if (aggregatedOcmNode.responsibles === undefined) return true
+
+        return aggregatedOcmNode.responsibles.some((responsible) => {
+          return responsible.githubUsers.some((githubUser) => (
+            githubUser.username.toLowerCase() === token.sub.toLowerCase()
+            && githubUser.host === token.github_oAuth.host
+          )) || responsible.emails.some((email) => (
+            email.toLowerCase() == token.github_oAuth.email_address.toLowerCase()
+          ))
+        })
+      }
+    },
+    {
+      id: 'filter-severity',
+      filter: (aggregatedOcmNode) => filterForSeverity({
+        severity: SEVERITIES.MEDIUM, // TODO allow configuration of desired minimum severity
+        aggregatedOcmNode: aggregatedOcmNode,
+      }),
+    },
+  ]
   const [customFilters, setCustomFilters] = React.useState([])
 
-  const [selectedOcmNodes, setSelectedOcmNodes] = React.useState([])
-  const [customSelectedOcmNodes, setCustomSelectedOcmNodes] = React.useState([])
+  const [aggregatedOcmNodes, setAggregatedOcmNodes] = React.useState([])
+  const [selectedAggregatedOcmNodes, setSelectedAggregatedOcmNodes] = React.useState([])
+  const [customSelectedAggregatedOcmNodes, setCustomSelectedAggregatedOcmNodes] = React.useState([])
 
-  const selected = filterMode === filterModes.CUSTOM ? customSelectedOcmNodes : selectedOcmNodes
-  const setSelected = filterMode === filterModes.CUSTOM ? setCustomSelectedOcmNodes : setSelectedOcmNodes
+  const selected = filterMode === filterModes.CUSTOM ? customSelectedAggregatedOcmNodes : selectedAggregatedOcmNodes
+  const setSelected = filterMode === filterModes.CUSTOM ? setCustomSelectedAggregatedOcmNodes : setSelectedAggregatedOcmNodes
 
   const [mountRescoring, setMountRescoring] = React.useState(false)
 
   const addOrUpdateFilter = React.useCallback((filter) => {
-    setCustomFilters(prev => {
+    setCustomFilters((prev) => {
       return [
-        ...prev.filter(f => f.id !== filter.id),
+        ...prev.filter((f) => f.id !== filter.id),
         filter,
       ]
     })
   }, [])
 
   const removeFilter = React.useCallback((filterID) => {
-    setCustomFilters(prev => prev.filter(f => f.id !== filterID))
+    setCustomFilters((prev) => prev.filter((f) => f.id !== filterID))
   }, [])
 
-  const filterOcmNodes = React.useCallback((ocmNodes) => {
+  const filterAggregatedOcmNodes = React.useCallback((aggregatedOcmNodes) => {
     const getFilters = () => {
       if (filterMode === filterModes.PERSONAL && personalFilters.length > 0) return personalFilters
       return customFilters
     }
 
-    if (getFilters().length === 0) return ocmNodes
+    if (getFilters().length === 0) return aggregatedOcmNodes
 
-    return getFilters().reduce((ocmNodes, filter) => {
-      return ocmNodes.filter(ocmNode => filter.filter(ocmNode))
-    }, ocmNodes)
-  }, [personalFilters, customFilters, filterMode])
+    return getFilters().reduce((aggregatedOcmNodes, filter) => {
+      return aggregatedOcmNodes.filter((aggregatedOcmNode) => filter.filter(aggregatedOcmNode))
+    }, aggregatedOcmNodes)
+  }, [customFilters, filterMode])
 
   React.useEffect(() => {
-    setSelectedOcmNodes([])
-    setCustomSelectedOcmNodes([])
+    setSelectedAggregatedOcmNodes([])
+    setCustomSelectedAggregatedOcmNodes([])
   }, [type])
 
-  if (state.error) return <Alert severity='error'>
-    Unable to load Components
+  React.useEffect(() => {
+    if (!complianceSummary) return
+
+    setAggregatedOcmNodes(complianceSummary.complianceSummary.reduce((aggregatedNodes, componentSummary) => {
+      return componentSummary.artefacts.reduce((nodes, artefactSummary) => {
+        const aggregatedOcmNode = {
+          ocmNode: new OcmNode(
+            [{
+              name: artefactSummary.artefact.component_name,
+              version: artefactSummary.artefact.component_version,
+            }],
+            {
+              name: artefactSummary.artefact.artefact.artefact_name,
+              version: artefactSummary.artefact.artefact.artefact_version,
+              type: artefactSummary.artefact.artefact.artefact_type,
+              extraIdentity: artefactSummary.artefact.artefact.artefact_extra_id,
+            },
+            artefactSummary.artefact.artefact_kind,
+          ),
+          severity: artefactSummary.entries.find((entry) => entry.type === type).severity,
+        }
+
+        return [
+          ...nodes.filter((node) => node.ocmNode.identity() !== aggregatedOcmNode.ocmNode.identity()),
+          aggregatedOcmNode,
+        ]
+      }, aggregatedNodes)
+    }, []))
+  }, [complianceSummary, type])
+
+  if (complianceSummaryState.error) return <Alert severity='error'>
+    Unable to load components
   </Alert>
 
-  if (state.isLoading) return <Box>
+  if (complianceSummaryState.isLoading) return <Box>
     <Header
       addOrUpdateFilter={addOrUpdateFilter}
       removeFilter={removeFilter}
-      selectedOcmNodes={selected}
+      selectedAggregatedOcmNodes={selected}
       filterMode={filterMode}
-      toggleFilterMode={() => setFilterMode(prev => {
-        if (prev === filterModes.CUSTOM) return filterModes.PERSONAL
-        return filterModes.CUSTOM
-      })}
+      toggleFilterMode={() => setFilterMode((prev) => prev === filterModes.CUSTOM ? filterModes.PERSONAL : filterModes.CUSTOM)}
       setMountRescoring={setMountRescoring}
       type={type}
       setType={setType}
     />
     <div style={{ padding: '1em' }} />
     <ArtefactList
-      selectedOcmNodes={selected}
-      setSelectedOcmNodes={setSelected}
+      selectedAggregatedOcmNodes={selected}
+      setSelectedAggregatedOcmNodes={setSelected}
       ocmRepo={ocmRepo}
-      filterMode={filterMode}
     />
   </Box>
 
-  const components = dependencies.componentDependencies
-  const ocmNodes = components.reduce((nodes, component) => {
-    return [
-      ...nodes,
-      ...component.resources.map(resource => new OcmNode(
-        [component],
-        resource,
-        ARTEFACT_KIND.RESOURCE,
-      )),
-      ...component.sources.map(source => new OcmNode(
-        [component],
-        source,
-        ARTEFACT_KIND.SOURCE,
-      )),
-    ]
-  }, [])
-
   return <Artefacts
-    components={components}
-    ocmNodes={filterOcmNodes(ocmNodes)}
-    addOrUpdateFilter={addOrUpdateFilter}
-    removeFilter={removeFilter}
-    selectedOcmNodes={selected}
-    setSelectedOcmNodes={setSelected}
-    ocmRepo={ocmRepo}
-    filterMode={filterMode}
-    toggleFilterMode={() => setFilterMode(prev => {
-      if (prev === filterModes.CUSTOM) return filterModes.PERSONAL
-      return filterModes.CUSTOM
-    })}
-    setPersonalFilters={setPersonalFilters}
-    personalFilters={personalFilters}
-    mountRescoring={mountRescoring}
-    setMountRescoring={setMountRescoring}
+    aggregatedOcmNodes={filterAggregatedOcmNodes(aggregatedOcmNodes)}
+    setAggregatedOcmNodes={setAggregatedOcmNodes}
+    selectedAggregatedOcmNodes={selected}
+    setSelectedAggregatedOcmNodes={setSelected}
     type={type}
     setType={setType}
+    ocmRepo={ocmRepo}
+    addOrUpdateFilter={addOrUpdateFilter}
+    removeFilter={removeFilter}
+    filterMode={filterMode}
+    toggleFilterMode={() => setFilterMode((prev) => prev === filterModes.CUSTOM ? filterModes.PERSONAL : filterModes.CUSTOM)}
+    mountRescoring={mountRescoring}
+    setMountRescoring={setMountRescoring}
+    refreshComplianceSummary={refreshComplianceSummary}
   />
 }
 ComplianceTab.displayName = 'ComplianceTab'
