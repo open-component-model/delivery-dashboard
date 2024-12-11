@@ -33,7 +33,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import ReportProblemIcon from '@mui/icons-material/ReportProblem'
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined'
 
-import { SEVERITIES } from '../consts'
+import { CRYPTO_ASSET_TYPES, SEVERITIES } from '../consts'
 import {
   artefactMetadataSeverityComparator,
   artefactMetadatumSeverity,
@@ -87,6 +87,66 @@ const datasources = {
   CRYPTO: 'crypto',
 }
 Object.freeze(datasources)
+
+
+const asKey = ({
+  props,
+  separator = '|',
+  absentIndicator = 'null',
+}) => {
+  return props.map((prop) => prop === null || prop === undefined ? absentIndicator : prop).join(separator)
+}
+
+
+/**
+ * Generates a key to uniquely identify artefact metadata `data` properties. Mirrors key defintions
+ * from https://github.com/gardener/cc-utils/blob/master/dso/model.py.
+ *
+ * @param {String} type - artefact metadata type
+ * @param {Object} data - the artefact metadata `data` payload
+ * @returns {String} data key
+ */
+const dataKey = ({type, data}) => {
+  if (type === artefactMetadataTypes.STRUCTURE_INFO) return asKey({
+    props: [data.package_name, data.package_version],
+  })
+
+  if (type === artefactMetadataTypes.LICENSE) return asKey({
+    props: [data.package_name, data.package_version, data.license.name],
+  })
+
+  if (type === artefactMetadataTypes.VULNERABILITY) return asKey({
+    props: [data.package_name, data.package_version, data.cve],
+  })
+
+  if (type === artefactMetadataTypes.FINDING_MALWARE) return asKey({
+    props: [data.finding.content_digest, data.finding.filename, data.finding.malware],
+  })
+
+  if (type === CRYPTO_ASSET_TYPES.ALGORITHM) return asKey({
+    props: [data.primitive, data.parameter_set_identifier, data.curve, data.padding],
+  })
+
+  if (type === CRYPTO_ASSET_TYPES.CERTIFICATE) return asKey({
+    props: [data.subject_algorithm_ref, data.subject_public_key_ref],
+  })
+
+  if (type === CRYPTO_ASSET_TYPES.LIBRARY) return asKey({
+    props: [data.name, data.version],
+  })
+
+  if (type === CRYPTO_ASSET_TYPES.PROTOCOL) return asKey({
+    props: [data.type, data.version],
+  })
+
+  if (type === CRYPTO_ASSET_TYPES.RELATED_CRYPTO_MATERIAL) return asKey({
+    props: [data.type, data.algorithm_ref, data.size?.toString()],
+  })
+
+  if (type === artefactMetadataTypes.CRYPTO_ASSET) return asKey({
+    props: [data.asset_type, dataKey({type: data.asset_type, data: data.properties})],
+  })
+}
 
 
 /**
@@ -638,17 +698,16 @@ const MetadataViewerAccordion = ({
           const Handler = typedef ? typedef.SpecificTypeHandler
             : defaultTypedefForName({name: data.meta.type}).SpecificTypeHandler
 
-          const key = data.meta.type === artefactMetadataTypes.VULNERABILITY ?
-            `${data.meta.type}:${data.data.cve}:${data.artefact.artefact.artefact_name}:${data.artefact.artefact.artefact_version}:${data.data.package_name}:${data.data.package_version}` :
-            (
-              data.meta.type === artefactMetadataTypes.LICENSE ?
-                `${data.meta.type}:${data.data.license.name}:${data.artefact.artefact.artefact_name}:${data.artefact.artefact.artefact_version}` :
-                (
-                  data.meta.type === artefactMetadataTypes.STRUCTURE_INFO ?
-                    `${data.meta.type}:${data.data.package_name}:${data.data.package_version}` :
-                    data.meta.type
-                )
-            )
+          const key = asKey({
+            props: [
+              data.meta.type,
+              dataKey({
+                type: data.meta.type,
+                data: data.data,
+              }),
+            ],
+          })
+
           return <MetadataViewer
             key={key}
             type={data.meta.type}
