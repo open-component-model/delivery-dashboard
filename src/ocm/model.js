@@ -30,6 +30,7 @@ import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutli
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import LockIcon from '@mui/icons-material/Lock'
 import ReportProblemIcon from '@mui/icons-material/ReportProblem'
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined'
 
@@ -75,6 +76,7 @@ const artefactMetadataTypes = {
   OS_IDS: 'os_ids',
   CODECHECKS_AGGREGATED: 'codechecks/aggregated',
   CRYPTO_ASSET: 'crypto_asset',
+  FINDING_FIPS: 'finding/fips',
   RESCORINGS: 'rescorings',
 }
 Object.freeze(artefactMetadataTypes)
@@ -124,11 +126,11 @@ export const dataKey = ({type, data}) => {
   })
 
   if (type === CRYPTO_ASSET_TYPES.ALGORITHM) return asKey({
-    props: [data.primitive, data.parameter_set_identifier, data.curve, data.padding],
+    props: [data.name, data.primitive, data.parameter_set_identifier, data.curve, data.padding],
   })
 
   if (type === CRYPTO_ASSET_TYPES.CERTIFICATE) return asKey({
-    props: [data.subject_algorithm_ref, data.subject_public_key_ref],
+    props: [data.signature_algorithm_ref, data.subject_public_key_ref],
   })
 
   if (type === CRYPTO_ASSET_TYPES.LIBRARY) return asKey({
@@ -145,6 +147,10 @@ export const dataKey = ({type, data}) => {
 
   if (type === artefactMetadataTypes.CRYPTO_ASSET) return asKey({
     props: [data.asset_type, dataKey({type: data.asset_type, data: data.properties})],
+  })
+
+  if (type === artefactMetadataTypes.FINDING_FIPS) return asKey({
+    props: [dataKey({type: artefactMetadataTypes.CRYPTO_ASSET, data: data.asset})],
   })
 }
 
@@ -211,6 +217,11 @@ const displayNameForData = ({
     return `${displayName} ${data.license.name}`
   } else if (type === artefactMetadataTypes.STRUCTURE_INFO) {
     return `Package ${data.package_name} ${data.package_version}`
+  } else if (type === artefactMetadataTypes.FINDING_FIPS) {
+    // if asset type is certificate, don't show all names as they are usually more irrelevant
+    return `Fips ${data.asset.asset_type} ${data.asset.asset_type !== CRYPTO_ASSET_TYPES.CERTIFICATE ? data.asset.names.sort().join(', ') : ''}`
+  } else if (type === artefactMetadataTypes.CRYPTO_ASSET) {
+    return `Crypto Asset ${data.asset_type} ${data.asset_type !== CRYPTO_ASSET_TYPES.CERTIFICATE ? data.names.sort().join(', ') : ''}`
   } else {
     return displayName
   }
@@ -366,6 +377,12 @@ const knownMetadataTypes = [
     friendlyName: 'Crypto Asset',
     SpecificTypeHandler: MultilineTextViewer,
     Icon: ArticleIcon,
+  },
+  {
+    name: 'finding/fips',
+    friendlyName: 'Fips',
+    SpecificTypeHandler: MultilineTextViewer,
+    Icon: LockIcon,
   },
 ]
 

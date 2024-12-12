@@ -140,6 +140,7 @@ const TypeFilter = ({
     artefactMetadataTypes.LICENSE,
     artefactMetadataTypes.VULNERABILITY,
     artefactMetadataTypes.FINDING_MALWARE,
+    artefactMetadataTypes.FINDING_FIPS,
   ]
 
   return <FormControl variant='standard' fullWidth>

@@ -380,6 +380,17 @@ const ComplianceCell = ({
         />
       }
       {
+        artefact.kind === ARTEFACT_KIND.RESOURCE && lastCryptoScan && <FipsFindingCell
+          ocmNodes={ocmNodes}
+          ocmRepo={ocmRepo}
+          metadataTypedef={findTypedefByName({name: artefactMetadataTypes.FINDING_FIPS})}
+          fetchComplianceSummary={fetchComplianceSummary}
+          lastScan={lastCryptoScan}
+          severity={getMaxSeverity(artefactMetadataTypes.FINDING_FIPS)}
+          isLoading={state.isLoading}
+        />
+      }
+      {
         artefact.kind === ARTEFACT_KIND.RESOURCE && <MalwareFindingCell
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
@@ -867,6 +878,84 @@ BDBACell.propTypes = {
   lastScan: PropTypes.object,
   scanConfig: PropTypes.object,
   fetchComplianceSummary: PropTypes.func.isRequired,
+  isLoading: PropTypes.bool.isRequired,
+}
+
+
+const FipsFindingCell = ({
+  ocmNodes,
+  ocmRepo,
+  metadataTypedef,
+  fetchComplianceSummary,
+  lastScan,
+  severity,
+  isLoading,
+}) => {
+  const [mountRescoring, setMountRescoring] = React.useState(false)
+
+  const handleRescoringClose = () => {
+    setMountRescoring(false)
+  }
+
+  const title = metadataTypedef.friendlyName
+
+  return <Grid item onClick={(e) => e.stopPropagation()}>
+    {
+      mountRescoring && <RescoringModal
+        ocmNodes={ocmNodes}
+        ocmRepo={ocmRepo}
+        handleClose={handleRescoringClose}
+        fetchComplianceSummary={fetchComplianceSummary}
+      />
+    }
+    <Tooltip
+      title={
+        <Stack>
+          <RescoringButton
+            setMountRescoring={setMountRescoring}
+            title='Rescoring'
+          />
+          {
+            isLoading ? <Skeleton/> : <Typography variant='inherit'>
+              {
+                lastScanTimestampStr(lastScan)
+              }
+            </Typography>
+          }
+        </Stack>
+      }
+    >
+      {
+        lastScan || isLoading ? <Chip
+          color={severity.color}
+          label={severity.name === SEVERITIES.CLEAN
+            ? `No ${title} Findings`
+            : `${title} ${capitalise(severity.name)}`
+          }
+          variant='outlined'
+          size='small'
+          icon={<UnfoldMoreIcon/>}
+          clickable={false}
+        /> : <Chip
+          color='default'
+          label={`No ${title} Scan`}
+          variant='outlined'
+          size='small'
+          icon={<UnfoldMoreIcon/>}
+          clickable={false}
+        />
+      }
+    </Tooltip>
+  </Grid>
+}
+FipsFindingCell.displayName = 'FipsFindingCell'
+FipsFindingCell.propTypes = {
+  ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
+  ocmRepo: PropTypes.string,
+  metadataTypedef: PropTypes.object.isRequired,
+  fetchComplianceSummary: PropTypes.func.isRequired,
+  lastScan: PropTypes.object,
+  severity: PropTypes.object.isRequired,
   isLoading: PropTypes.bool.isRequired,
 }
 
