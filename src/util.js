@@ -158,8 +158,8 @@ export const pluralise = (word, count, verbSingular, verbPlural) => {
     return word
   }
 
-  if (verbPlural) return `${word.replace(/y$/, 'ie')}s ${verbPlural}`
-  return `${word.replace(/y$/, 'ie')}s`
+  if (verbPlural) return `${word.replace(/y$/, 'ie')}${word.endsWith('s') ? '' : 's'} ${verbPlural}`
+  return `${word.replace(/y$/, 'ie')}${word.endsWith('s') ? '' : 's'}`
 }
 
 export const orderRescoringsBySpecificity = (rescorings) => {
