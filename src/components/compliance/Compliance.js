@@ -831,7 +831,7 @@ const Artefacts = ({
     }
     {
       aggregatedOcmNodes.map((aggregatedOcmNode) => <FetchResponsibles
-        key={aggregatedOcmNode.ocmNode.identity()}
+        key={`${aggregatedOcmNode.ocmNode.identity()}${type}`}
         aggregatedOcmNode={aggregatedOcmNode}
         setAggregatedOcmNodes={setAggregatedOcmNodes}
         ocmRepo={ocmRepo}
