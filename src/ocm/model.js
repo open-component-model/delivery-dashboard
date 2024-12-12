@@ -198,6 +198,25 @@ const defaultTypedefForName = ({
 }
 
 
+const displayNameForData = ({
+  type,
+  data,
+}) => {
+  const typedef = findTypedefByName({name: type})
+  const displayName = typedef ? typedef.friendlyName : defaultTypedefForName({name: type}).friendlyName
+
+  if (type === artefactMetadataTypes.VULNERABILITY) {
+    return `${displayName} ${data.cve}`
+  } else if (type === artefactMetadataTypes.LICENSE) {
+    return `${displayName} ${data.license.name}`
+  } else if (type === artefactMetadataTypes.STRUCTURE_INFO) {
+    return `Package ${data.package_name} ${data.package_version}`
+  } else {
+    return displayName
+  }
+}
+
+
 const MetadataViewer = ({
   type,
   data,
@@ -205,9 +224,6 @@ const MetadataViewer = ({
   timestamp,
   ArtefactMetadataViewer,
 }) => {
-  const typedef = findTypedefByName({name: type})
-  const displayName = typedef ? typedef.friendlyName : defaultTypedefForName({name: type}).friendlyName
-
   return <Accordion
     TransitionProps={{ unmountOnExit: true }}
   >
@@ -218,17 +234,7 @@ const MetadataViewer = ({
         <Grid item xs={3}>
           <Typography>
             {
-              type === artefactMetadataTypes.VULNERABILITY ?
-                `${displayName} ${data.cve}` :
-                (
-                  type === artefactMetadataTypes.LICENSE ?
-                    `${displayName} ${data.license.name}` :
-                    (
-                      type === artefactMetadataTypes.STRUCTURE_INFO ?
-                        `Package ${data.package_name} ${data.package_version}` :
-                        displayName
-                    )
-                )
+              displayNameForData({type, data})
             }
           </Typography>
         </Grid>
