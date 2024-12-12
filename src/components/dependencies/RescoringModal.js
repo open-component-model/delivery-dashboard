@@ -1180,16 +1180,6 @@ const MalwareExtraInfo = ({
           }}
           marginBottom='0.5rem'
         >
-          Layer Digest
-        </Typography>
-        <Divider/>
-        <Typography
-          variant='inherit'
-          sx={{
-            fontWeight: 'bold',
-          }}
-          marginBottom='0.5rem'
-        >
           Filename
         </Typography>
         <Typography variant='inherit'>
