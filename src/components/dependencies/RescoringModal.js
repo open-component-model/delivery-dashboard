@@ -1245,7 +1245,9 @@ const TruncatedTextWithTooltip = ({
   </Typography>
 
   return <Tooltip
-    title={text}
+    title={<Typography {...typographyProps}>
+      {text}
+    </Typography>}
   >
     <Typography {...typographyProps}>
       {text.substring(0, maxLength)}...
@@ -1255,7 +1257,7 @@ const TruncatedTextWithTooltip = ({
 TruncatedTextWithTooltip.displayName = 'TruncatedTextWithTooltip'
 TruncatedTextWithTooltip.propTypes = {
   text: PropTypes.string.isRequired,
-  maxLength: PropTypes.string.isRequired,
+  maxLength: PropTypes.number.isRequired,
   typographyProps: PropTypes.object.isRequired,
 }
 
