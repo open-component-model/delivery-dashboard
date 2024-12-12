@@ -1678,6 +1678,7 @@ const RescoringContent = ({
       SPRINT: 'sprint',
       CURRENT: 'current',
       RESCORED: 'rescored',
+      TYPE: 'type',
     }
   }, [])
 
