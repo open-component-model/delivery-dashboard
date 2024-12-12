@@ -234,16 +234,6 @@ export const PACKAGES = {
 Object.freeze(PACKAGES)
 
 
-export const CRYPTO_ASSET_TYPES = {
-  ALGORITHM: 'algorithm',
-  CERTIFICATE: 'certificate',
-  LIBRARY: 'library',
-  PROTOCOL: 'protocol',
-  RELATED_CRYPTO_MATERIAL: 'related-crypto-material',
-}
-Object.freeze(CRYPTO_ASSET_TYPES)
-
-
 export const USER_IDENTITIES = {
   EMAIL_ADDRESS: 'emailAddress',
   GITHUB_USER: 'githubUser',
