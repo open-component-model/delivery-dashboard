@@ -106,7 +106,7 @@ const asKey = ({
  * @param {Object} data - the artefact metadata `data` payload
  * @returns {String} data key
  */
-const dataKey = ({type, data}) => {
+export const dataKey = ({type, data}) => {
   if (type === artefactMetadataTypes.STRUCTURE_INFO) return asKey({
     props: [data.package_name, data.package_version],
   })

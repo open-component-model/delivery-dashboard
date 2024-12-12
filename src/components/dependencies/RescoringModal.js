@@ -76,6 +76,7 @@ import { registerCallbackHandler } from '../../feature'
 import { OcmNode, OcmNodeDetails } from '../../ocm/iter'
 import {
   artefactMetadataTypes,
+  dataKey,
   defaultTypedefForName,
   findTypedefByName,
   knownLabelNames,
@@ -128,21 +129,12 @@ const patchRescoringProposals = (rescoringProposals, ocmNode) => {
 }
 
 
-const typeSpecificRescoringIdentity = (rescoring) => {
-  const finding = rescoring.finding
-
-  if (finding.cve) {
-    return `${finding.package_name}_${finding.cve}`
-  } else if (finding.license) {
-    return `${finding.package_name}_${finding.license.name}`
-  } else if (finding.malware) {
-    return `${finding.malware}_${finding.content_digest}_${finding.filename}`
-  }
-}
-
-
 const rescoringIdentity = (rescoring) => {
-  return `${rescoring.ocmNode.identity()}_${rescoring.finding_type}_${typeSpecificRescoringIdentity(rescoring)}`
+  const key = dataKey({
+    type: rescoring.finding_type,
+    data: rescoring.finding,
+  })
+  return `${rescoring.ocmNode.identity()}_${rescoring.finding_type}_${key}`
 }
 
 
@@ -2296,7 +2288,10 @@ const Rescore = ({
           {
             customRescoringsWithoutComment.map((r, idx) => <Typography key={idx} variant='body2'>
               {
-                typeSpecificRescoringIdentity(r)
+                dataKey({
+                  type: r.finding_type,
+                  data: r.finding,
+                })
               }
             </Typography>)
           }
