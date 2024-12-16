@@ -2,7 +2,7 @@ import PropTypes from 'prop-types'
 
 import urljoin from 'url-join'
 
-import { addMetadata } from './complianceData'
+import { addMetadata } from './fetch'
 import { appendPresentParams } from './util'
 import { TOKEN_KEY } from './consts'
 

@@ -6,8 +6,8 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import PropTypes from 'prop-types'
 
 import { NoMaxWidthTooltip, componentPathQuery, normaliseObject, toYamlString, trimLongString } from '../util'
-import CopyOnClickChip from '../components/util/CopyOnClickChip'
-import MultilineTextViewer from '../components/util/MultilineTextViewer'
+import CopyOnClickChip from '../util/copyOnClickChip'
+import MultilineTextViewer from '../util/multilineTextViewer'
 import { sanitiseArtefactExtraId } from './util'
 
 

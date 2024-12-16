@@ -1,7 +1,4 @@
 import React from 'react'
-import PropTypes from 'prop-types'
-
-import yaml from 'js-yaml'
 
 import {
   Box,
@@ -11,8 +8,11 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import styled from '@emotion/styled'
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
+
+import PropTypes from 'prop-types'
+import yaml from 'js-yaml'
+import styled from '@emotion/styled'
 
 import {
   COMPONENT_PATH,
@@ -29,7 +29,7 @@ import {
   artefactMetadataFilter,
   artefactMetadataSeverityFilter,
   artefactMetadataTypeFilter,
-} from './cnudie'
+} from './ocm/util'
 
 
 export const defaultSeverityCfgForName = ({

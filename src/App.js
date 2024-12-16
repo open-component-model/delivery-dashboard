@@ -12,9 +12,10 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 import { enqueueSnackbar, SnackbarProvider } from 'notistack'
+import Snowfall from 'react-snowfall'
 
-import { ComponentPage } from './pages/ComponentPage'
-import NotFoundPage from './pages/NotFoundPage'
+import { ComponentPage } from './component/common'
+import NotFoundPage from './notFound'
 import {
   COMPONENT_PATH,
   copyNotificationCfg,
@@ -27,15 +28,14 @@ import {
   TOKEN_KEY,
   SHOW_SNOWFLAKES,
 } from './consts'
-import { LoginPage } from './pages/LoginPage'
-import { LandingPage } from './pages/LandingPage'
-import { MonitoringPage } from './pages/MonitoringPage'
-import { ServicesPage } from './pages/ServicesPage'
+import { LoginPage } from './login'
+import { LandingPage } from './landing'
+import { MonitoringPage } from './extensions/monitoring'
+import { ServicesPage } from './extensions/service'
 import { FeatureProvider } from './feature'
 import { auth } from './api'
 import { isTokenExpired, isWinterComing } from './util'
-import SnackbarWithDetails from './components/util/SnackbarWithDetails'
-import Snowfall from 'react-snowfall'
+import SnackbarWithDetails from './util/snackbarWithDetails'
 
 
 export let originalGetContrastText

@@ -1,5 +1,4 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 
 import {
   Accordion,
@@ -33,6 +32,11 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import LockIcon from '@mui/icons-material/Lock'
 import ReportProblemIcon from '@mui/icons-material/ReportProblem'
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined'
+import PestControlIcon from '@mui/icons-material/PestControl'
+import CoronavirusIcon from '@mui/icons-material/Coronavirus'
+import ArticleIcon from '@mui/icons-material/Article'
+
+import PropTypes from 'prop-types'
 
 import { CRYPTO_ASSET_TYPES, SEVERITIES } from '../consts'
 import {
@@ -50,13 +54,10 @@ import {
   generateArtefactID,
   artefactMetadataSeverityFilter,
   artefactMetadataTypeFilter,
-} from '../cnudie'
-import MultilineTextViewer from '../components/util/MultilineTextViewer'
-import { useFetchComponentDescriptor, useFetchQueryMetadata } from '../api/useFetch'
-import CopyOnClickChip from '../components/util/CopyOnClickChip'
-import PestControlIcon from '@mui/icons-material/PestControl'
-import CoronavirusIcon from '@mui/icons-material/Coronavirus'
-import ArticleIcon from '@mui/icons-material/Article'
+} from './util'
+import MultilineTextViewer from '../util/multilineTextViewer'
+import { useFetchComponentDescriptor, useFetchQueryMetadata } from '../fetch'
+import CopyOnClickChip from '../util/copyOnClickChip'
 
 
 const knownLabelNames = {
