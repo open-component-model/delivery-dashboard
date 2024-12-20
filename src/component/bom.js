@@ -53,7 +53,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 
 import PropTypes from 'prop-types'
-import { SemVer } from 'semver'
+import SemVer from 'semver'
 
 import { FeatureRegistrationContext, SearchParamContext } from '../App'
 import { generateArtefactID } from '../ocm/util'
