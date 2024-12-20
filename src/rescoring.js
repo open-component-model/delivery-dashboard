@@ -40,6 +40,7 @@ import {
   FormGroup,
   FormControlLabel,
   FormLabel,
+  Alert,
 } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { useTheme } from '@emotion/react'
@@ -97,6 +98,7 @@ import CopyOnClickChip from './util/copyOnClickChip'
 import ErrorBoundary from './util/errorBoundary'
 import ExtraWideTooltip from './util/extraWideTooltip'
 import MultilineTextViewer from './util/multilineTextViewer'
+import { useFetchComponentDescriptor } from './fetch'
 
 
 const scopeOptions = {
@@ -216,14 +218,61 @@ SelectCveRescoringRuleSet.propTypes = {
 }
 
 
+const CveCategorisationLabel = ({
+  ocmNode,
+  ocmRepo,
+}) => {
+  // ocmNode may be incomplete (e.g. if based on ComplianceSummary labels are absent)
+  const [componentDescriptor, state] = useFetchComponentDescriptor({
+    componentName: ocmNode.component.name,
+    componentVersion: ocmNode.component.version,
+    ocmRepo: ocmRepo,
+  })
+
+  if (state.isLoading) return <CircularProgress/>
+  if (state.isError) return <Alert severity='error'>
+    Unable to fetch CVE Categorisation Label
+  </Alert>
+
+  const artefact = [
+    ...componentDescriptor.component.resources,
+    ...componentDescriptor.component.sources,
+  ].find(artefact => {
+    return (
+      artefact.name === ocmNode.artefact.name
+      && artefact.version === ocmNode.artefact.version
+      && JSON.stringify(normaliseObject(artefact.extraIdentity)) === JSON.stringify(normaliseObject(ocmNode.artefact.extraIdentity))
+    )
+  })
+
+  const cveCategorisationLabel = new OcmNode(
+    [componentDescriptor.component],
+    artefact,
+    ocmNode.artefactKind,
+  ).findLabel(knownLabelNames.cveCategorisation)
+
+  return <MultilineTextViewer
+    text={
+      cveCategorisationLabel
+        ? toYamlString(cveCategorisationLabel)
+        : 'no label found for this artefact'}
+  />
+}
+CveCategorisationLabel.displayName = 'CveCategorisationLabel'
+CveCategorisationLabel.propTypes = {
+  ocmNode: PropTypes.object.isRequired,
+  ocmRepo: PropTypes.string,
+}
+
+
 const VulnerabilityRescoringInputs = ({
   cveRescoringRuleSet,
   setCveRescoringRuleSet,
   rescoringFeature,
   ocmNodes,
+  ocmRepo,
 }) => {
   const [selectedNode, setSelectedNode] = React.useState(ocmNodes[0])
-  const cveCategorisationLabel = selectedNode.findLabel(knownLabelNames.cveCategorisation)
 
   return <Stack spacing={2}>
     <Typography>CVSS Categorisation (from Component-Descriptor label)</Typography>
@@ -247,7 +296,10 @@ const VulnerabilityRescoringInputs = ({
       </Select>
     </FormControl>
     <Box border={1} borderColor='primary.main'>
-      <MultilineTextViewer text={cveCategorisationLabel ? toYamlString(cveCategorisationLabel) : 'no label found for this artefact'}/>
+      <CveCategorisationLabel
+        ocmNode={selectedNode}
+        ocmRepo={ocmRepo}
+      />
     </Box>
     <Divider/>
     <Typography>CVSS Rescoring Rule Set</Typography>
@@ -267,6 +319,7 @@ VulnerabilityRescoringInputs.propTypes = {
   setCveRescoringRuleSet: PropTypes.func.isRequired,
   rescoringFeature: PropTypes.object.isRequired,
   ocmNodes: PropTypes.arrayOf(PropTypes.instanceOf(OcmNode)).isRequired,
+  ocmRepo: PropTypes.string,
 }
 
 
@@ -277,6 +330,7 @@ const VulnerabilityRescoringDrawer = ({
   setCveRescoringRuleSet,
   rescoringFeature,
   ocmNodes,
+  ocmRepo,
 }) => {
   return <Drawer
     PaperProps={{
@@ -324,6 +378,7 @@ const VulnerabilityRescoringDrawer = ({
           setCveRescoringRuleSet={setCveRescoringRuleSet}
           rescoringFeature={rescoringFeature}
           ocmNodes={ocmNodes}
+          ocmRepo={ocmRepo}
         />
       </Box>
       <Box
@@ -352,6 +407,7 @@ VulnerabilityRescoringDrawer.propTypes = {
   setCveRescoringRuleSet: PropTypes.func.isRequired,
   rescoringFeature: PropTypes.object.isRequired,
   ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
+  ocmRepo: PropTypes.string,
 }
 
 
@@ -2716,6 +2772,7 @@ const RescoringModal = ({
                       setCveRescoringRuleSet={setCveRescoringRuleSet}
                       rescoringFeature={rescoringFeature}
                       ocmNodes={ocmNodes}
+                      ocmRepo={ocmRepo}
                     />
                   </ErrorBoundary> : <Box paddingTop={1}>
                     <Tooltip title='Open rescoring rules'>
