@@ -230,14 +230,14 @@ const VulnerabilityRescoringInputs = ({
     <FormControl>
       <InputLabel>Artefact</InputLabel>
       <Select
-        value={selectedNode}
+        value={selectedNode.identity()}
         label='Artefact'
-        onChange={(e) => setSelectedNode(e.target.value)}
+        onChange={(e) => setSelectedNode(ocmNodes.find(ocmNode => ocmNode.identity() === e.target.value))}
       >
         {
           ocmNodes.map((ocmNode, idx) => <MenuItem
             key={idx}
-            value={ocmNode}
+            value={ocmNode.identity()}
           >
             {
               ocmNode.name()
