@@ -123,7 +123,7 @@ export const dataKey = ({type, data}) => {
   })
 
   if (type === artefactMetadataTypes.FINDING_MALWARE) return asKey({
-    props: [data.content_digest, data.filename, data.malware],
+    props: [data.finding.content_digest, data.finding.filename, data.finding.malware],
   })
 
   if (type === CRYPTO_ASSET_TYPES.ALGORITHM) return asKey({

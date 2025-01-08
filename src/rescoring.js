@@ -1328,7 +1328,7 @@ const Subject = ({
   } else if (rescoring.finding_type === artefactMetadataTypes.FINDING_MALWARE) {
     return <Stack>
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <Typography variant='inherit'>{finding.filename.split('/').pop()}</Typography>
+        <Typography variant='inherit'>{finding.finding.filename.split('/').pop()}</Typography>
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
@@ -1434,7 +1434,7 @@ const Finding = ({
   } else if (rescoring.finding_type === artefactMetadataTypes.FINDING_MALWARE) {
     return <Stack spacing={0.5}>
       <TruncatedTextWithTooltip
-        text={finding.malware}
+        text={finding.finding.malware}
         maxLength={24}
         typographyProps={{
           variant: 'inherit',
@@ -1447,8 +1447,8 @@ const Finding = ({
           {finding.severity}
         </Typography>
         <MalwareExtraInfo
-          contentDigest={finding.content_digest}
-          filename={finding.filename}
+          contentDigest={finding.finding.content_digest}
+          filename={finding.finding.filename}
         />
       </div>
     </Stack>
@@ -2395,9 +2395,9 @@ const Rescore = ({
         }
       } else if (type === artefactMetadataTypes.FINDING_MALWARE) {
         return {
-          content_digest: rescoring.finding.content_digest,
-          filename: rescoring.finding.filename,
-          malware: rescoring.finding.malware,
+          content_digest: rescoring.finding.finding.content_digest,
+          filename: rescoring.finding.finding.filename,
+          malware: rescoring.finding.finding.malware,
         }
       } else if (type === artefactMetadataTypes.FINDING_FIPS) {
         return rescoring.finding.asset
