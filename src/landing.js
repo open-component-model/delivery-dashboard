@@ -182,7 +182,7 @@ const editDepOfComp = (depName, component, actionObject) => {
   const reorderDep = (dependencies, fromIndex, toIndex) => {
     return dependencies.map((d) => {
       if (d.disabled) return d
-  
+
       if (d.name === depName) d.position = toIndex
       else if (d.position > fromIndex && d.position <= toIndex) d.position -= 1
       else if (d.position < fromIndex && d.position >= toIndex)  d.position += 1
@@ -270,6 +270,14 @@ const SpecialComponents = () => {
   }
 
   const mergedSpecialComponents = getMergedSpecialComponents(specialComponentsFeature)
+  const specialComponentsByType = mergedSpecialComponents.reduce((group, element) => {
+    return {
+      ...group,
+      [element.type]: group[element.type]
+        ? [...group[element.type], element]
+        : [element],
+    }
+  }, {})
 
   const handleDragEnd = (result) => {
     if (!result.destination || result.reason === 'CANCEL' || result.destination.index === result.source.index) return
@@ -295,21 +303,33 @@ const SpecialComponents = () => {
     specialComponentsFeature.triggerRerender()
   }
 
-  const specialComponentTypes = [... new Set(mergedSpecialComponents.map(c => c.type))]
+  const specialComponentTypes = Object.keys(specialComponentsByType)
 
   return <>
     <DragDropContext onDragEnd={handleDragEnd}>
-      <Grid container spacing={2}>
+      <Stack
+        direction='column'
+        spacing={2}
+      >
         {
-          mergedSpecialComponents.map((component) => {
-            return <SpecialComponent
-              key={`${component.id}-${component.isAddedByUser}`}
-              component={component}
-              specialComponentsFeature={specialComponentsFeature}
-            />
-          })
+          Object.entries(specialComponentsByType).map(([type, components]) => {
+            return <Box key={type}>
+              <Typography>{type}</Typography>
+              <Grid container spacing={2}>
+                {
+                  components.map((component) => {
+                    return <SpecialComponent
+                      key={`${component.id}-${component.isAddedByUser}`}
+                      component={component}
+                      specialComponentsFeature={specialComponentsFeature}
+                    />
+                  })
+                }
+              </Grid>
+            </Box>
+          } )
         }
-      </Grid> 
+      </Stack>
     </DragDropContext>
     <Fab
       style={{backgroundColor: theme.dependentComponentOverview.color, color: theme.bomButton.color, position: 'fixed', bottom: '1.5rem', right: '1.5rem'}}
@@ -390,7 +410,7 @@ const SpecialComponentDialog = ({
     <DialogTitle>Add Component to Overview</DialogTitle>
     <DialogContent>
       <DialogContentText>
-        To add a component, please enter its component name and the preferred 
+        To add a component, please enter its component name and the preferred
         displayed name. Also, specify the type which is used to group multiple
         components as well as the repository context.
       </DialogContentText>
@@ -878,7 +898,7 @@ const ComponentHeader = ({
             }
             {
               isError ? <Typography variant='caption'>Error fetching Component</Typography> : (isEditMode ? <form>
-                <input type='text' onClick={(e) => e.preventDefault()} onChange={handleChangeDisplayName} defaultValue={component.displayName} maxLength={30}/> 
+                <input type='text' onClick={(e) => e.preventDefault()} onChange={handleChangeDisplayName} defaultValue={component.displayName} maxLength={30}/>
               </form> : <Typography style={{ fontSize: 'medium', fontWeight: 'bold' }}>
                 {component.displayName}
               </Typography>)
