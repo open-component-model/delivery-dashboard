@@ -2,3 +2,9 @@
 image:
   repository: ~
   tag: ~
+envVars: []
+ingress:
+  annotations: []
+  class: nginx
+  hosts: []
+  tlsHostNames: []
