@@ -1,4 +1,4 @@
-FROM alpine:latest AS build
+FROM alpine:3 AS node-builder
 
 COPY . /src
 WORKDIR /src
@@ -9,8 +9,25 @@ RUN apk add --no-cache npm \
   && npm i /src \
   && npm run build
 
-FROM nginx:latest
+################################################
 
-COPY --from=build  /src/build /usr/share/nginx/html
+FROM alpine:3 AS lighttpd-builder
 
-ENTRYPOINT ["/bin/bash", "-c", "/usr/share/nginx/html/generate_config.sh && nginx -g \"daemon off;\""]
+COPY Makefile .
+
+# inspired by source build description: https://git.lighttpd.net/lighttpd/lighttpd1.4/src/branch/master/INSTALL
+RUN apk add make \
+  && make build-scon \
+  && mkdir /cache
+
+################################################
+
+FROM scratch
+
+COPY --from=lighttpd-builder --chown=10000:10000 /lighttpd /lighttpd
+COPY --from=lighttpd-builder --chown=10000:10000 /cache /cache
+COPY --from=node-builder --chown=10000:10000 /src/build /delivery-dashboard
+COPY --chown=10000:10000 lighttpd.conf /lighttpd.conf
+
+USER 10000:10000
+ENTRYPOINT ["/lighttpd", "-D", "-f", "/lighttpd.conf"]
