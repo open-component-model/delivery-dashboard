@@ -1,16 +1,27 @@
-FROM alpine:latest AS build
+FROM alpine:3 AS node-builder
 
-COPY . /src
 WORKDIR /src
 
-RUN apk add python3 --no-cache --update && .ci/template_env.py
-
-RUN apk add --no-cache npm \
+RUN --mount=type=bind,source=.,target=/src,rw \
+  apk add --no-cache --update \
+    python3 \
+    npm \
+  && .ci/template_env.py \
   && npm i /src \
-  && npm run build
+  && npm run build \
+  && mv /src/build /build
 
-FROM nginx:latest
+################################################
 
-COPY --from=build  /src/build /usr/share/nginx/html
+FROM alpine:3
 
-ENTRYPOINT ["/bin/bash", "-c", "/usr/share/nginx/html/generate_config.sh && nginx -g \"daemon off;\""]
+RUN apk add --no-cache \
+  lighttpd \
+  && mkdir /cache \
+  && chown 10000:10000 /cache
+
+COPY --from=node-builder --chown=10000:10000 /build /delivery-dashboard
+COPY --chown=10000:10000 lighttpd.conf /lighttpd.conf
+
+USER 10000:10000
+ENTRYPOINT ["/usr/sbin/lighttpd", "-D", "-f", "/lighttpd.conf"]
