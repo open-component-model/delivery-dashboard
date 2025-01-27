@@ -36,7 +36,7 @@ spec:
               for var in $(env | grep ^REACT); do
                 key=${var%%=*};
                 value=${var#*=*};
-                echo "window.$key = '$value'" >> /delivery-dashboard/config.js;
+                echo "window.$key = '$value'" >> /delivery-dashboard/dynamic/config.js;
               done
               cat /delivery-dashboard/config.js;
           {{- if default dict .Values.envVars }}
@@ -58,7 +58,7 @@ spec:
               name: default
           volumeMounts:
             - name: delivery-dashboard-config
-              mountPath: /delivery-dashboard
+              mountPath: /delivery-dashboard/dynamic
           resources:
             requests:
               memory: 10Mi
