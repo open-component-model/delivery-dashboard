@@ -54,7 +54,7 @@ spec:
           image: {{ include "image" .Values.image }}
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: {{ default 80 .Values.containerPort }}
+            - containerPort: {{ default 8080 .Values.containerPort }}
               name: default
           volumeMounts:
             - name: delivery-dashboard-config

@@ -8,7 +8,7 @@ spec:
   type: ClusterIP
   ports:
   - port: {{ default 8080 .Values.servicePort }}
-    targetPort: {{ default 80 .Values.containerPort }}
+    targetPort: {{ default 8080 .Values.containerPort }}
     name: default
   selector:
     app: delivery-dashboard
