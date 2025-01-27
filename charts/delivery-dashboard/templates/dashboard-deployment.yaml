@@ -48,7 +48,7 @@ spec:
           {{- end }}
           volumeMounts:
             - name: delivery-dashboard-config
-              mountPath: /delivery-dashboard
+              mountPath: /delivery-dashboard/dynamic
       containers:
         - name: delivery-dashboard
           image: {{ include "image" .Values.image }}
