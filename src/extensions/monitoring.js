@@ -42,7 +42,6 @@ import {
   useFetchBacklogItems,
   useFetchContainerStatuses,
   useFetchLogCollections,
-  useFetchScanConfigurations,
 } from '../fetch'
 import CopyOnClickChip from '../util/copyOnClickChip'
 import { PersistentDrawerLeft } from '../layout'
@@ -140,22 +139,8 @@ const ServiceTabs = ({
   const searchParamContext = React.useContext(SearchParamContext)
   const currentTab = searchParamContext.get('servicesTab') || servicesTabConfig.BACKLOG.id
 
-  const [scanConfigs, scanConfigsState] = useFetchScanConfigurations()
-  const scanConfigsFetchDetails = {
-    scanConfigs: scanConfigs,
-    isLoading: scanConfigsState.isLoading,
-    isError: scanConfigsState.error,
-  }
-
-  // cfgName and priority are already initialised here to keep state between tab changes
-  const [cfgName, setCfgName] = React.useState()
+  // priority is already initialised here to keep state between tab changes
   const [priority, setPriority] = React.useState(PRIORITIES.NONE)
-
-  React.useEffect(() => {
-    if (scanConfigsState.isLoading || scanConfigsState.error) return
-
-    if (scanConfigs?.length > 0) setCfgName(scanConfigs[0].name)
-  }, [scanConfigs, scanConfigsState.isLoading, scanConfigsState.error])
 
   const handleChange = (_, newTab) => {
     searchParamContext.update({'servicesTab': newTab})
@@ -183,8 +168,6 @@ const ServiceTabs = ({
       <BacklogTab
         service={service}
         aggregatedContainerStatus={aggregatedContainerStatus}
-        scanConfigsFetchDetails={scanConfigsFetchDetails}
-        cfgNameState={{cfgName, setCfgName}}
         priorityState={{priority, setPriority}}
         refresh={refresh}
       />
@@ -217,49 +200,9 @@ ServiceTabs.propTypes = {
 const BacklogTab = ({
   service,
   aggregatedContainerStatus,
-  scanConfigsFetchDetails,
-  cfgNameState,
   priorityState,
   refresh,
 }) => {
-  const context = React.useContext(ConfigContext)
-
-  const {scanConfigs, isLoading, isError} = scanConfigsFetchDetails
-
-  if (isError) return <Alert severity='error' variant={context.prefersDarkMode ? 'outlined' : 'standard'}>
-    Scan configurations could not be fetched.
-  </Alert>
-  else if (isLoading || !scanConfigs) return <Skeleton/>
-
-  return <Backlog
-    service={service}
-    aggregatedContainerStatus={aggregatedContainerStatus}
-    scanConfigs={scanConfigs}
-    cfgNameState={cfgNameState}
-    priorityState={priorityState}
-    refresh={refresh}
-  />
-}
-BacklogTab.displayName = 'BacklogTab'
-BacklogTab.propTypes = {
-  service: PropTypes.string.isRequired,
-  aggregatedContainerStatus: PropTypes.object.isRequired,
-  scanConfigsFetchDetails: PropTypes.object.isRequired,
-  cfgNameState: PropTypes.object.isRequired,
-  priorityState: PropTypes.object.isRequired,
-  refresh: PropTypes.object.isRequired,
-}
-
-
-const Backlog = ({
-  service,
-  aggregatedContainerStatus,
-  scanConfigs,
-  cfgNameState,
-  priorityState,
-  refresh,
-}) => {
-  const {cfgName} = cfgNameState
   const {priority} = priorityState
 
   // use cache during initial load
@@ -267,7 +210,6 @@ const Backlog = ({
 
   const [backlogItems, backlogItemsState, refreshBacklogItems] = useFetchBacklogItems({
     service: service,
-    cfgName: cfgName,
     skipCache: skipCache.current,
   })
   const backlogItemsFetchDetails = {
@@ -334,8 +276,6 @@ const Backlog = ({
   return <>
     <BacklogHeader
       aggregatedContainerStatus={aggregatedContainerStatus}
-      scanConfigs={scanConfigs}
-      cfgNameState={cfgNameState}
       priorityState={priorityState}
       backlogItemsFetchDetails={backlogItemsFetchDetails}
       selectedBacklogItems={selectedBacklogItems}
@@ -354,12 +294,10 @@ const Backlog = ({
     />
   </>
 }
-Backlog.displayName = 'Backlog'
-Backlog.propTypes = {
+BacklogTab.displayName = 'BacklogTab'
+BacklogTab.propTypes = {
   service: PropTypes.string.isRequired,
   aggregatedContainerStatus: PropTypes.object.isRequired,
-  scanConfigs: PropTypes.arrayOf(PropTypes.object).isRequired,
-  cfgNameState: PropTypes.object.isRequired,
   priorityState: PropTypes.object.isRequired,
   refresh: PropTypes.object.isRequired,
 }
@@ -367,8 +305,6 @@ Backlog.propTypes = {
 
 const BacklogHeader = ({
   aggregatedContainerStatus,
-  scanConfigs,
-  cfgNameState,
   priorityState,
   backlogItemsFetchDetails,
   selectedBacklogItems,
@@ -381,7 +317,6 @@ const BacklogHeader = ({
 
   const [deletionIsLoading, setDeletionIsLoading] = React.useState(false)
 
-  const {cfgName, setCfgName} = cfgNameState
   const {priority, setPriority} = priorityState
 
   const fetchDeleteBacklogItem = async () => {
@@ -422,11 +357,6 @@ const BacklogHeader = ({
 
   return <Stack direction='row' spacing={3} display='flex' alignItems='center' justifyContent='space-between'>
     <Stack direction='row' spacing={3} display='flex' alignItems='center'>
-      <CfgNameFilter
-        cfgName={cfgName}
-        setCfgName={setCfgName}
-        scanConfigs={scanConfigs}
-      />
       <PriorityFilter
         priority={priority}
         setPriority={setPriority}
@@ -465,8 +395,6 @@ const BacklogHeader = ({
 BacklogHeader.displayName = 'BacklogHeader'
 BacklogHeader.propTypes = {
   aggregatedContainerStatus: PropTypes.object.isRequired,
-  scanConfigs: PropTypes.arrayOf(PropTypes.object).isRequired,
-  cfgNameState: PropTypes.object.isRequired,
   priorityState: PropTypes.object.isRequired,
   backlogItemsFetchDetails: PropTypes.object.isRequired,
   selectedBacklogItems: PropTypes.arrayOf(PropTypes.object).isRequired,
@@ -800,38 +728,6 @@ BacklogItemRow.propTypes = {
 }
 
 
-const CfgNameFilter = ({
-  cfgName,
-  setCfgName,
-  scanConfigs,
-}) => {
-  if (!cfgName) return <Skeleton/>
-
-  return <FormControl variant='standard'>
-    <InputLabel>Configuration</InputLabel>
-    <Select
-      value={cfgName}
-      onChange={(e) => setCfgName(e.target.value)}
-      sx={{ minWidth: '150px' }}
-    >
-      {
-        scanConfigs.map((scanConfig) => <MenuItem key={scanConfig.name} value={scanConfig.name}>
-          <Typography variant='body2'>
-            {scanConfig.name}
-          </Typography>
-        </MenuItem>)
-      }
-    </Select>
-  </FormControl>
-}
-CfgNameFilter.displayName = 'CfgNameFilter'
-CfgNameFilter.propTypes = {
-  cfgName: PropTypes.string,
-  setCfgName: PropTypes.func.isRequired,
-  scanConfigs: PropTypes.arrayOf(PropTypes.object).isRequired,
-}
-
-
 const PriorityFilter = ({
   priority,
   setPriority,
@@ -906,10 +802,10 @@ const LogTab = ({
         </IconButton>
         <ServiceStatus serviceStatus={aggregatedContainerStatus}/>
       </Stack>
-      <DownloadLogs logs={logs} service={service} logLevel={logLevel} disabled={showLoadingAnimation || error}/>
+      <DownloadLogs logs={logs} service={service} logLevel={logLevel} disabled={showLoadingAnimation || Boolean(error)}/>
     </Stack>
     <div style={{height: '2rem'}}/>
-    <Logs logs={logs} isLoading={showLoadingAnimation} isError={error}/>
+    <Logs logs={logs} isLoading={showLoadingAnimation} isError={Boolean(error)}/>
   </>
 }
 LogTab.displayName = 'LogTab'

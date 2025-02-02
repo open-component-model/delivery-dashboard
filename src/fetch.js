@@ -579,7 +579,6 @@ const useFetchScanConfigurations = () => {
 
 const useFetchBacklogItems = ({
   service,
-  cfgName,
   skipCache = false,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
@@ -599,10 +598,8 @@ const useFetchBacklogItems = ({
 
   const params = React.useMemo(() => ({
     service,
-    cfgName,
   }), [
     service,
-    cfgName,
   ])
 
   const cacheKey = JSON.stringify({

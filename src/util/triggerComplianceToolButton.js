@@ -28,7 +28,6 @@ import {
 
 export const triggerComplianceTool = ({
   service,
-  cfgName,
   ocmNodes,
   enqueueSnackbar,
   priority,
@@ -44,7 +43,6 @@ export const triggerComplianceTool = ({
     try {
       await serviceExtensions.backlogItems.create({
         service: service,
-        cfgName: cfgName,
         priority: priority ? priority : 'Critical',
         artefacts: artefacts,
       })
@@ -132,7 +130,6 @@ export const triggerComplianceTool = ({
 }
 triggerComplianceTool.propTypes = {
   service: PropTypes.string.isRequired,
-  cfgName: PropTypes.string.isRequired,
   ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   enqueueSnackbar: PropTypes.func.isRequired,
   priority: PropTypes.string,
@@ -142,7 +139,6 @@ triggerComplianceTool.propTypes = {
 
 const TriggerComplianceToolButton = ({
   ocmNodes,
-  cfgName,
   service,
 }) => {
   const { enqueueSnackbar } = useSnackbar()
@@ -152,7 +148,6 @@ const TriggerComplianceToolButton = ({
       e.stopPropagation()
       triggerComplianceTool({
         service: service,
-        cfgName: cfgName,
         ocmNodes: ocmNodes,
         enqueueSnackbar: enqueueSnackbar,
       })
@@ -170,7 +165,6 @@ const TriggerComplianceToolButton = ({
 TriggerComplianceToolButton.displayName = 'TriggerComplianceToolButton'
 TriggerComplianceToolButton.propTypes = {
   ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
-  cfgName: PropTypes.string.isRequired,
   service: PropTypes.string.isRequired,
 }
 
