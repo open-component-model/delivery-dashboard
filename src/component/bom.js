@@ -61,6 +61,7 @@ import { Responsibles } from '../responsibles'
 import {
   componentPathQuery,
   enhanceComponentRefFromPath,
+  normaliseExtraIdentity,
   normaliseObject,
   trimComponentName,
   trimLongString,
@@ -298,7 +299,7 @@ const Component = React.memo(({
       if (idParts.length === 4) return artefactId // no artefact extra id included -> id can be left unchanged
 
       const extraIdentity = idParts.pop()
-      const normalisedExtraIdentity = JSON.stringify(normaliseObject(JSON.parse(extraIdentity)))
+      const normalisedExtraIdentity = normaliseExtraIdentity(JSON.parse(extraIdentity))
 
       return `${idParts.join('|')}|${normalisedExtraIdentity}`
     })
@@ -310,7 +311,7 @@ const Component = React.memo(({
         return baseId
       }
 
-      return `${baseId}|${JSON.stringify(normaliseObject(artefact.extraIdentity))}`
+      return `${baseId}|${normaliseExtraIdentity(artefact.extraIdentity)}`
     }
 
     const resourceNodes = component.resources.filter((resource) => {
@@ -2099,8 +2100,8 @@ const ComplianceCell = ({
       && artefactSummary.artefact.artefact.artefact_name === artefact.name
       && artefactSummary.artefact.artefact.artefact_version === artefact.version
       && artefactSummary.artefact.artefact.artefact_type === artefact.type
-      && JSON.stringify(normaliseObject(artefactSummary.artefact.artefact.artefact_extra_id))
-        === JSON.stringify(normaliseObject(artefact.extraIdentity))
+      && normaliseExtraIdentity(artefactSummary.artefact.artefact.artefact_extra_id)
+        === normaliseExtraIdentity(artefact.extraIdentity)
     )
   })
 

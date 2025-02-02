@@ -21,6 +21,7 @@ import { serviceExtensions } from '../api'
 import {
   camelCaseToDisplayText,
   isTokenExpired,
+  normaliseExtraIdentity,
   normaliseObject,
 } from '../util'
 
@@ -120,8 +121,8 @@ export const triggerComplianceTool = ({
           ocmNode.component_name == node.component_name &&
           ocmNode.artefact.artefact_name == node.artefact.artefact_name &&
           ocmNode.artefact.artefact_type == node.artefact.artefact_type &&
-          JSON.stringify(normaliseObject(ocmNode.artefact.artefact_extra_id))
-            === JSON.stringify(normaliseObject(node.artefact.artefact_extra_id))
+          normaliseExtraIdentity(ocmNode.artefact.artefact_extra_id)
+            === normaliseExtraIdentity(node.artefact.artefact_extra_id)
         )
       }
     }) === idx
