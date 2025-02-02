@@ -13,14 +13,11 @@ import { useSnackbar } from 'notistack'
 
 import {
   COMPLIANCE_TOOLS,
-  TOKEN_KEY,
-  copyNotificationCfg,
   errorSnackbarProps,
 } from '../consts'
 import { serviceExtensions } from '../api'
 import {
   camelCaseToDisplayText,
-  isTokenExpired,
   normaliseExtraIdentity,
   normaliseObject,
 } from '../util'
@@ -76,20 +73,6 @@ export const triggerComplianceTool = ({
       setIsLoading(false)
     }
     return true
-  }
-
-  const token = JSON.parse(localStorage.getItem(TOKEN_KEY))
-  if (!token) {
-    enqueueSnackbar('You need to login first', {
-      ...copyNotificationCfg,
-    })
-    return false
-  } else if (isTokenExpired(token)) {
-    enqueueSnackbar('Session expired, please login again', {
-      ...copyNotificationCfg,
-    })
-    localStorage.removeItem(TOKEN_KEY)
-    return false
   }
 
   const artefacts = ocmNodes.map((ocmNode) => {
