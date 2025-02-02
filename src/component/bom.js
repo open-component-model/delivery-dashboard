@@ -140,7 +140,7 @@ MetadataViewer.propTypes = {
   ocmRepo: PropTypes.string,
 }
 
-export const ComplianceTools = ({
+const ComplianceTools = ({
   component,
 }) => {
   const [complianceToolsPopoverOpen, setComplianceToolsPopoverOpen] = React.useState(false)
@@ -1064,9 +1064,6 @@ ReferencedByTableRow.propTypes = {
 }
 
 
-export { Component, Components }
-
-
 const LoadingComponents = ({loadingComponentsCount}) => {
   return <Box
     width='50%'
@@ -1114,7 +1111,7 @@ LoadingComponents.propTypes = {
 }
 
 
-export const LoadingDependencies = () => {
+const LoadingDependencies = () => {
   const loadingComponentsCount = 40
 
   return <Box>
@@ -1425,7 +1422,7 @@ BomTab.propTypes = {
 }
 
 
-export const FetchDependenciesTab = React.memo(({
+const FetchDependenciesTab = React.memo(({
   component,
   ocmRepo,
   componentRefs,
@@ -1625,7 +1622,7 @@ SpecialComponentStatus.propTypes = {
 }
 
 
-const ComponentChip = ({
+export const ComponentChip = ({
   component,
   complianceSummaryFetchDetails,
 }) => {
@@ -1900,11 +1897,6 @@ IssueChip.propTypes = {
   scanConfig: PropTypes.object,
 }
 
-export {
-  ComponentChip,
-  IssueChip,
-  evaluateResourceBranch,
-}
 
 const OsCell = ({
   osData,
@@ -2699,6 +2691,3 @@ BDBACell.propTypes = {
   fetchComplianceSummary: PropTypes.func.isRequired,
   isLoading: PropTypes.bool.isRequired,
 }
-
-
-export { ComplianceCell, ArtefactCell, IconCell }
