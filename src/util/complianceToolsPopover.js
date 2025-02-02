@@ -10,10 +10,8 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  Drawer,
   FormControl,
   Grid,
-  IconButton,
   InputAdornment,
   InputLabel,
   MenuItem,
@@ -29,13 +27,10 @@ import {
   TableRow,
   TableSortLabel,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { useSnackbar } from 'notistack'
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import SearchIcon from '@mui/icons-material/Search'
 
 import PropTypes from 'prop-types'
@@ -43,14 +38,12 @@ import { useTheme } from '@emotion/react'
 
 import {
   useFetchBom,
-  useFetchScanConfigurations,
   useFetchServiceExtensions,
 } from '../fetch'
 import {
   camelCaseToDisplayText,
   matchObjectWithSearchQuery,
   pluralise,
-  toYamlString,
   trimLongString,
 } from '../util'
 import {
@@ -63,7 +56,6 @@ import {
 import { triggerComplianceTool } from './triggerComplianceToolButton'
 import { OcmNode, OcmNodeDetails } from '../ocm/iter'
 import CopyOnClickChip from './copyOnClickChip'
-import MultilineTextViewer from './multilineTextViewer'
 
 
 const ServiceConfiguration = ({
@@ -115,153 +107,6 @@ PriorityConfiguration.displayName = 'PriorityConfiguration'
 PriorityConfiguration.propTypes = {
   priority: PropTypes.object.isRequired,
   setPriority: PropTypes.func.isRequired,
-}
-
-
-const ScanConfiguration = ({
-  scanConfigsAgg,
-}) => {
-  const {scanConfig, setScanConfig, scanConfigs} = scanConfigsAgg
-
-  return <FormControl style={{width: '90%'}}>
-    <InputLabel>{'Scan Configuration'}</InputLabel>
-    <Select
-      value={scanConfig.name}
-      label={'Scan Configuration'}
-      onChange={(e) => setScanConfig(scanConfigs.find((cfg) => cfg.name === e.target.value))}
-    >
-      {
-        scanConfigs.map((cfg) => <MenuItem key={cfg.name} value={cfg.name}>{cfg.name}</MenuItem>)
-      }
-    </Select>
-  </FormControl>
-}
-ScanConfiguration.displayName = 'ScanConfiguration'
-ScanConfiguration.propTypes = {
-  scanConfigsAgg: PropTypes.object.isRequired,
-}
-
-
-const Configuration = ({
-  service,
-  scanConfigsAgg,
-}) => {
-  const [filterScanConfig, setFilterScanConfig] = React.useState(true)
-  const [scanConfig, setScanConfig] = React.useState(scanConfigsAgg.scanConfig)
-
-  React.useEffect(() => {
-    if (!filterScanConfig) {
-      setScanConfig(scanConfigsAgg.scanConfig.config)
-    } else if (service in scanConfigsAgg.scanConfig.config) {
-      setScanConfig({
-        ...scanConfigsAgg.scanConfig.config.defaults,
-        ...scanConfigsAgg.scanConfig.config[service],
-      })
-    } else {
-      setScanConfig({
-        warning: `selected scan configuration does not contain a configuration for ${camelCaseToDisplayText(service).toLowerCase()}`,
-      })
-    }
-  }, [filterScanConfig, scanConfigsAgg.scanConfig, service])
-
-  return <Stack spacing={3}>
-    <Typography>Please select the scan configuration of your choice.</Typography>
-    <div style={{display: 'flex', justifyContent: 'space-between'}}>
-      <ScanConfiguration scanConfigsAgg={scanConfigsAgg}/>
-      <Tooltip title={`filter scan configuration based on extension ${camelCaseToDisplayText(service).toLowerCase()}`}>
-        <Checkbox
-          checked={filterScanConfig}
-          onChange={() => setFilterScanConfig(!filterScanConfig)}
-          sx={{width: '10%'}}
-        />
-      </Tooltip>
-    </div>
-    <Box border={1} borderColor={'primary.main'}>
-      <MultilineTextViewer text={toYamlString(scanConfig)}/>
-    </Box>
-  </Stack>
-}
-Configuration.displayName = 'Configuration'
-Configuration.propTypes = {
-  service: PropTypes.string.isRequired,
-  scanConfigsAgg: PropTypes.object.isRequired,
-}
-
-
-const ComplianceToolsPopoverDrawer = ({
-  open,
-  handleClose,
-  service,
-  scanConfigsAgg,
-}) => {
-  return <Drawer
-    PaperProps={{
-      style: {
-        position: 'absolute',
-        width: '100vh',
-      }
-    }}
-    variant='persistent'
-    anchor='left'
-    open={open}
-    onClick={(e) => e.stopPropagation()}
-  >
-    <Box
-      borderLeft={1}
-      borderLeftColor={'primary.main'}
-      borderRight={1}
-      borderRightColor={'primary.main'}
-    >
-      <Box
-        position='sticky'
-        top={0}
-        left={0}
-        width={'100%'}
-        zIndex={999}
-        paddingTop={3}
-        paddingLeft={3}
-        paddingRight={3}
-        bgcolor={'background.paper'}
-        borderTop={1}
-        borderTopColor={'primary.main'}
-      >
-        <IconButton onClick={() => handleClose()}>
-          <ChevronLeftIcon/>
-        </IconButton>
-        <div style={{ padding: '0.5em' }}/>
-        <Divider/>
-      </Box>
-      <Box paddingLeft={3} paddingRight={3}>
-        <div style={{ padding: '0.5em' }}/>
-        <Configuration
-          service={service}
-          scanConfigsAgg={scanConfigsAgg}
-        />
-      </Box>
-      <Box
-        position='sticky'
-        bottom={0}
-        right={0}
-        width={'100%'}
-        zIndex={999}
-        paddingBottom={3}
-        paddingLeft={3}
-        paddingRight={3}
-        bgcolor={'background.paper'}
-        borderBottom={1}
-        borderBottomColor={'primary.main'}
-      >
-        <Divider/>
-      </Box>
-    </Box>
-  </Drawer>
-}
-ComplianceToolsPopoverDrawer.displayName = 'ComplianceToolsPopoverDrawer'
-ComplianceToolsPopoverDrawer.propTypes = {
-  open: PropTypes.bool.isRequired,
-  handleClose: PropTypes.func.isRequired,
-  service: PropTypes.string.isRequired,
-  scanConfigsAgg: PropTypes.object.isRequired,
 }
 
 
@@ -551,11 +396,9 @@ ArtefactList.propTypes = {
 
 const TriggerComplianceTool = ({
   service,
-  scanConfig,
   priority,
   selectedOcmNodes,
   setSelectedOcmNodes,
-  configIsAvailable,
 }) => {
   const [isLoading, setIsLoading] = React.useState(false)
 
@@ -570,15 +413,6 @@ const TriggerComplianceTool = ({
   const ocmNodesLength = filteredOcmNodes.length
 
   const scheduleButtonText = `schedule ${ocmNodesLength} ${pluralise('artefact', ocmNodesLength)} for ${camelCaseToDisplayText(service)}`
-
-  if (!configIsAvailable) return <Button
-    variant='contained'
-    color='secondary'
-    disabled
-    fullWidth
-  >
-    Please select a different scan configuration
-  </Button>
 
   if (!token) return <Button
     variant='contained'
@@ -606,7 +440,6 @@ const TriggerComplianceTool = ({
     onClick={() => {
       const triggeredSuccessfully = triggerComplianceTool({
         service: service,
-        cfgName: scanConfig.name,
         ocmNodes: filteredOcmNodes,
         enqueueSnackbar: enqueueSnackbar,
         priority: priority,
@@ -625,11 +458,9 @@ const TriggerComplianceTool = ({
 TriggerComplianceTool.displayName = 'TriggerComplianceTool'
 TriggerComplianceTool.propTypes = {
   service: PropTypes.string.isRequired,
-  scanConfig: PropTypes.object.isRequired,
   priority: PropTypes.string.isRequired,
   selectedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedOcmNodes: PropTypes.func.isRequired,
-  configIsAvailable: PropTypes.bool.isRequired,
 }
 
 
@@ -639,7 +470,6 @@ const ComplianceToolPopover = ({
 }) => {
   const { component } = popoverProps
 
-  const [openInput, setOpenInput] = React.useState(false)
   const [filters, setFilters] = React.useState([])
 
   const [dependencies, state] = useFetchBom({
@@ -654,9 +484,6 @@ const ComplianceToolPopover = ({
   const [services, servicesState] = useFetchServiceExtensions()
   const [service, setService] = React.useState()
 
-  const [scanConfigs, scanConfigsState] = useFetchScanConfigurations()
-  const [scanConfig, setScanConfig] = React.useState()
-
   const [priority, setPriority] = React.useState(PRIORITIES.CRITICAL)
 
   React.useEffect(() => {
@@ -666,11 +493,6 @@ const ComplianceToolPopover = ({
       setService(services[0])
     }
   }, [services, servicesState, service])
-
-  React.useEffect(() => {
-    if (scanConfigsState.isLoading || scanConfigsState.error) return
-    if (!scanConfig && scanConfigs?.length > 0) setScanConfig(scanConfigs[0])
-  }, [scanConfigs, scanConfigsState.isLoading, scanConfigsState.error, scanConfig])
 
   React.useEffect(() => {
     if (state.isLoading || state.error || servicesState.isLoading || servicesState.state) return
@@ -695,15 +517,9 @@ const ComplianceToolPopover = ({
             ARTEFACT_KIND.SOURCE,
           )
         }): []),
-      ].filter((node) => {
-        if (!scanConfig) return true
-
-        // if artefact type filter is set, don't show nodes that are filtered out
-        const artefactTypes = scanConfig.config[service].artefact_types || scanConfig.config.defaults.artefact_types
-        return !artefactTypes || artefactTypes.some((type) => type === node.artefact.type)
-      })
+      ]
     }, []))
-  }, [dependencies, scanConfig, state.isLoading, state.error, service, servicesState.isLoading, servicesState.error])
+  }, [dependencies, state.isLoading, state.error, service, servicesState.isLoading, servicesState.error])
 
   const addOrUpdateFilter = React.useCallback((newFilter) => {
     setFilters((prevFilters) => {
@@ -726,15 +542,10 @@ const ComplianceToolPopover = ({
     }, ocmNodes)
   }, [filters])
 
-  if (state.error || servicesState.error || scanConfigsState.error) {
+  if (state.error || servicesState.error) {
     return
-  } else if (state.isLoading || servicesState.isLoading || scanConfigsState.isLoading || !service || !scanConfig) {
+  } else if (state.isLoading || servicesState.isLoading || !service) {
     return
-  }
-
-  const closeInput = (event) => {
-    if (openInput) setOpenInput(false)
-    event.stopPropagation() // stop interaction with background
   }
 
   return <Dialog
@@ -755,44 +566,16 @@ const ComplianceToolPopover = ({
         border: 1,
         borderColor: 'primary.main',
       }}
-      onClick={(e) => closeInput(e)}
     >
-      <Grid container>
-        <Grid item xs={1}>
-          {
-            openInput ? <ComplianceToolsPopoverDrawer
-              open={openInput}
-              handleClose={() => setOpenInput(false)}
-              service={service}
-              scanConfigsAgg={{
-                scanConfig,
-                setScanConfig,
-                scanConfigs,
-              }}
-            /> : <Box
-              paddingTop={1} // sync position with close button inside drawer
-            >
-              <IconButton
-                onClick={() => setOpenInput(true)}
-              >
-                <ChevronRightIcon/>
-              </IconButton>
-            </Box>
-          }
-        </Grid>
-        <Grid item xs={10}>
-          <Stack
-            direction='column'
-            display='flex'
-            justifyContent='center'
-            alignItems='center'
-          >
-            <Typography variant='h6'>Compliance Tool Instrumentation</Typography>
-            <Typography variant='h6' color='secondary'>{`${component.name}:${component.version}`}</Typography>
-          </Stack>
-        </Grid>
-        <Grid item xs={1}/>
-      </Grid>
+      <Stack
+        direction='column'
+        display='flex'
+        justifyContent='center'
+        alignItems='center'
+      >
+        <Typography variant='h6'>Compliance Tool Instrumentation</Typography>
+        <Typography variant='h6' color='secondary'>{`${component.name}:${component.version}`}</Typography>
+      </Stack>
     </DialogTitle>
     <DialogContent
       sx={{
@@ -800,7 +583,6 @@ const ComplianceToolPopover = ({
         border: '1px solid #000',
         boxShadow: 24,
       }}
-      onClick={(e) => closeInput(e)}
     >
       <Stack sx={{marginTop: '2rem'}}>
         <div style={{display: 'flex', justifyContent: 'space-between'}}>
@@ -834,7 +616,6 @@ const ComplianceToolPopover = ({
         borderColor: 'primary.main',
         padding: 2,
       }}
-      onClick={(e) => closeInput(e)}
     >
       <Grid container alignItems='center' spacing={2}>
         <Grid item xs={3.5}/>
@@ -842,11 +623,9 @@ const ComplianceToolPopover = ({
           <Box display='flex' justifyContent='center'>
             <TriggerComplianceTool
               service={service}
-              scanConfig={scanConfig}
               priority={priority.name}
               selectedOcmNodes={selectedOcmNodes}
               setSelectedOcmNodes={setSelectedOcmNodes}
-              configIsAvailable={service in scanConfig.config}
             />
           </Box>
         </Grid>
