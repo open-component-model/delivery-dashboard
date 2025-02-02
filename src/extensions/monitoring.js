@@ -31,7 +31,6 @@ import {
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
 import DeleteIcon from '@mui/icons-material/Delete'
 import HourglassBottomIcon from '@mui/icons-material/HourglassBottom'
-import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { alpha } from '@mui/material/styles'
 import { DataGrid, gridClasses } from '@mui/x-data-grid'
@@ -346,8 +345,6 @@ const Backlog = ({
     />
     <div style={{height: '2rem'}}/>
     <BacklogItems
-      service={service}
-      scanConfig={scanConfigs.find((scanConfig) => scanConfig.name === cfgName)}
       filteredBacklogItems={filteredBacklogItems()}
       error={backlogItemsState.error}
       selectedBacklogItems={selectedBacklogItems}
@@ -480,8 +477,6 @@ BacklogHeader.propTypes = {
 
 
 const BacklogItems = ({
-  service,
-  scanConfig,
   filteredBacklogItems,
   selectedBacklogItems,
   setSelectedBacklogItems,
@@ -640,9 +635,6 @@ const BacklogItems = ({
               </TableSortLabel>
             </TableCell>
             <TableCell sx={{textAlign: 'center'}}>
-              Ref
-            </TableCell>
-            <TableCell sx={{textAlign: 'center'}}>
               <TableSortLabel
                 onClick={() => handleSort(orderAttributes.CLAIMED)}
                 active={orderBy === orderAttributes.CLAIMED}
@@ -659,8 +651,6 @@ const BacklogItems = ({
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((backlogItem) => <BacklogItemRow
                 key={backlogItem.metadata.uid}
-                service={service}
-                scanConfig={scanConfig}
                 backlogItem={backlogItem}
                 selectedBacklogItems={selectedBacklogItems}
                 setSelectedBacklogItems={setSelectedBacklogItems}
@@ -683,8 +673,6 @@ const BacklogItems = ({
 }
 BacklogItems.displayName = 'BacklogItems'
 BacklogItems.propTypes = {
-  service: PropTypes.string.isRequired,
-  scanConfig: PropTypes.object,
   filteredBacklogItems: PropTypes.arrayOf(PropTypes.object).isRequired,
   selectedBacklogItems: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedBacklogItems: PropTypes.func.isRequired,
@@ -695,8 +683,6 @@ BacklogItems.propTypes = {
 
 
 const BacklogItemRow = ({
-  service,
-  scanConfig,
   backlogItem,
   selectedBacklogItems,
   setSelectedBacklogItems,
@@ -797,13 +783,6 @@ const BacklogItemRow = ({
       </FormControl>
     </TableCell>
     <TableCell sx={{width: '10vw', textAlign: 'center'}}>
-      <BacklogItemReference
-        service={service}
-        scanConfig={scanConfig}
-        backlogItem={backlogItem}
-      />
-    </TableCell>
-    <TableCell sx={{width: '10vw', textAlign: 'center'}}>
       {
         backlogItem.claimed && <Tooltip title={`Started at: ${new Date(backlogItem.claimedAt).toLocaleString()}`}>
           <HourglassBottomIcon fontSize='small'/>
@@ -814,78 +793,10 @@ const BacklogItemRow = ({
 }
 BacklogItemRow.displayName = 'BacklogItemRow'
 BacklogItemRow.propTypes = {
-  service: PropTypes.string.isRequired,
-  scanConfig: PropTypes.object,
   backlogItem: PropTypes.object.isRequired,
   selectedBacklogItems: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedBacklogItems: PropTypes.func.isRequired,
   refreshBacklogItems: PropTypes.func.isRequired,
-}
-
-
-const BacklogItemReference = ({
-  service,
-  scanConfig,
-  backlogItem,
-}) => {
-  const theme = useTheme()
-
-  if (!scanConfig) return <Skeleton/>
-
-  const component = {
-    name: backlogItem.spec.artefact.component_name,
-    version: backlogItem.spec.artefact.artefact.component_version,
-  }
-  const artefact = {
-    name: backlogItem.spec.artefact.artefact.artefact_name,
-    version: backlogItem.spec.artefact.artefact.artefact_version,
-  }
-
-  if (service === COMPLIANCE_TOOLS.BDBA) {
-    const bdbaUrl = scanConfig.config.bdba.base_url
-    const group = scanConfig.config.bdba.group_id
-    const search = `${artefact.name}_${artefact.version}_${component.name.replaceAll('/', '_')}`
-    const bdbaUrlForArtefact = `${bdbaUrl}/#/groups/${group}/applications?search=${search}`
-
-    return <IconButton
-      title='View in BDBA'
-      sx={{
-        backgroundColor: theme.palette.grey,
-        color: theme.palette.text.primary,
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-        window.open(bdbaUrlForArtefact, '_blank')
-      }}
-    >
-      <OpenInNewIcon fontSize='small'/>
-    </IconButton>
-  } else if (service === COMPLIANCE_TOOLS.ISSUE_REPLICATOR) {
-    const repoUrl = scanConfig.config.issueReplicator.github_issues_target_repository_url
-    const issueState = encodeURIComponent('is:open')
-    const name = encodeURIComponent(`${component.name}:${artefact.name}`)
-    const repoUrlForArtefact = `https://${repoUrl}/issues?q=${issueState}+${name}`
-
-    return <IconButton
-      title='View on GitHub'
-      sx={{
-        backgroundColor: theme.palette.grey,
-        color: theme.palette.text.primary,
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-        window.open(repoUrlForArtefact, '_blank')
-      }}
-    >
-      <OpenInNewIcon fontSize='small'/>
-    </IconButton>
-  }
-}
-BacklogItemReference.displayName = 'BacklogItemReference'
-BacklogItemReference.propTypes = {
-  service: PropTypes.string.isRequired,
-  scanConfig: PropTypes.object,
-  backlogItem: PropTypes.object.isRequired,
 }
 
 
