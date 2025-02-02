@@ -8,7 +8,6 @@ import PropTypes from 'prop-types'
 import { NoMaxWidthTooltip, componentPathQuery, normaliseExtraIdentity, toYamlString, trimLongString } from '../util'
 import CopyOnClickChip from '../util/copyOnClickChip'
 import MultilineTextViewer from '../util/multilineTextViewer'
-import { sanitiseArtefactExtraId } from './util'
 
 
 /**
