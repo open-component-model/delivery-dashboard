@@ -29,7 +29,6 @@ import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutli
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import LockIcon from '@mui/icons-material/Lock'
 import ReportProblemIcon from '@mui/icons-material/ReportProblem'
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined'
 import PestControlIcon from '@mui/icons-material/PestControl'
@@ -38,7 +37,7 @@ import ArticleIcon from '@mui/icons-material/Article'
 
 import PropTypes from 'prop-types'
 
-import { CRYPTO_ASSET_TYPES, SEVERITIES } from '../consts'
+import { SEVERITIES } from '../consts'
 import {
   artefactMetadataSeverityComparator,
   artefactMetadatumSeverity,
@@ -76,8 +75,6 @@ const artefactMetadataTypes = {
   FINDING_MALWARE: 'finding/malware',
   OS_IDS: 'os_ids',
   CODECHECKS_AGGREGATED: 'codechecks/aggregated',
-  CRYPTO_ASSET: 'crypto_asset',
-  FINDING_FIPS: 'finding/fips',
   RESCORINGS: 'rescorings',
 }
 Object.freeze(artefactMetadataTypes)
@@ -87,7 +84,6 @@ const datasources = {
   BDBA: 'bdba',
   CLAMAV: 'clamav',
   CC_UTILS: 'cc-utils',
-  CRYPTO: 'crypto',
 }
 Object.freeze(datasources)
 
@@ -124,34 +120,6 @@ export const dataKey = ({type, data}) => {
 
   if (type === artefactMetadataTypes.FINDING_MALWARE) return asKey({
     props: [data.finding.content_digest, data.finding.filename, data.finding.malware],
-  })
-
-  if (type === CRYPTO_ASSET_TYPES.ALGORITHM) return asKey({
-    props: [data.name, data.primitive, data.parameter_set_identifier, data.curve, data.padding],
-  })
-
-  if (type === CRYPTO_ASSET_TYPES.CERTIFICATE) return asKey({
-    props: [data.signature_algorithm_ref, data.subject_public_key_ref],
-  })
-
-  if (type === CRYPTO_ASSET_TYPES.LIBRARY) return asKey({
-    props: [data.name, data.version],
-  })
-
-  if (type === CRYPTO_ASSET_TYPES.PROTOCOL) return asKey({
-    props: [data.type, data.version],
-  })
-
-  if (type === CRYPTO_ASSET_TYPES.RELATED_CRYPTO_MATERIAL) return asKey({
-    props: [data.type, data.algorithm_ref, data.size?.toString()],
-  })
-
-  if (type === artefactMetadataTypes.CRYPTO_ASSET) return asKey({
-    props: [data.asset_type, dataKey({type: data.asset_type, data: data.properties})],
-  })
-
-  if (type === artefactMetadataTypes.FINDING_FIPS) return asKey({
-    props: [dataKey({type: artefactMetadataTypes.CRYPTO_ASSET, data: data.asset})],
   })
 }
 
@@ -218,11 +186,6 @@ const displayNameForData = ({
     return `${displayName} ${data.license.name}`
   } else if (type === artefactMetadataTypes.STRUCTURE_INFO) {
     return `Package ${data.package_name} ${data.package_version}`
-  } else if (type === artefactMetadataTypes.FINDING_FIPS) {
-    // if asset type is certificate, don't show all names as they are usually more irrelevant
-    return `Fips ${data.asset.asset_type} ${data.asset.asset_type !== CRYPTO_ASSET_TYPES.CERTIFICATE ? data.asset.names.sort().join(', ') : ''}`
-  } else if (type === artefactMetadataTypes.CRYPTO_ASSET) {
-    return `Crypto Asset ${data.asset_type} ${data.asset_type !== CRYPTO_ASSET_TYPES.CERTIFICATE ? data.names.sort().join(', ') : ''}`
   } else {
     return displayName
   }
@@ -372,18 +335,6 @@ const knownMetadataTypes = [
     friendlyName: 'Malware',
     SpecificTypeHandler: MultilineTextViewer,
     Icon: CoronavirusIcon
-  },
-  {
-    name: 'crypto_asset',
-    friendlyName: 'Crypto Asset',
-    SpecificTypeHandler: MultilineTextViewer,
-    Icon: ArticleIcon,
-  },
-  {
-    name: 'finding/fips',
-    friendlyName: 'Fips',
-    SpecificTypeHandler: MultilineTextViewer,
-    Icon: LockIcon,
   },
 ]
 
