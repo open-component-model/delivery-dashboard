@@ -77,7 +77,7 @@ import {
 import ExtraWideTooltip from '../util/extraWideTooltip'
 import FeatureDependent from '../util/featureDependent'
 import ComplianceToolPopover from '../util/complianceToolsPopover'
-import { ARTEFACT_KIND, features, PACKAGES, COMPLIANCE_TOOLS, REPORTING_MINIMUM_SEVERITY, SEVERITIES, TOKEN_KEY, DEPENDENT_COMPONENT, fetchBomPopulate } from '../consts'
+import { ARTEFACT_KIND, features, COMPLIANCE_TOOLS, REPORTING_MINIMUM_SEVERITY, SEVERITIES, TOKEN_KEY, DEPENDENT_COMPONENT, fetchBomPopulate } from '../consts'
 import {
   useFetchComponentResponsibles,
   useFetchScanConfigurations,
@@ -715,13 +715,11 @@ const Artefacts = ({
       artefactMetadataTypes.ARTEFACT_SCAN_INFO,
       artefactMetadataTypes.CODECHECKS_AGGREGATED,
       artefactMetadataTypes.OS_IDS,
-      artefactMetadataTypes.STRUCTURE_INFO,
     ]
   }, [
     artefactMetadataTypes.ARTEFACT_SCAN_INFO,
     artefactMetadataTypes.CODECHECKS_AGGREGATED,
     artefactMetadataTypes.OS_IDS,
-    artefactMetadataTypes.STRUCTURE_INFO,
   ])
 
   const params = React.useMemo(() => {
@@ -1827,80 +1825,6 @@ const evaluateResourceBranch = (resource) => {
   }
 }
 
-const GolangChip = ({
-  versions,
-  timestamp,
-}) => {
-  if (!versions?.length > 0) return null
-
-  const hasNoNullVersion = versions.find((e) => {
-    if (e === undefined) return false
-    return true
-  })
-
-  const sortedVersions = versions.filter((e) => e !== null).sort((left, right) => {
-    if (!SemVer.valid(left)) return 1
-    if (!SemVer.valid(right)) return -1
-
-    return SemVer.lt(parseRelaxedSemver(left), parseRelaxedSemver(right))
-  })
-
-  return <Tooltip
-    title={
-      <Stack direction='column' spacing={1}>
-        {
-          <Stack direction='column'>
-            {sortedVersions.map((version) => {
-              return (
-                <Typography
-                  key={version}
-                  variant='inherit'
-                  sx={{
-                    whiteSpace: 'pre-wrap',
-                    maxWidth: 'none',
-                  }}
-                >
-                  {version}
-                </Typography>
-              )
-            })}
-            {
-              !hasNoNullVersion ? <Typography
-                key={'golang_null'}
-                variant='inherit'
-                sx={{
-                  whiteSpace: 'pre-wrap',
-                  maxWidth: 'none',
-                }}
-              >
-                Unknown Version
-              </Typography> : null
-            }
-          </Stack>
-        }
-        <Divider/>
-        <Typography variant='inherit'>
-          {timestamp}
-        </Typography>
-      </Stack>
-    }
-  >
-    <Grid item>
-      <Chip
-        label='Golang'
-        variant='outlined'
-        size='small'
-        color={hasNoNullVersion ? 'default' : 'warning'}
-      />
-    </Grid>
-  </Tooltip>
-}
-GolangChip.displayName = 'GolangChip'
-GolangChip.propTypes = {
-  versions: PropTypes.arrayOf(PropTypes.string),
-  timestamp: PropTypes.string,
-}
-
 
 const IssueChip = ({
   ocmNodes,
@@ -1977,7 +1901,6 @@ IssueChip.propTypes = {
 
 export {
   ComponentChip,
-  GolangChip,
   IssueChip,
   evaluateResourceBranch,
 }
@@ -2259,7 +2182,6 @@ const ComplianceCell = ({
     artefactExtraId: artefact.extraIdentity,
   }))
 
-  const structureInfos = complianceFiltered?.filter((d) => d.meta.type === artefactMetadataTypes.STRUCTURE_INFO)
   const osData = complianceFiltered?.find((d) => d.meta.type === artefactMetadataTypes.OS_IDS)
   const codecheckData = complianceFiltered?.find((d) => d.meta.type === artefactMetadataTypes.CODECHECKS_AGGREGATED)
 
@@ -2284,14 +2206,6 @@ const ComplianceCell = ({
           scanConfig={scanConfig?.config && COMPLIANCE_TOOLS.BDBA in scanConfig.config ? scanConfig : null}
           fetchComplianceSummary={fetchComplianceSummary}
           isLoading={state.isLoading}
-        />
-      }
-      {
-        artefact.kind === ARTEFACT_KIND.RESOURCE && <GolangChip
-          versions={structureInfos?.filter((structureInfo) => {
-            return structureInfo.data.package_name === PACKAGES.GOLANG
-          }).map((structureInfo) => structureInfo.data.package_version)}
-          timestamp={lastScanTimestampStr(lastBdbaScan)}
         />
       }
       {
