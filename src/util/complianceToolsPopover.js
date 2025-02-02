@@ -51,7 +51,6 @@ import {
   COMPLIANCE_TOOLS,
   fetchBomPopulate,
   PRIORITIES,
-  TOKEN_KEY,
 } from '../consts'
 import { triggerComplianceTool } from './triggerComplianceToolButton'
 import { OcmNode, OcmNodeDetails } from '../ocm/iter'
@@ -409,19 +408,9 @@ const TriggerComplianceTool = ({
     return true
   })
 
-  const token = JSON.parse(localStorage.getItem(TOKEN_KEY))
   const ocmNodesLength = filteredOcmNodes.length
 
   const scheduleButtonText = `schedule ${ocmNodesLength} ${pluralise('artefact', ocmNodesLength)} for ${camelCaseToDisplayText(service)}`
-
-  if (!token) return <Button
-    variant='contained'
-    color='secondary'
-    disabled
-    fullWidth
-  >
-    Log in to {scheduleButtonText}
-  </Button>
 
   if (ocmNodesLength === 0) return <Button
     variant='contained'

@@ -66,13 +66,11 @@ import {
 import { rescore } from './api'
 import {
   ARTEFACT_KIND,
-  copyNotificationCfg,
   errorSnackbarProps,
   features,
   META_RESCORING_RULES,
   META_SPRINT_NAMES,
   SEVERITIES,
-  TOKEN_KEY,
 } from './consts'
 import { registerCallbackHandler } from './feature'
 import { OcmNode, OcmNodeDetails } from './ocm/iter'
@@ -86,7 +84,6 @@ import {
 import {
   findSeverityCfgByName,
   formatAndSortSprints,
-  isTokenExpired,
   normaliseExtraIdentity,
   normaliseObject,
   pluralise,
@@ -948,7 +945,6 @@ const ApplicableRescoringsRow = ({
   applicableRescoring,
   priority,
   fetchDeleteApplicableRescoring,
-  isAuthenticated,
 }) => {
   const [rowHovered, setRowHovered] = React.useState(false)
   const [isConfirmDeletion, setIsConfirmDeletion] = React.useState(false)
@@ -1020,7 +1016,7 @@ const ApplicableRescoringsRow = ({
       }
     </TableCell>
     {
-      isAuthenticated && !applicableRescoring.data.matching_rules.includes(META_RESCORING_RULES.BDBA_TRIAGE) ? <TableCell
+      !applicableRescoring.data.matching_rules.includes(META_RESCORING_RULES.BDBA_TRIAGE) ? <TableCell
         align='center'
         sx={{ border: 0 }}
       >
@@ -1044,7 +1040,6 @@ ApplicableRescoringsRow.propTypes = {
   applicableRescoring: PropTypes.object.isRequired,
   priority: PropTypes.number.isRequired,
   fetchDeleteApplicableRescoring: PropTypes.func.isRequired,
-  isAuthenticated: PropTypes.bool.isRequired,
 }
 
 
@@ -1053,7 +1048,6 @@ const ApplicableRescorings = ({
   setRescorings,
   fetchComplianceData,
   fetchComplianceSummary,
-  isAuthenticated,
   expanded,
   rescoringFeature,
 }) => {
@@ -1175,9 +1169,7 @@ const ApplicableRescorings = ({
                     </Tooltip> : <Typography variant='inherit'>Applied Rules</Typography>
                   }
                 </TableCell>
-                {
-                  isAuthenticated && <TableCell width='40vw' sx={{ border: 0 }}/>
-                }
+                <TableCell width='40vw' sx={{ border: 0 }}/>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -1187,7 +1179,6 @@ const ApplicableRescorings = ({
                   applicableRescoring={ap}
                   priority={idx + 1}
                   fetchDeleteApplicableRescoring={fetchDeleteApplicableRescoring}
-                  isAuthenticated={isAuthenticated}
                 />)
               }
             </TableBody>
@@ -1203,7 +1194,6 @@ ApplicableRescorings.propTypes = {
   setRescorings: PropTypes.func.isRequired,
   fetchComplianceData: PropTypes.func,
   fetchComplianceSummary: PropTypes.func,
-  isAuthenticated: PropTypes.bool.isRequired,
   expanded: PropTypes.bool.isRequired,
   rescoringFeature: PropTypes.object,
 }
@@ -1454,7 +1444,6 @@ const RescoringContentTableRow = ({
   const currentSeverity = rescoringProposalSeverity(rescoring)
   const currentSeverityCfg = findSeverityCfgByName({name: currentSeverity})
 
-  const isAuthenticated = JSON.parse(localStorage.getItem(TOKEN_KEY)) !== null
   const sprintInfo = sprints.find((s) => s.name === sprintNameForRescoring(rescoring))
 
   const severityToDays = (severity, maxProcessingDays) => {
@@ -1593,7 +1582,6 @@ const RescoringContentTableRow = ({
               }}
               onClick={(e) => e.stopPropagation()}
               variant='standard'
-              disabled={!isAuthenticated}
               sx={{ marginY: '0.5rem' }}
             >
               {
@@ -1642,7 +1630,6 @@ const RescoringContentTableRow = ({
           onChange={(e) => delayCommentUpdate(e.target.value)}
           onClick={(e) => e.stopPropagation()}
           error={rescoringNeedsComment(rescoring)}
-          disabled={!isAuthenticated}
           size='small'
           maxRows={4}
           InputProps={{
@@ -1678,7 +1665,6 @@ const RescoringContentTableRow = ({
       setRescorings={setRescorings}
       fetchComplianceData={fetchComplianceData}
       fetchComplianceSummary={fetchComplianceSummary}
-      isAuthenticated={isAuthenticated}
       expanded={expanded}
       rescoringFeature={rescoringFeature}
     />
@@ -2304,17 +2290,6 @@ const Rescore = ({
     return {artefact, meta, data}
   }, [scope])
 
-  const token = JSON.parse(localStorage.getItem(TOKEN_KEY))
-
-  if (!token) return <Button
-    variant='contained'
-    color='secondary'
-    disabled
-    fullWidth
-  >
-    Log in to apply rescorings
-  </Button>
-
   if (!rescorings?.length > 0) return <Button
     variant='contained'
     color='secondary'
@@ -2419,14 +2394,6 @@ const Rescore = ({
           }
           handleClose()
         }
-      }
-
-      if (isTokenExpired(token)) {
-        enqueueSnackbar('Session expired, please login again', {
-          ...copyNotificationCfg,
-        })
-        localStorage.removeItem(TOKEN_KEY)
-        return
       }
 
       fetchRescorings()

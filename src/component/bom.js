@@ -78,7 +78,7 @@ import {
 import ExtraWideTooltip from '../util/extraWideTooltip'
 import FeatureDependent from '../util/featureDependent'
 import ComplianceToolPopover from '../util/complianceToolsPopover'
-import { ARTEFACT_KIND, features, COMPLIANCE_TOOLS, REPORTING_MINIMUM_SEVERITY, SEVERITIES, TOKEN_KEY, DEPENDENT_COMPONENT, fetchBomPopulate } from '../consts'
+import { ARTEFACT_KIND, features, COMPLIANCE_TOOLS, REPORTING_MINIMUM_SEVERITY, SEVERITIES, DEPENDENT_COMPONENT, fetchBomPopulate } from '../consts'
 import {
   useFetchComponentResponsibles,
   useFetchScanConfigurations,
@@ -2309,8 +2309,6 @@ const ArtefactCell = ({
   }
 
   if (artefact.access.type === 'localBlob/v1') {
-    const isAuthenticated = JSON.parse(localStorage.getItem(TOKEN_KEY)) !== null
-
     return <TableCell>
       <Box
         display='flex'
@@ -2322,23 +2320,14 @@ const ArtefactCell = ({
           extraIdentity={artefact.extraIdentity}
         />
         <div style={{ padding: '0.3em' }} />
-        <Tooltip
-          title={
-            isAuthenticated
-              ? 'Download'
-              : 'You need to login first'
-          }
-        >
+        <Tooltip title='Download'>
           <span>
             <a
               href={downloadUrl}
               target='_blank'
               rel='noreferrer'
             >
-              <IconButton
-                size='small'
-                disabled={!isAuthenticated}
-              >
+              <IconButton size='small'>
                 <CloudDownloadIcon/>
               </IconButton>
             </a>
