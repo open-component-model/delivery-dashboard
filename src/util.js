@@ -237,8 +237,8 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
     ) return false
     if (
       Object.keys(rescoring.artefact.artefact.artefact_extra_id).length > 0
-      && JSON.stringify(normaliseObject(rescoring.artefact.artefact.artefact_extra_id))
-        !== JSON.stringify(normaliseObject(finding.artefact.artefact.artefact_extra_id))
+      && normaliseExtraIdentity(rescoring.artefact.artefact.artefact_extra_id)
+        !== normaliseExtraIdentity(finding.artefact.artefact.artefact_extra_id)
     ) return false
     if (
       finding.meta.type === artefactMetadataTypes.VULNERABILITY
@@ -827,4 +827,22 @@ export const getMonthlyDates = (timeSpanDays) => {
   }
 
   return dates
+}
+
+
+/**
+ * This is an equivalent normalisation function to the one used in the delivery-service to normalise
+ * extra-identities. Using the same algorithm for normalisation allows comparison of
+ * extra-identities which were normalised in the delivery-service vs. those which were normalised in
+ * the delivery-dashboard.
+ */
+export const normaliseExtraIdentity = (extraIdentity) => {
+  const sortedKeys = Object.keys(extraIdentity).sort()
+
+  return sortedKeys.reduce((normalised, key) => {
+    return [
+      ...normalised,
+      `${key}:${extraIdentity[key]}`,
+    ]
+  }, []).join('_')
 }

@@ -5,7 +5,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 
 import PropTypes from 'prop-types'
 
-import { NoMaxWidthTooltip, componentPathQuery, normaliseObject, toYamlString, trimLongString } from '../util'
+import { NoMaxWidthTooltip, componentPathQuery, normaliseExtraIdentity, toYamlString, trimLongString } from '../util'
 import CopyOnClickChip from '../util/copyOnClickChip'
 import MultilineTextViewer from '../util/multilineTextViewer'
 import { sanitiseArtefactExtraId } from './util'
@@ -50,8 +50,7 @@ class OcmNode {
 
     if (this.isComponentNode()) return componentIdentity
 
-    const extraId = normaliseObject(sanitiseArtefactExtraId(this.artefact.extraIdentity))
-    const artefactIdentity = `${this.artefact.name}:${this.artefact.version}:${JSON.stringify(extraId)}`
+    const artefactIdentity = `${this.artefact.name}:${this.artefact.version}:${this.normalisedExtraIdentity()}`
     return `${componentIdentity}_${artefactIdentity}_${this.artefactKind}`
   }
 
@@ -65,6 +64,10 @@ class OcmNode {
       ...(this.isComponentNode() ? [] : this.artefact.labels), // most specific first
       ...this.component.labels,
     ].find(l => l.name === labelName)
+  }
+
+  normalisedExtraIdentity() {
+    return normaliseExtraIdentity(this.artefact.extraIdentity)
   }
 }
 

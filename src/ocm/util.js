@@ -21,12 +21,12 @@ export const sanitiseArtefactExtraId = (artefactExtraId) => {
   return sanitised
 }
 
-import { artefactMetadatumSeverity, normaliseObject } from '../util'
+import { artefactMetadatumSeverity, normaliseExtraIdentity } from '../util'
 
 
 const generateArtefactID = (artefact) => {
   const cleanArtefactExtraId = sanitiseArtefactExtraId(artefact.extraIdentity)
-  return `${artefact.name}_${artefact.version}_${JSON.stringify(cleanArtefactExtraId)}`
+  return `${artefact.name}_${artefact.version}_${normaliseExtraIdentity(cleanArtefactExtraId)}`
 }
 
 /*/
@@ -53,7 +53,7 @@ const artefactMetadataFilter = ({
     if(artefactType && artefactType !== artefact.artefact_type) return false
     if(artefactName && artefactName !== artefact.artefact_name) return false
     if(artefactVersion && artefactVersion !== artefact.artefact_version) return false
-    if(artefactExtraId && JSON.stringify(normaliseObject(artefactExtraId)) !== JSON.stringify(normaliseObject(artefact.artefact_extra_id))) return false
+    if(artefactExtraId && normaliseExtraIdentity(artefactExtraId) !== normaliseExtraIdentity(artefact.artefact_extra_id)) return false
     if(metadataType && metadataType !== metadata.meta.type) return false
 
     return true

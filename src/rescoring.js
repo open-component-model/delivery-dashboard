@@ -87,6 +87,7 @@ import {
   findSeverityCfgByName,
   formatAndSortSprints,
   isTokenExpired,
+  normaliseExtraIdentity,
   normaliseObject,
   pluralise,
   rescoringProposalSeverity,
@@ -241,7 +242,7 @@ const CveCategorisationLabel = ({
     return (
       artefact.name === ocmNode.artefact.name
       && artefact.version === ocmNode.artefact.version
-      && JSON.stringify(normaliseObject(artefact.extraIdentity)) === JSON.stringify(normaliseObject(ocmNode.artefact.extraIdentity))
+      && normaliseExtraIdentity(artefact.extraIdentity) === ocmNode.normalisedExtraIdentity()
     )
   })
 
