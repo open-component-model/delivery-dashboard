@@ -93,6 +93,7 @@ export const labelMissingCfg = {
 export const features = {
   AUTHENTICATION: 'authentication',
   DELIVERY_DB: 'delivery-db',
+  CLUSTER_ACCESS: 'cluster-access',
   TESTS: 'tests',
   REPO_CONTEXTS: 'repo-contexts',
   SPECIAL_COMPONENTS: 'special-components',
@@ -101,8 +102,8 @@ export const features = {
   VERSION_FILTER: 'version-filter',
   JOKES_API: 'jokes-api',
   DASHBOARD_CREATE_ISSUE_URL: 'dashboard-create-issue-url',
-  RESCORING: 'rescoring',
-  SERVICE_EXTENSIONS: 'service-extensions',
+  SCAN_CONFIGURATION: 'scan-configuration',
+  FINDING_CONFIGURATIONS: 'finding-configurations',
 }
 
 export const featureStates = {
@@ -201,19 +202,6 @@ export const ARTEFACT_KIND = {
 }
 Object.freeze(ARTEFACT_KIND)
 
-export const SEVERITIES = {
-  UNKNOWN: 'UNKNOWN',
-  NONE: 'NONE',
-  CLEAN: 'CLEAN',
-  LOW: 'LOW',
-  MEDIUM: 'MEDIUM',
-  HIGH: 'HIGH',
-  CRITICAL: 'CRITICAL',
-  BLOCKER: 'BLOCKER',
-}
-Object.freeze(SEVERITIES)
-export const REPORTING_MINIMUM_SEVERITY = SEVERITIES.MEDIUM
-
 export const META_RESCORING_RULES = {
   BDBA_TRIAGE: 'bdba-triage',
   CUSTOM_RESCORING: 'custom-rescoring',
@@ -234,3 +222,22 @@ export const USER_IDENTITIES = {
   PERSONAL_NAME: 'personalName',
 }
 Object.freeze(USER_IDENTITIES)
+
+
+export const FILTER_SEMANTICS = {
+  INCLUDE: 'include',
+  EXCLUDE: 'exclude',
+}
+Object.freeze(FILTER_SEMANTICS)
+
+
+export const SUMMARY_CATEGORISATIONS = {
+  CLEAN: 'CLEAN',
+  UNKNOWN: 'UNKNOWN',
+}
+
+
+export const RESCORING_MODES = {
+  'AUTOMATIC': 'automatic',
+  'MANUAL': 'manual',
+}

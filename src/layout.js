@@ -226,7 +226,7 @@ export const PersistentDrawerLeft = ({
             }}
           >
             <ConnectivityIndicator/>
-            <FeatureDependent requiredFeatures={[features.SERVICE_EXTENSIONS]}>
+            <FeatureDependent requiredFeatures={[features.CLUSTER_ACCESS]}>
               <ServiceExtensionStatus />
             </FeatureDependent>
             <SettingsMenu />

@@ -22,8 +22,8 @@ import { registerCallbackHandler } from './feature'
 import { normaliseObject } from './util'
 import { useConnected } from './util/connectivity'
 import { osBranches } from './api'
-import { SEVERITIES } from './consts'
 import { determineOsBranch } from './os'
+import { FINDING_TYPES } from './findings'
 
 
 const cache = new Map()
@@ -441,24 +441,8 @@ const useFetchQueryMetadata = ({
 
 
 const useFetchServiceExtensions = () => {
-  const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
-  const [serviceExtensionsFeature, setServiceExtensionsFeature] = React.useState()
-
-  React.useEffect(() => {
-    return registerCallbackHandler({
-      featureRegistrationContext: featureRegistrationContext,
-      featureName: features.SERVICE_EXTENSIONS,
-      callback: ({feature}) => setServiceExtensionsFeature(feature),
-    })
-  }, [featureRegistrationContext])
-
-  const fetchCondition = React.useCallback(() => {
-    return serviceExtensionsFeature?.isAvailable
-  }, [serviceExtensionsFeature])
-
   return _useFetch({
     fetchFunction: serviceExtensions.services,
-    fetchCondition: fetchCondition,
     errorMessage: 'Service extensions could not be fetched',
     cacheKey: JSON.stringify({
       route: routes.serviceExtensions.base,
@@ -473,19 +457,19 @@ const useFetchLogCollections = ({
   skipCache = false,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
-  const [serviceExtensionsFeature, setServiceExtensionsFeature] = React.useState()
+  const [clusterAccessFeature, setClusterAccessFeature] = React.useState()
 
   React.useEffect(() => {
     return registerCallbackHandler({
       featureRegistrationContext: featureRegistrationContext,
-      featureName: features.SERVICE_EXTENSIONS,
-      callback: ({feature}) => setServiceExtensionsFeature(feature),
+      featureName: features.CLUSTER_ACCESS,
+      callback: ({feature}) => setClusterAccessFeature(feature),
     })
   }, [featureRegistrationContext])
 
   const fetchCondition = React.useCallback(() => {
-    return serviceExtensionsFeature?.isAvailable
-  }, [serviceExtensionsFeature])
+    return clusterAccessFeature?.isAvailable
+  }, [clusterAccessFeature])
 
   const params = React.useMemo(() => ({
     service,
@@ -515,19 +499,19 @@ const useFetchContainerStatuses = ({
   skipCache = false,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
-  const [serviceExtensionsFeature, setServiceExtensionsFeature] = React.useState()
+  const [clusterAccessFeature, setClusterAccessFeature] = React.useState()
 
   React.useEffect(() => {
     return registerCallbackHandler({
       featureRegistrationContext: featureRegistrationContext,
-      featureName: features.SERVICE_EXTENSIONS,
-      callback: ({feature}) => setServiceExtensionsFeature(feature),
+      featureName: features.CLUSTER_ACCESS,
+      callback: ({feature}) => setClusterAccessFeature(feature),
     })
   }, [featureRegistrationContext])
 
   const fetchCondition = React.useCallback(() => {
-    return serviceExtensionsFeature?.isAvailable
-  }, [serviceExtensionsFeature])
+    return clusterAccessFeature?.isAvailable
+  }, [clusterAccessFeature])
 
   const params = React.useMemo(() => ({
     service,
@@ -550,51 +534,24 @@ const useFetchContainerStatuses = ({
 }
 
 
-const useFetchScanConfigurations = () => {
-  const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
-  const [serviceExtensionsFeature, setServiceExtensionsFeature] = React.useState()
-
-  React.useEffect(() => {
-    return registerCallbackHandler({
-      featureRegistrationContext: featureRegistrationContext,
-      featureName: features.SERVICE_EXTENSIONS,
-      callback: ({feature}) => setServiceExtensionsFeature(feature),
-    })
-  }, [featureRegistrationContext])
-
-  const fetchCondition = React.useCallback(() => {
-    return serviceExtensionsFeature?.isAvailable
-  }, [serviceExtensionsFeature])
-
-  return _useFetch({
-    fetchFunction: serviceExtensions.scanConfigurations,
-    fetchCondition: fetchCondition,
-    errorMessage: 'Scan configurations could not be fetched',
-    cacheKey: JSON.stringify({
-      route: routes.serviceExtensions.scanConfigurations(),
-    }),
-  })
-}
-
-
 const useFetchBacklogItems = ({
   service,
   skipCache = false,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
-  const [serviceExtensionsFeature, setServiceExtensionsFeature] = React.useState()
+  const [clusterAccessFeature, setClusterAccessFeature] = React.useState()
 
   React.useEffect(() => {
     return registerCallbackHandler({
       featureRegistrationContext: featureRegistrationContext,
-      featureName: features.SERVICE_EXTENSIONS,
-      callback: ({feature}) => setServiceExtensionsFeature(feature),
+      featureName: features.CLUSTER_ACCESS,
+      callback: ({feature}) => setClusterAccessFeature(feature),
     })
   }, [featureRegistrationContext])
 
   const fetchCondition = React.useCallback(() => {
-    return serviceExtensionsFeature?.isAvailable
-  }, [serviceExtensionsFeature])
+    return clusterAccessFeature?.isAvailable
+  }, [clusterAccessFeature])
 
   const params = React.useMemo(() => ({
     service,
@@ -714,7 +671,6 @@ export {
   useFetchServiceExtensions,
   useFetchLogCollections,
   useFetchContainerStatuses,
-  useFetchScanConfigurations,
   useFetchBacklogItems,
   useFetchDoraMetrics,
 }
@@ -782,12 +738,7 @@ const osInfo = async ({ osId }) => {
 
 
 const addMetadata = async (complianceData) => {
-  // handle no severity as unknown for now
-  if (!complianceData.data.severity && !complianceData.meta.severity) {
-    complianceData.data.severity = SEVERITIES.UNKNOWN
-  }
-
-  if (complianceData.meta.type === 'os_ids') {
+  if (complianceData.meta.type === FINDING_TYPES.OS_IDS) {
     return await addOsInfo(complianceData)
   } else {
     return complianceData

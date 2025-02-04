@@ -60,35 +60,26 @@ import PropTypes from 'prop-types'
 
 import {
   ConfigContext,
-  FeatureRegistrationContext,
   SearchParamContext,
 } from './App'
 import { rescore } from './api'
 import {
   ARTEFACT_KIND,
   errorSnackbarProps,
-  features,
   META_RESCORING_RULES,
   META_SPRINT_NAMES,
-  SEVERITIES,
 } from './consts'
-import { registerCallbackHandler } from './feature'
 import { OcmNode, OcmNodeDetails } from './ocm/iter'
 import {
   artefactMetadataTypes,
   dataKey,
-  defaultTypedefForName,
-  findTypedefByName,
   knownLabelNames,
 } from './ocm/model'
 import {
-  findSeverityCfgByName,
   formatAndSortSprints,
   normaliseExtraIdentity,
   normaliseObject,
   pluralise,
-  rescoringProposalSeverity,
-  sprintNameForRescoring,
   toYamlString,
   trimLongString,
 } from './util'
@@ -97,6 +88,16 @@ import ErrorBoundary from './util/errorBoundary'
 import ExtraWideTooltip from './util/extraWideTooltip'
 import MultilineTextViewer from './util/multilineTextViewer'
 import { useFetchComponentDescriptor } from './fetch'
+import {
+  categorisationValueToColor,
+  categoriseRescoringProposal,
+  findCategorisationById,
+  FINDING_TYPES,
+  findingCfgForType,
+  findingTypeToDisplayName,
+  rescorableFindingTypes,
+  sprintNameForRescoring,
+} from './findings'
 
 
 const scopeOptions = {
@@ -185,37 +186,6 @@ LinearProgressWithLabel.propTypes = {
 }
 
 
-const SelectCveRescoringRuleSet = ({
-  cveRescoringRuleSet,
-  setCveRescoringRuleSet,
-  rescoringFeature,
-}) => {
-  const cveRescoringRuleSets = rescoringFeature.rescoring_rule_sets
-
-  return <Select
-    value={cveRescoringRuleSet.name}
-    onChange={(e) => setCveRescoringRuleSet(cveRescoringRuleSets.find((rs) => rs.name === e.target.value))}
-  >
-    {
-      cveRescoringRuleSets.map((ruleSet, idx) => <MenuItem
-        value={ruleSet.name}
-        key={idx}
-      >
-        {
-          ruleSet.name
-        }
-      </MenuItem>)
-    }
-  </Select>
-}
-SelectCveRescoringRuleSet.displayName = 'SelectCveRescoringRuleSet'
-SelectCveRescoringRuleSet.propTypes = {
-  cveRescoringRuleSet: PropTypes.object.isRequired,
-  setCveRescoringRuleSet: PropTypes.func.isRequired,
-  rescoringFeature: PropTypes.object.isRequired,
-}
-
-
 const CveCategorisationLabel = ({
   ocmNode,
   ocmRepo,
@@ -239,6 +209,7 @@ const CveCategorisationLabel = ({
     return (
       artefact.name === ocmNode.artefact.name
       && artefact.version === ocmNode.artefact.version
+      && artefact.type === ocmNode.artefact.type
       && normaliseExtraIdentity(artefact.extraIdentity) === ocmNode.normalisedExtraIdentity()
     )
   })
@@ -264,15 +235,12 @@ CveCategorisationLabel.propTypes = {
 
 
 const VulnerabilityRescoringInputs = ({
-  cveRescoringRuleSet,
-  setCveRescoringRuleSet,
-  rescoringFeature,
   ocmNodes,
   ocmRepo,
 }) => {
   const [selectedNode, setSelectedNode] = React.useState(ocmNodes[0])
 
-  return <Stack spacing={2}>
+  return <Stack spacing={2} paddingBottom='1em'>
     <Typography>CVSS Categorisation (from Component-Descriptor label)</Typography>
     <FormControl>
       <InputLabel>Artefact</InputLabel>
@@ -300,33 +268,19 @@ const VulnerabilityRescoringInputs = ({
       />
     </Box>
     <Divider/>
-    <Typography>CVSS Rescoring Rule Set</Typography>
-    <SelectCveRescoringRuleSet
-      cveRescoringRuleSet={cveRescoringRuleSet}
-      setCveRescoringRuleSet={setCveRescoringRuleSet}
-      rescoringFeature={rescoringFeature}
-    />
-    <Box border={1} borderColor='primary.main'>
-      <MultilineTextViewer text={toYamlString(cveRescoringRuleSet.rules)}/>
-    </Box>
   </Stack>
 }
 VulnerabilityRescoringInputs.displayName = 'VulnerabilityRescoringInputs'
 VulnerabilityRescoringInputs.propTypes = {
-  cveRescoringRuleSet: PropTypes.object.isRequired,
-  setCveRescoringRuleSet: PropTypes.func.isRequired,
-  rescoringFeature: PropTypes.object.isRequired,
   ocmNodes: PropTypes.arrayOf(PropTypes.instanceOf(OcmNode)).isRequired,
   ocmRepo: PropTypes.string,
 }
 
 
-const VulnerabilityRescoringDrawer = ({
+const RescoringRulesetDrawer = ({
   open,
   handleClose,
-  cveRescoringRuleSet,
-  setCveRescoringRuleSet,
-  rescoringFeature,
+  findingCfg,
   ocmNodes,
   ocmRepo,
 }) => {
@@ -371,13 +325,18 @@ const VulnerabilityRescoringDrawer = ({
       </Box>
       <Box paddingLeft={3} paddingRight={3}>
         <div style={{ padding: '0.5em' }}/>
-        <VulnerabilityRescoringInputs
-          cveRescoringRuleSet={cveRescoringRuleSet}
-          setCveRescoringRuleSet={setCveRescoringRuleSet}
-          rescoringFeature={rescoringFeature}
-          ocmNodes={ocmNodes}
-          ocmRepo={ocmRepo}
-        />
+        {
+          findingCfg.type === FINDING_TYPES.VULNERABILITY && <VulnerabilityRescoringInputs
+            ocmNodes={ocmNodes}
+            ocmRepo={ocmRepo}
+          />
+        }
+        <Stack spacing={2}>
+          <Typography>Rescoring Ruleset</Typography>
+          <Box border={1} borderColor='primary.main'>
+            <MultilineTextViewer text={toYamlString(findingCfg.rescoring_ruleset)}/>
+          </Box>
+        </Stack>
       </Box>
       <Box
         position='sticky'
@@ -397,13 +356,11 @@ const VulnerabilityRescoringDrawer = ({
     </Box>
   </Drawer>
 }
-VulnerabilityRescoringDrawer.displayName = 'VulnerabilityRescoringDrawer'
-VulnerabilityRescoringDrawer.propTypes = {
+RescoringRulesetDrawer.displayName = 'RescoringRulesetDrawer'
+RescoringRulesetDrawer.propTypes = {
   open: PropTypes.bool.isRequired,
   handleClose: PropTypes.func.isRequired,
-  cveRescoringRuleSet: PropTypes.object.isRequired,
-  setCveRescoringRuleSet: PropTypes.func.isRequired,
-  rescoringFeature: PropTypes.object.isRequired,
+  findingCfg: PropTypes.object.isRequired,
   ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   ocmRepo: PropTypes.string,
 }
@@ -490,13 +447,13 @@ const RescoringFilterOption = ({
     if (isLoading) return
 
     const selectedSet = new Set(selected)
-    const optionsSet = new Set(options.map((option) => option.name))
+    const optionsSet = new Set(options.map(optionIdCallback))
 
     // nothing to do
     if (selectedSet.isSubsetOf(optionsSet)) return
 
-    // remove selected filter if option is not available anymore (e.g. last rescoring was deleted)
-    setSelected(prev => prev.filter(s => options.some(o => o.name === s)))
+    // remove selected filter if option is not available anymore (e.g. finding type has changed)
+    setSelected(prev => prev.filter(s => options.some(o => optionIdCallback(o) === s)))
   }, [
     options,
     selected,
@@ -518,68 +475,70 @@ const RescoringFilterOption = ({
     </li>
   }
 
-  return <Stack direction='column' spacing={2}>
+  return <Stack direction='column' spacing={2} sx={{width: '20vw'}}>
     <Typography>
       {title}
     </Typography>
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        flexWrap: 'wrap',
-        listStyle: 'none',
-        p: 0.5,
-        m: 0,
-      }}
-      component='ul'
-    >
-      {
-        isLoading ? <Loading/> : options.map((option) => {
-          const count = countCallback(option)
+    {
+      isLoading || options.length > 0 ?  <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'left',
+          flexWrap: 'wrap',
+          listStyle: 'none',
+          p: 0.5,
+          m: 0,
+        }}
+        component='ul'
+      >
+        {
+          isLoading ? <Loading/> : options.map((option) => {
+            const count = countCallback(option)
 
-          const select = (current, target) => {
-            setSelected([...current, target])
-          }
-
-          const unselect = (current, target) => {
-            setSelected(current.filter(s => s !== target))
-          }
-
-          const isSelected = (current, target) => {
-            return current.includes(target)
-          }
-
-          const onToggle = (current, target) => {
-            isSelected(current, target)
-              ? unselect(current, target)
-              : select(current, target)
-          }
-
-          return <li
-            key={optionIdCallback(option)}
-            style={{
-              margin: theme.spacing(0.5),
-            }}
-          >
-            {
-              <Chip
-                label={optionNameCallback(option)}
-                variant={
-                  isSelected(selected, optionIdCallback(option))
-                    ? 'filled'
-                    : 'outlined'
-                }
-                color={colorCallback(option)}
-                size={'small'}
-                deleteIcon={count ? <FilterCount count={count}/> : <></>}
-                onClick={() => onToggle(selected, optionIdCallback(option))}
-                onDelete={() => onToggle(selected, optionIdCallback(option))}
-              />
+            const select = (current, target) => {
+              setSelected([...current, target])
             }
-          </li>
-        })
-      }
-    </Box>
+
+            const unselect = (current, target) => {
+              setSelected(current.filter(s => s !== target))
+            }
+
+            const isSelected = (current, target) => {
+              return current.includes(target)
+            }
+
+            const onToggle = (current, target) => {
+              isSelected(current, target)
+                ? unselect(current, target)
+                : select(current, target)
+            }
+
+            return <li
+              key={optionIdCallback(option)}
+              style={{
+                margin: theme.spacing(0.5),
+              }}
+            >
+              {
+                <Chip
+                  label={optionNameCallback(option)}
+                  variant={
+                    isSelected(selected, optionIdCallback(option))
+                      ? 'filled'
+                      : 'outlined'
+                  }
+                  color={colorCallback(option)}
+                  size={'small'}
+                  deleteIcon={count ? <FilterCount count={count}/> : <></>}
+                  onClick={() => onToggle(selected, optionIdCallback(option))}
+                  onDelete={() => onToggle(selected, optionIdCallback(option))}
+                />
+              }
+            </li>
+          })
+        }
+      </Box> : <Typography>No options available</Typography>
+    }
   </Stack>
 }
 RescoringFilterOption.displayName = 'RescoringFilterOption'
@@ -600,94 +559,105 @@ RescoringFilterOption.propTypes = {
 const RescoringFilter = ({
   availableSprints,
   preSelectedSprints,
+  findingCfg,
+  findingType,
+  setFindingType,
   findingTypes,
   updateFilter,
   rescoringsLoading,
   sprintsLoading,
-  severityCfgs,
   toggleRescored,
   rescorings,
 }) => {
   const countRescored = rescorings.filter(rescoring => rescoring.applicable_rescorings.length !== 0).length
 
-  return <Stack direction='column' spacing={5}>
-    <Stack direction='row' spacing={5}>
-      <RescoringFilterOption
-        updateFilterCallback={React.useCallback((callback) => updateFilter('severity', callback), [updateFilter])}
-        isLoading={rescoringsLoading}
-        filterCallback={React.useCallback((selected, rescoring) => selected.some(s => s === rescoringProposalSeverity(rescoring)), [])}
-        countCallback={(severityCfg) => rescorings.filter(rescoring => rescoringProposalSeverity(rescoring) === severityCfg.name).length}
-        colorCallback={(severityCfg) => severityCfg.color}
-        options={severityCfgs}
-        optionIdCallback={(severityCfg) => severityCfg.name}
-        optionNameCallback={(severityCfg) => severityCfg.name}
-        title='Severity'
-      />
-      <Divider
-        orientation='vertical'
-        flexItem
-      />
-      <RescoringFilterOption
-        updateFilterCallback={React.useCallback((callback) => updateFilter('sprint', callback), [updateFilter])}
-        isLoading={rescoringsLoading}
-        filterCallback={React.useCallback((selected, rescoring) => selected.some(s => s === rescoring.finding_type), [])}
-        countCallback={(metadataType) => rescorings.filter(rescoring => rescoring.finding_type === metadataType.name).length}
-        options={findingTypes}
-        optionIdCallback={(metadataType) => metadataType.name}
-        optionNameCallback={(metadataType) => metadataType.friendlyName}
-        title='Finding Type'
-      />
-      <Divider
-        orientation='vertical'
-        flexItem
-      />
-      <RescoringFilterOption
-        updateFilterCallback={React.useCallback(callback => updateFilter('sprint', callback), [updateFilter])}
-        isLoading={sprintsLoading}
-        filterCallback={React.useCallback((selected, rescoring) => selected.some((sprint) => sprintNameForRescoring(rescoring) === sprint), [])}
-        countCallback={(sprint) => sprint.count}
-        options={availableSprints}
-        optionIdCallback={(sprint) => sprint.name}
-        optionNameCallback={(sprint) => sprint.displayName}
-        title='Due Date'
-        defaultSelection={preSelectedSprints}
-      />
-      <Divider
-        orientation='vertical'
-        flexItem
-      />
-      <Box
-        display='flex'
-        alignItems='center'
-        justifyContent='center'
+  return <Stack direction='row' spacing={5} display='flex' alignItems='center' justifyContent='center'>
+    <FormControl variant='standard' sx={{ width: '10vw'}}>
+      <InputLabel>Finding Type</InputLabel>
+      <Select
+        value={findingType}
+        label='Finding Type'
+        onChange={(e) => {
+          updateFilter('categorisation', () => true) // reset categorisation selection upon type change
+          setFindingType(e.target.value)
+        }}
       >
-        <FormGroup>
-          <FormLabel>
-            Hide findings
-          </FormLabel>
-          <FormControlLabel
-            control={
-              <Switch
-                onChange={(e, s) => toggleRescored(e, s)}
-                disabled={rescoringsLoading}
-              />
-            }
-            label={`with rescorings ${rescoringsLoading ? '' : `(${countRescored})`}`}
+        {
+          findingTypes.map((type) => <MenuItem key={type} value={type}>
+            <Typography variant='body2'>
+              {findingTypeToDisplayName(type)}
+            </Typography>
+          </MenuItem>)
+        }
+      </Select>
+    </FormControl>
+    <Divider
+      orientation='vertical'
+      flexItem
+    />
+    <RescoringFilterOption
+      updateFilterCallback={React.useCallback((callback) => updateFilter('categorisation', callback), [updateFilter])}
+      isLoading={rescoringsLoading}
+      filterCallback={React.useCallback((selected, rescoring) => selected.some(s => {
+        return s === categoriseRescoringProposal({rescoring, findingCfg}).id
+      }), [findingCfg])}
+      countCallback={(categorisation) => rescorings.filter(rescoring => {
+        return categoriseRescoringProposal({rescoring, findingCfg}).id === categorisation.id
+      }).length}
+      colorCallback={(categorisation) => categorisationValueToColor(categorisation.value)}
+      options={findingCfg.categorisations}
+      optionIdCallback={(categorisation) => categorisation.id}
+      optionNameCallback={(categorisation) => categorisation.display_name}
+      title='Categorisation'
+    />
+    <Divider
+      orientation='vertical'
+      flexItem
+    />
+    <RescoringFilterOption
+      updateFilterCallback={React.useCallback(callback => updateFilter('sprint', callback), [updateFilter])}
+      isLoading={sprintsLoading}
+      filterCallback={React.useCallback((selected, rescoring) => selected.some((sprint) => {
+        return sprintNameForRescoring({rescoring, findingCfg}) === sprint
+      }), [])}
+      countCallback={(sprint) => sprint.count}
+      options={availableSprints}
+      optionIdCallback={(sprint) => sprint.name}
+      optionNameCallback={(sprint) => sprint.displayName}
+      title='Due Date'
+      defaultSelection={preSelectedSprints}
+    />
+    <Divider
+      orientation='vertical'
+      flexItem
+    />
+    <FormGroup sx={{width: '15vw'}}>
+      <FormLabel>
+        Hide findings
+      </FormLabel>
+      <FormControlLabel
+        control={
+          <Switch
+            onChange={(e, s) => toggleRescored(e, s)}
+            disabled={rescoringsLoading}
           />
-        </FormGroup>
-      </Box>
-    </Stack>
+        }
+        label={`with rescorings ${rescoringsLoading ? '' : `(${countRescored})`}`}
+      />
+    </FormGroup>
   </Stack>
 }
 RescoringFilter.displayName = 'RescoringFilter'
 RescoringFilter.propTypes = {
   availableSprints: PropTypes.arrayOf(PropTypes.object).isRequired,
   preSelectedSprints: PropTypes.arrayOf(PropTypes.string),
-  findingTypes: PropTypes.arrayOf(PropTypes.object).isRequired,
+  findingCfg: PropTypes.object.isRequired,
+  findingType: PropTypes.string.isRequired,
+  setFindingType: PropTypes.func.isRequired,
+  findingTypes: PropTypes.arrayOf(PropTypes.string).isRequired,
   updateFilter: PropTypes.func.isRequired,
   rescoringsLoading: PropTypes.bool.isRequired,
   sprintsLoading: PropTypes.bool.isRequired,
-  severityCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
   toggleRescored: PropTypes.func.isRequired,
   rescorings: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
@@ -705,9 +675,6 @@ const RescoringRowLoading = () => {
       <Skeleton/>
     </TableCell>
     <TableCell width='100vw'>
-      <Skeleton/>
-    </TableCell>
-    <TableCell width='40vw'>
       <Skeleton/>
     </TableCell>
     <TableCell width='80vw'>
@@ -942,6 +909,7 @@ AppliedRulesExtraInfo.propTypes = {
 
 
 const ApplicableRescoringsRow = ({
+  findingCfg,
   applicableRescoring,
   priority,
   fetchDeleteApplicableRescoring,
@@ -961,6 +929,10 @@ const ApplicableRescoringsRow = ({
     )
 
   const localeDate = new Date(applicableRescoring.meta.creation_date).toLocaleString()
+  const categorisation = findCategorisationById({
+    id: applicableRescoring.data.severity,
+    findingCfg: findingCfg,
+  })
 
   return <TableRow
     onMouseEnter={() => setRowHovered(true)}
@@ -996,9 +968,12 @@ const ApplicableRescoringsRow = ({
       />
     </TableCell>
     <TableCell align='center'>
-      <Typography variant='inherit' color={`${findSeverityCfgByName({name: applicableRescoring.data.severity}).color}.main`}>
+      <Typography
+        variant='inherit'
+        color={`${categorisationValueToColor(categorisation.value)}.main`}
+      >
         {
-          applicableRescoring.data.severity
+          categorisation.display_name
         }
       </Typography>
     </TableCell>
@@ -1037,6 +1012,7 @@ const ApplicableRescoringsRow = ({
 }
 ApplicableRescoringsRow.displayName = 'ApplicableRescoringsRow'
 ApplicableRescoringsRow.propTypes = {
+  findingCfg: PropTypes.object.isRequired,
   applicableRescoring: PropTypes.object.isRequired,
   priority: PropTypes.number.isRequired,
   fetchDeleteApplicableRescoring: PropTypes.func.isRequired,
@@ -1044,12 +1020,12 @@ ApplicableRescoringsRow.propTypes = {
 
 
 const ApplicableRescorings = ({
+  findingCfg,
   rescoring,
   setRescorings,
   fetchComplianceData,
   fetchComplianceSummary,
   expanded,
-  rescoringFeature,
 }) => {
   if (rescoring.applicable_rescorings.length === 0) {
     // if all applicable rescorings were deleted, don't show collapse anymore
@@ -1103,10 +1079,10 @@ const ApplicableRescorings = ({
   }
 
   return <TableRow>
-    <TableCell sx={{ padding: 0, border: 'none' }} colSpan={10}>
+    <TableCell sx={{ padding: 0, border: 'none' }} colSpan={9}>
       <Collapse in={expanded} unmountOnExit>
         <Card sx={{ paddingY: '1rem' }}>
-          <Typography sx={{ paddingLeft: '1rem' }}>Applicable Rescorings</Typography>
+          <Typography sx={{ paddingLeft: '1rem' }}>Rescorings</Typography>
           <Table sx={{ tableLayout: 'fixed', overflowX: 'hidden' }}>
             <TableHead>
               <TableRow>
@@ -1143,31 +1119,11 @@ const ApplicableRescorings = ({
                     </div>
                   </Tooltip>
                 </TableCell>
-                <TableCell width='90vw' align='center'>Severity</TableCell>
+                <TableCell width='90vw' align='center'>Categorisation</TableCell>
                 <TableCell width='90vw' align='center'>User</TableCell>
                 <TableCell width='200vw'>Comment</TableCell>
                 <TableCell width='150vw'>
-                  {
-                    rescoringFeature?.cve_categorisation_label_url ? <Tooltip
-                      title={<Typography variant='inherit'>
-                        See <Link
-                          href={rescoringFeature.cve_categorisation_label_url}
-                          target='_blank'
-                          sx={{
-                            color: 'orange'
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {' docs '}
-                        </Link> for more information about rescoring rules.
-                      </Typography>}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <Typography variant='inherit'>Applied Rules</Typography>
-                        <HelpOutlineIcon sx={{ height: '1rem' }}/>
-                      </div>
-                    </Tooltip> : <Typography variant='inherit'>Applied Rules</Typography>
-                  }
+                  <Typography variant='inherit'>Applied Rules</Typography>
                 </TableCell>
                 <TableCell width='40vw' sx={{ border: 0 }}/>
               </TableRow>
@@ -1176,6 +1132,7 @@ const ApplicableRescorings = ({
               {
                 rescoring.applicable_rescorings.map((ap, idx) => <ApplicableRescoringsRow
                   key={idx}
+                  findingCfg={findingCfg}
                   applicableRescoring={ap}
                   priority={idx + 1}
                   fetchDeleteApplicableRescoring={fetchDeleteApplicableRescoring}
@@ -1190,12 +1147,12 @@ const ApplicableRescorings = ({
 }
 ApplicableRescorings.displayName = 'ApplicableRescorings'
 ApplicableRescorings.propTypes = {
+  findingCfg: PropTypes.object.isRequired,
   rescoring: PropTypes.object.isRequired,
   setRescorings: PropTypes.func.isRequired,
   fetchComplianceData: PropTypes.func,
   fetchComplianceSummary: PropTypes.func,
   expanded: PropTypes.bool.isRequired,
-  rescoringFeature: PropTypes.object,
 }
 
 
@@ -1252,8 +1209,8 @@ const Subject = ({
   const finding = rescoring.finding
 
   if ([
-    artefactMetadataTypes.VULNERABILITY,
-    artefactMetadataTypes.LICENSE,
+    FINDING_TYPES.VULNERABILITY,
+    FINDING_TYPES.LICENSE,
   ].includes(rescoring.finding_type)
   ) {
     return <Stack>
@@ -1264,7 +1221,7 @@ const Subject = ({
       <Typography variant='inherit' whiteSpace='pre-line'>{finding.package_versions.sort().join('\n')}</Typography>
     </Stack>
 
-  } else if (rescoring.finding_type === artefactMetadataTypes.FINDING_MALWARE) {
+  } else if (rescoring.finding_type === FINDING_TYPES.MALWARE) {
     return <Stack>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <Typography variant='inherit'>{finding.finding.filename.split('/').pop()}</Typography>
@@ -1310,10 +1267,15 @@ TruncatedTextWithTooltip.propTypes = {
 
 const Finding = ({
   rescoring,
+  findingCfg,
 }) => {
   const finding = rescoring.finding
+  const categorisation = findCategorisationById({
+    id: finding.severity,
+    findingCfg: findingCfg,
+  })
 
-  if (rescoring.finding_type === artefactMetadataTypes.VULNERABILITY) {
+  if (rescoring.finding_type === FINDING_TYPES.VULNERABILITY) {
     return <Stack spacing={0.5}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.4rem'}}>
         <Tooltip
@@ -1340,7 +1302,7 @@ const Finding = ({
       </div>
       <div style={{ display: 'flex' }}>
         <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
-        <Typography variant='inherit' color={`${findSeverityCfgByName({name: finding.severity}).color}.main`}>
+        <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
           {
             finding.severity
           }
@@ -1348,7 +1310,7 @@ const Finding = ({
       </div>
       <div style={{ display: 'flex' }}>
         <Typography variant='inherit' marginRight='0.4rem'>CVSS v3:</Typography>
-        <Typography variant='inherit' color={`${findSeverityCfgByName({name: finding.severity}).color}.main`}>
+        <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
           {
             finding.cvss_v3_score
           }
@@ -1356,7 +1318,7 @@ const Finding = ({
       </div>
     </Stack>
 
-  } else if (rescoring.finding_type === artefactMetadataTypes.FINDING_MALWARE) {
+  } else if (rescoring.finding_type === FINDING_TYPES.MALWARE) {
     return <Stack spacing={0.5}>
       <TruncatedTextWithTooltip
         text={finding.finding.malware}
@@ -1368,7 +1330,7 @@ const Finding = ({
       />
       <div style={{ display: 'flex' }}>
         <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
-        <Typography variant='inherit' color={`${findSeverityCfgByName({name: finding.severity}).color}.main`}>
+        <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
           {finding.severity}
         </Typography>
         <MalwareExtraInfo
@@ -1378,7 +1340,7 @@ const Finding = ({
       </div>
     </Stack>
 
-  } else if (rescoring.finding_type === artefactMetadataTypes.LICENSE) {
+  } else if (rescoring.finding_type === FINDING_TYPES.LICENSE) {
     return <Stack spacing={0.5}>
       <div style={{ display: 'flex' }}>
         <Typography variant='inherit' marginRight='0.4rem'>{finding.license.name}</Typography>
@@ -1399,7 +1361,7 @@ const Finding = ({
       </div>
       <div style={{ display: 'flex' }}>
         <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
-        <Typography variant='inherit' color={`${findSeverityCfgByName({name: finding.severity}).color}.main`}>
+        <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
           {finding.severity}
         </Typography>
       </div>
@@ -1410,6 +1372,7 @@ const Finding = ({
 Finding.displayName = 'Finding'
 Finding.propTypes = {
   rescoring: PropTypes.object.isRequired,
+  findingCfg: PropTypes.object.isRequired,
 }
 
 
@@ -1420,12 +1383,10 @@ const RescoringContentTableRow = ({
   selectedRescorings,
   selectRescoring,
   sprints,
-  scanConfig,
+  findingCfg,
   setRescorings,
   fetchComplianceData,
   fetchComplianceSummary,
-  rescoringFeature,
-  severityCfgs,
 }) => {
   const {
     severity,
@@ -1441,25 +1402,16 @@ const RescoringContentTableRow = ({
   const matchingRules = matching_rules
   const applicableRescorings = applicable_rescorings
 
-  const currentSeverity = rescoringProposalSeverity(rescoring)
-  const currentSeverityCfg = findSeverityCfgByName({name: currentSeverity})
+  const currentCategorisation = categoriseRescoringProposal({rescoring, findingCfg})
+  const rescoredCategorisation = findCategorisationById({
+    id: severity,
+    findingCfg: findingCfg,
+  })
 
-  const sprintInfo = sprints.find((s) => s.name === sprintNameForRescoring(rescoring))
+  const sprintInfo = sprints.find((s) => s.name === sprintNameForRescoring({rescoring, findingCfg}))
 
-  const severityToDays = (severity, maxProcessingDays) => {
-    const severityLowerCase = severity.toLowerCase()
-    if (!maxProcessingDays)
-      return null
-    if (severityLowerCase in maxProcessingDays)
-      return maxProcessingDays[severityLowerCase]
-    if (severityLowerCase === SEVERITIES.CRITICAL.toLowerCase())
-      return maxProcessingDays.very_high_or_greater
-    return null
-  }
-
-  const maxProcessingDays = scanConfig?.config.issueReplicator?.max_processing_days
-  const currentDays = severityToDays(currentSeverity, maxProcessingDays)
-  const rescoredDays = severityToDays(severity, maxProcessingDays)
+  const currentDays = currentCategorisation.allowed_processing_time / 24 / 60 / 60
+  const rescoredDays = rescoredCategorisation.allowed_processing_time / 24 / 60 / 60
   const diffDays = rescoredDays !== null && currentDays !== null && currentDays !== rescoredDays
     ? `${rescoredDays - currentDays >= 0 ? '+' : ''}${rescoredDays - currentDays} days`
     : null
@@ -1489,11 +1441,6 @@ const RescoringContentTableRow = ({
       }, 300)
     )
   }
-
-  const typedef = findTypedefByName({name: rescoring.finding_type})
-  const Icon = typedef ? typedef.Icon
-    : defaultTypedefForName({name: rescoring.finding_type}).Icon
-
 
   return <>
     <TableRow
@@ -1526,12 +1473,7 @@ const RescoringContentTableRow = ({
         />
       </TableCell>
       <TableCell>
-        <Finding rescoring={rescoring}/>
-      </TableCell>
-      <TableCell align='center'>
-        <Tooltip title={typedef.friendlyName}>
-          <Icon/>
-        </Tooltip>
+        <Finding rescoring={rescoring} findingCfg={findingCfg}/>
       </TableCell>
       <TableCell align='center'>
         {
@@ -1555,9 +1497,9 @@ const RescoringContentTableRow = ({
         }
       </TableCell>
       <TableCell align='right' sx={{ paddingX: 0 }}>
-        <Typography variant='inherit' color={`${currentSeverityCfg.color}.main`}>
+        <Typography variant='inherit' color={`${categorisationValueToColor(currentCategorisation.value)}.main`}>
           {
-            currentSeverity
+            currentCategorisation.display_name
           }
         </Typography>
       </TableCell>
@@ -1585,15 +1527,16 @@ const RescoringContentTableRow = ({
               sx={{ marginY: '0.5rem' }}
             >
               {
-                severityCfgs.map((cfg) => {
-                  return <MenuItem key={cfg.name} value={cfg.name}>
-                    <Typography color={`${cfg.color}.main`} variant='body2'>
-                      {
-                        cfg.name
-                      }
-                    </Typography>
-                  </MenuItem>
-                })
+                findingCfg.categorisations.map((categorisation) => <MenuItem
+                  key={categorisation.id}
+                  value={categorisation.id}
+                >
+                  <Typography color={`${categorisationValueToColor(categorisation.value)}.main`} variant='body2'>
+                    {
+                      categorisation.display_name
+                    }
+                  </Typography>
+                </MenuItem>)
               }
             </Select>
             {
@@ -1661,12 +1604,12 @@ const RescoringContentTableRow = ({
       </TableCell>
     </TableRow>
     <ApplicableRescorings
+      findingCfg={findingCfg}
       rescoring={rescoring}
       setRescorings={setRescorings}
       fetchComplianceData={fetchComplianceData}
       fetchComplianceSummary={fetchComplianceSummary}
       expanded={expanded}
-      rescoringFeature={rescoringFeature}
     />
   </>
 }
@@ -1678,12 +1621,10 @@ RescoringContentTableRow.propTypes = {
   selectedRescorings: PropTypes.arrayOf(PropTypes.object).isRequired,
   selectRescoring: PropTypes.func.isRequired,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
-  scanConfig: PropTypes.object,
+  findingCfg: PropTypes.object.isRequired,
   setRescorings: PropTypes.func.isRequired,
   fetchComplianceData: PropTypes.func,
   fetchComplianceSummary: PropTypes.func,
-  rescoringFeature: PropTypes.object.isRequired,
-  severityCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -1695,12 +1636,11 @@ const RescoringContent = ({
   selectedRescorings,
   setSelectedRescorings,
   sprints,
-  scanConfig,
+  findingCfg,
+  findingType,
   fetchComplianceData,
   fetchComplianceSummary,
-  rescoringFeature,
   rescoringsLoading,
-  severityCfgs,
   sprintsLoading,
 }) => {
   const theme = useTheme()
@@ -1720,7 +1660,6 @@ const RescoringContent = ({
       SPRINT: 'sprint',
       CURRENT: 'current',
       RESCORED: 'rescored',
-      TYPE: 'type',
     }
   }, [])
 
@@ -1784,9 +1723,9 @@ const RescoringContent = ({
 
     const bdbaFinding = (rescoring) => {
       const suffix = () => {
-        if (rescoringType === artefactMetadataTypes.LICENSE) {
+        if (rescoringType === FINDING_TYPES.LICENSE) {
           return rescoring.finding.license.name
-        } else if (rescoringType === artefactMetadataTypes.VULNERABILITY) {
+        } else if (rescoringType === FINDING_TYPES.VULNERABILITY) {
           return rescoring.finding.cve
         }
       }
@@ -1798,26 +1737,30 @@ const RescoringContent = ({
       [orderAttributes.SUBJECT]: rescoring.finding.package_name,
       [orderAttributes.FINDING]: bdbaFinding(rescoring),
       [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000), // maximum date according to https://262.ecma-international.org/11.0/#sec-time-values-and-time-range
-      [orderAttributes.CURRENT]: findSeverityCfgByName({name: rescoringProposalSeverity(rescoring)}).value,
-      [orderAttributes.RESCORED]: findSeverityCfgByName({name: rescoring.severity}).value,
-      [orderAttributes.TYPE]: rescoring.finding_type,
+      [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
+      [orderAttributes.RESCORED]: findCategorisationById({
+        id: rescoring.severity,
+        findingCfg: findingCfg,
+      }).value,
     }
 
     const malwareAccess = {
       [orderAttributes.SUBJECT]: rescoring.finding.filename,
-      [orderAttributes.FINDING]: `${artefactMetadataTypes.FINDING_MALWARE}_${rescoring.finding.malware}`,
+      [orderAttributes.FINDING]: `${FINDING_TYPES.MALWARE}_${rescoring.finding.malware}`,
       [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
-      [orderAttributes.CURRENT]: findSeverityCfgByName({name: rescoringProposalSeverity(rescoring)}).value,
-      [orderAttributes.RESCORED]: findSeverityCfgByName({name: rescoring.severity}).value,
-      [orderAttributes.TYPE]: rescoring.finding_type,
+      [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
+      [orderAttributes.RESCORED]: findCategorisationById({
+        id: rescoring.severity,
+        findingCfg: findingCfg,
+      }).value,
     }
 
     if (
-      rescoringType === artefactMetadataTypes.VULNERABILITY
-      || rescoringType === artefactMetadataTypes.LICENSE
+      rescoringType === FINDING_TYPES.VULNERABILITY
+      || rescoringType === FINDING_TYPES.LICENSE
     ) {
       return bdbaAccesses[desired]
-    } else if (rescoringType === artefactMetadataTypes.FINDING_MALWARE) {
+    } else if (rescoringType === FINDING_TYPES.MALWARE) {
       return malwareAccess[desired]
     }
 
@@ -1855,7 +1798,7 @@ const RescoringContent = ({
         />
         <TableBody>
           {
-            rescoringsLoading ? [...Array(25).keys()].map((e) => <RescoringRowLoading
+            rescoringsLoading || rescorings.find((rescoring) => rescoring.finding_type !== findingType) ? [...Array(25).keys()].map((e) => <RescoringRowLoading
               key={e}
             />) : sortData([...rescorings], getComparator(orderBy))
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
@@ -1867,12 +1810,10 @@ const RescoringContent = ({
                 selectedRescorings={selectedRescorings}
                 selectRescoring={selectRescoring}
                 sprints={sprints}
-                scanConfig={scanConfig}
+                findingCfg={findingCfg}
                 setRescorings={setRescorings}
                 fetchComplianceData={fetchComplianceData}
                 fetchComplianceSummary={fetchComplianceSummary}
-                rescoringFeature={rescoringFeature}
-                severityCfgs={severityCfgs}
               />)
           }
         </TableBody>
@@ -1898,12 +1839,11 @@ RescoringContent.propTypes = {
   selectedRescorings: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedRescorings: PropTypes.func.isRequired,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
-  scanConfig: PropTypes.object,
+  findingCfg: PropTypes.object.isRequired,
+  findingType: PropTypes.string.isRequired,
   fetchComplianceData: PropTypes.func,
   fetchComplianceSummary: PropTypes.func,
-  rescoringFeature: PropTypes.object,
   rescoringsLoading: PropTypes.bool.isRequired,
-  severityCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
   sprintsLoading: PropTypes.bool.isRequired,
 }
 
@@ -2004,15 +1944,6 @@ const RescoringContentTableHeader = ({
           <Typography variant='inherit'>Finding</Typography>
         </TableSortLabel>
       </TableCell>
-      <TableCell width='40vw' sx={{ background: headerBackground }} align='center'>
-        <TableSortLabel
-          onClick={() => handleSort(orderAttributes.TYPE)}
-          active={orderBy === orderAttributes.TYPE}
-          direction={order}
-        >
-          <Typography variant='inherit'>Type</Typography>
-        </TableSortLabel>
-      </TableCell>
       <SprintHeader
         sprints={sprints}
         sprintsLoading={sprintsLoading}
@@ -2064,7 +1995,6 @@ RescoringContentTableHeader.propTypes = {
 
 const Rescoring = ({
   ocmNodes,
-  cveRescoringRuleSet,
   rescorings,
   setRescorings,
   setFilteredRescorings,
@@ -2075,13 +2005,13 @@ const Rescoring = ({
   setShowProgress,
   fetchComplianceData,
   fetchComplianceSummary,
-  rescoringFeature,
   sprints,
-  scanConfig,
+  sprintsLoading,
+  findingCfg,
+  findingCfgs,
+  findingType,
   setRescoringsLoading,
   rescoringsLoading,
-  severityCfgs,
-  sprintsLoading,
 }) => {
   const [isLoading, setIsLoading] = React.useState(false)
   const [isError, setIsError] = React.useState(false)
@@ -2116,12 +2046,7 @@ const Rescoring = ({
               artefactVersion: ocmNode.artefact.version,
               artefactType: ocmNode.artefact.type,
               artefactExtraId: ocmNode.artefact.extraIdentity,
-              cveRescoringRuleSetName: cveRescoringRuleSet?.name,
-              types: [
-                artefactMetadataTypes.VULNERABILITY,
-                artefactMetadataTypes.LICENSE,
-                artefactMetadataTypes.FINDING_MALWARE,
-              ],
+              types: rescorableFindingTypes({findingCfgs}),
             }),
             ocmNode,
           )
@@ -2131,7 +2056,7 @@ const Rescoring = ({
         }))
         const updatedRescorings = rescoringProposals.reduce((prev, rescoringProposal) => [...prev, ...rescoringProposal], [])
         setRescorings(updatedRescorings)
-        setFilteredRescorings(updatedRescorings)
+        setFilteredRescorings(updatedRescorings.filter((rescoring) => rescoring.finding_type === findingType))
       } catch (error) {
         enqueueSnackbar(
           'Rescoring could not be fetched',
@@ -2152,9 +2077,9 @@ const Rescoring = ({
   }, [
     ocmNodes,
     rescorings,
+    findingCfgs,
     setRescorings,
     setFilteredRescorings,
-    cveRescoringRuleSet,
     isLoading,
     setIsLoading,
     isError,
@@ -2195,19 +2120,17 @@ const Rescoring = ({
     selectedRescorings={selectedRescorings}
     setSelectedRescorings={setSelectedRescorings}
     sprints={sprints}
-    scanConfig={scanConfig}
+    findingCfg={findingCfg}
+    findingType={findingType}
     fetchComplianceData={fetchComplianceData}
     fetchComplianceSummary={fetchComplianceSummary}
-    rescoringFeature={rescoringFeature}
     rescoringsLoading={rescoringsLoading}
-    severityCfgs={severityCfgs}
     sprintsLoading={sprintsLoading}
   />
 }
 Rescoring.displayName = 'Rescoring'
 Rescoring.propTypes = {
   ocmNodes: PropTypes.arrayOf(PropTypes.instanceOf(OcmNode)).isRequired,
-  cveRescoringRuleSet: PropTypes.object,
   rescorings: PropTypes.array,
   setRescorings: PropTypes.func.isRequired,
   setFilteredRescorings: PropTypes.func.isRequired,
@@ -2218,13 +2141,13 @@ Rescoring.propTypes = {
   setShowProgress: PropTypes.func.isRequired,
   fetchComplianceData: PropTypes.func,
   fetchComplianceSummary: PropTypes.func,
-  rescoringFeature: PropTypes.object,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
-  scanConfig: PropTypes.object,
+  sprintsLoading: PropTypes.bool.isRequired,
+  findingCfg: PropTypes.object.isRequired,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
+  findingType: PropTypes.string.isRequired,
   setRescoringsLoading: PropTypes.func.isRequired,
   rescoringsLoading: PropTypes.bool.isRequired,
-  severityCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
-  sprintsLoading: PropTypes.bool.isRequired,
 }
 
 
@@ -2260,17 +2183,17 @@ const Rescore = ({
     }
 
     const findingForType = (type) => {
-      if (type === artefactMetadataTypes.LICENSE) {
+      if (type === FINDING_TYPES.LICENSE) {
         return {
           package_name: rescoring.finding.package_name,
           license: rescoring.finding.license,
         }
-      } else if (type === artefactMetadataTypes.VULNERABILITY) {
+      } else if (type === FINDING_TYPES.VULNERABILITY) {
         return {
           package_name: rescoring.finding.package_name,
           cve: rescoring.finding.cve,
         }
-      } else if (type === artefactMetadataTypes.FINDING_MALWARE) {
+      } else if (type === FINDING_TYPES.MALWARE) {
         return {
           content_digest: rescoring.finding.finding.content_digest,
           filename: rescoring.finding.finding.filename,
@@ -2373,7 +2296,7 @@ const Rescore = ({
         enqueueSnackbar(
           lenSerialisedRescorings > 0
             ? `Successfully applied ${lenSerialisedRescorings} ${pluralise('rescoring', lenSerialisedRescorings)}`
-            : 'No rescoring was applied because no severity changed',
+            : 'No rescoring was applied because no categorisation changed',
           {
             variant: lenSerialisedRescorings > 0 ? 'success' : 'info',
             anchorOrigin: {
@@ -2421,15 +2344,16 @@ const RescoringModal = ({
   handleClose,
   fetchComplianceData,
   fetchComplianceSummary,
-  scanConfig,
+  initialFindingType,
+  findingCfgs,
 }) => {
   const [openInput, setOpenInput] = React.useState(false)
 
-  const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
-  const [rescoringFeature, setRescoringFeature] = React.useState()
-  const [cveRescoringRuleSet, setCveRescoringRuleSet] = React.useState()
+  const [findingType, setFindingType] = React.useState(initialFindingType)
+  const [findingCfg, setFindingCfg] = React.useState(findingCfgForType({findingType, findingCfgs}))
   const [rescorings, setRescorings] = React.useState([])
   const [rescoringsLoading, setRescoringsLoading] = React.useState(true)
+  const [rescoringsForType, setRescoringsForType] = React.useState()
   const [filteredRescorings, setFilteredRescorings] = React.useState()
   const [selectedRescorings, setSelectedRescorings] = React.useState([])
   const [progress, setProgress] = React.useState(0)
@@ -2482,98 +2406,61 @@ const RescoringModal = ({
   }, [])
 
   React.useEffect(() => {
-    return registerCallbackHandler({
-      featureRegistrationContext: featureRegistrationContext,
-      featureName: features.RESCORING,
-      callback: ({feature}) => setRescoringFeature(feature),
-    })
-  }, [featureRegistrationContext])
-
-  React.useEffect(() => {
-    if (cveRescoringRuleSet || !rescoringFeature?.isAvailable) return
-
-    // set initial value to default cvss rescoring rule set
-    const defaultCveRescoringruleSet = rescoringFeature.rescoring_rule_sets.find((rs) => {
-      return rs.name === rescoringFeature.default_rescoring_rule_set_name
-    })
-
-    if (defaultCveRescoringruleSet) {
-      setCveRescoringRuleSet(defaultCveRescoringruleSet)
-      return
-    }
-
-    // if no default is configured explicitly, fallback to first
-    setCveRescoringRuleSet(rescoringFeature.rescoring_rule_sets[0])
-  }, [rescoringFeature, cveRescoringRuleSet])
+    setSelectedRescorings([])
+    setFindingCfg(findingCfgForType({findingType, findingCfgs}))
+  }, [findingType])
 
   React.useEffect(() => {
     if (rescoringsLoading) return
 
-    if (!rescorings.some((rescoring) => rescoring.sprint)) {
-      setSprints([])
-      setSprintsLoading(false)
-      return
-    }
+    setRescoringsForType(rescorings.filter((rescoring) => rescoring.finding_type === findingType))
+  }, [rescoringsLoading, rescorings, findingType])
+
+  React.useEffect(() => {
+    if (!rescoringsForType) return
 
     // get unique sprints by name if any
-    setSprints(formatAndSortSprints(rescorings ? [...new Map(rescorings.map((rescoring) => {
-      const sprintName = sprintNameForRescoring(rescoring)
+    setSprints(formatAndSortSprints([...new Map(rescoringsForType.map((rescoring) => {
+      const sprintName = sprintNameForRescoring({rescoring, findingCfg})
       return [
         sprintName,
         {
           ...(rescoring.sprint ?? {}),
           name: sprintName,
-          count: rescorings.filter((r) => sprintName === sprintNameForRescoring(r)).length,
+          count: rescoringsForType.filter((r) => sprintName === sprintNameForRescoring({
+            rescoring: r,
+            findingCfg: findingCfg,
+          })).length,
         },
       ]
-    })).values()]: []))
+    })).values()]))
     setSprintsLoading(false)
-  }, [rescorings, setSprints, rescoringsLoading])
+  }, [setSprints, rescoringsForType])
 
   const allowedRescorings = filteredRescorings?.filter((rescoring) => {
     return (
       selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))
-      && rescoring.severity !== rescoringProposalSeverity(rescoring)
+      && rescoring.severity !== categoriseRescoringProposal({rescoring, findingCfg}).id
     )
   })
   const filteredOutRescoringsLength = filteredRescorings ? selectedRescorings.length - allowedRescorings.length : 0
 
   React.useEffect(() => {
-    setFilteredRescorings(rescorings.filter(rescoring => {
+    if (!rescoringsForType) return
+
+    setFilteredRescorings(rescoringsForType.filter(rescoring => {
       for (const filter of Object.values(filters)) {
         // all filters must match to keep a rescoring
         if (!filter(rescoring)) return false
       }
       return true
     }))
-  }, [filters, rescorings])
+  }, [rescoringsForType, filters])
 
   const closeInput = (e) => {
     if (openInput) setOpenInput(false)
     e.stopPropagation() // stop interaction with background
   }
-
-  const uniqueTypedefs = (rescorings) => {
-    if (rescorings.length === 0) return []
-
-    const typeDefs = new Map()
-
-    rescorings.map((rescoring) => {
-      const typedef = findTypedefByName({name: rescoring.finding_type}) || defaultTypedefForName({name: rescoring.finding_type})
-      typeDefs.set(typedef.name, typedef)
-    })
-
-    return [...typeDefs.values()]
-  }
-
-  const severityCfgs = React.useCallback(() => [
-    findSeverityCfgByName({name: SEVERITIES.NONE}),
-    findSeverityCfgByName({name: SEVERITIES.LOW}),
-    findSeverityCfgByName({name: SEVERITIES.MEDIUM}),
-    findSeverityCfgByName({name: SEVERITIES.HIGH}),
-    findSeverityCfgByName({name: SEVERITIES.CRITICAL}),
-    findSeverityCfgByName({name: SEVERITIES.BLOCKER}),
-  ], [])
 
   const toggleRescored = React.useCallback((event, toggled) => {
     updateFilter('toggleRescored', (rescoring) => {
@@ -2616,15 +2503,13 @@ const RescoringModal = ({
         {
           <Grid item xs={1}>
             {
-              cveRescoringRuleSet && <>
+              findingCfg.rescoring_ruleset && <>
                 {
                   openInput ? <ErrorBoundary>
-                    <VulnerabilityRescoringDrawer
+                    <RescoringRulesetDrawer
                       open={openInput}
-                      handleClose={() => setOpenInput(false)}
-                      cveRescoringRuleSet={cveRescoringRuleSet}
-                      setCveRescoringRuleSet={setCveRescoringRuleSet}
-                      rescoringFeature={rescoringFeature}
+                      handleClose={closeInput}
+                      findingCfg={findingCfg}
                       ocmNodes={ocmNodes}
                       ocmRepo={ocmRepo}
                     />
@@ -2643,33 +2528,26 @@ const RescoringModal = ({
         <Grid item xs={10}>
           <RescoringHeader
             ocmNodes={ocmNodes}
-            title={'Rescoring'}
+            title='Rescoring'
           />
         </Grid>
         <Grid item xs={1}/>
       </Grid>
       <Grid item xs={12}>
         <div style={{ padding: '0.3em' }} />
-        <Box
-          display='flex'
-          alignItems='center'
-          justifyContent='center'
-        >
-          <RescoringFilter
-            availableSprints={sprints.filter((sprint) => sprint.name !== META_SPRINT_NAMES.RESOLVED)}
-            preSelectedSprints={preSelectedSprints}
-            findingTypes={uniqueTypedefs(rescorings)}
-            updateFilter={updateFilter}
-            rescoringsLoading={rescoringsLoading}
-            sprintsLoading={sprintsLoading}
-            severityCfgs={severityCfgs().filter(severityCfg => {
-              // only show relevant severities
-              return rescorings.some(r => rescoringProposalSeverity(r) === severityCfg.name)
-            })}
-            toggleRescored={toggleRescored}
-            rescorings={rescorings}
-          />
-        </Box>
+        <RescoringFilter
+          availableSprints={sprints.filter((sprint) => sprint.name !== META_SPRINT_NAMES.RESOLVED)}
+          preSelectedSprints={preSelectedSprints}
+          findingCfg={findingCfg}
+          findingType={findingType}
+          setFindingType={setFindingType}
+          findingTypes={rescorableFindingTypes({findingCfgs})}
+          updateFilter={updateFilter}
+          rescoringsLoading={rescoringsLoading}
+          sprintsLoading={sprintsLoading}
+          toggleRescored={toggleRescored}
+          rescorings={rescoringsForType ?? []}
+        />
       </Grid>
     </DialogTitle>
     <DialogContent
@@ -2689,7 +2567,6 @@ const RescoringModal = ({
         <Rescoring
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
-          cveRescoringRuleSet={cveRescoringRuleSet}
           rescorings={filteredRescorings}
           setRescorings={setRescorings}
           setFilteredRescorings={setFilteredRescorings}
@@ -2700,13 +2577,13 @@ const RescoringModal = ({
           setShowProgress={setShowProgress}
           fetchComplianceData={fetchComplianceData}
           fetchComplianceSummary={fetchComplianceSummary}
-          rescoringFeature={rescoringFeature}
           sprints={sprints}
           sprintsLoading={sprintsLoading}
-          scanConfig={scanConfig}
+          findingCfg={findingCfg}
+          findingCfgs={findingCfgs}
+          findingType={findingType}
           setRescoringsLoading={setRescoringsLoading}
           rescoringsLoading={rescoringsLoading}
-          severityCfgs={severityCfgs()}
         />
       </ErrorBoundary>
     </DialogContent>
@@ -2790,7 +2667,7 @@ const RescoringModal = ({
             filteredOutRescoringsLength > 0 && <Tooltip
               title={
                 `${filteredOutRescoringsLength} ${pluralise('rescoring', filteredOutRescoringsLength, 'is', 'are')}
-                filtered out or the severity did not change`
+                filtered out or the categorisation did not change`
               }
             >
               <InfoOutlinedIcon sx={{ height: '1rem' }}/>
@@ -2820,7 +2697,8 @@ RescoringModal.propTypes = {
   handleClose: PropTypes.func.isRequired,
   fetchComplianceData: PropTypes.func,
   fetchComplianceSummary: PropTypes.func,
-  scanConfig: PropTypes.object,
+  initialFindingType: PropTypes.string.isRequired,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
