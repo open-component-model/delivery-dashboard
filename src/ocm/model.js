@@ -1015,48 +1015,6 @@ MetadataViewerPopover.propTypes = {
   handleClose: PropTypes.func.isRequired,
 }
 
-const ComplianceDataTypeSelector = ({ currentSelection, types, handleChange }) => {
-  const [value, setValue] = React.useState(currentSelection)
-
-  const onChange = (event) => {
-    setValue(event.target.value)
-    handleChange(event.target.value)
-  }
-
-  return <FormControl
-    fullWidth
-  >
-    <InputLabel id='demo-simple-select-label' color='secondary'>Compliance Data Type</InputLabel>
-    <Select
-      labelId='demo-simple-select-label'
-      id='demo-simple-select'
-      value={value}
-      label='Compliance Data Type'
-      onChange={onChange}
-    >
-      {
-        types.sort().map((type) => {
-          const typedef = findTypedefByName({name: type})
-          return <MenuItem
-            value={type}
-            key={type}
-          >
-            {
-              typedef ? typedef.friendlyName : type
-            }
-          </MenuItem>
-        })
-      }
-    </Select>
-  </FormControl>
-}
-ComplianceDataTypeSelector.displayName = 'ComplianceDataTypeSelector'
-ComplianceDataTypeSelector.propTypes = {
-  currentSelection: PropTypes.string,
-  types: PropTypes.arrayOf(PropTypes.string).isRequired,
-  handleChange: PropTypes.func.isRequired,
-}
-
 
 export {
   artefactMetadataTypes,
