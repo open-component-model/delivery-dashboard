@@ -1733,10 +1733,8 @@ ComponentChip.propTypes = {
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
 }
 
-/**
- * reasoned color string for given resource os information
- */
-const evaluateResourceBranch = (resource) => {
+
+const osInfoReason = (resource) => {
   const eolString = (eolInfo) => {
     if (typeof eolInfo == 'string') return `EOL reached on ${new Date(eolInfo).toLocaleDateString()}`
 
@@ -1747,17 +1745,9 @@ const evaluateResourceBranch = (resource) => {
     return `Newer Patch Version is available, ${version}`
   }
 
-  if (!resource)
-    return {
-      reason: 'no resource os information found',
-      severity: findSeverityCfgByName({name: SEVERITIES.UNKNOWN}),
-    }
+  if (!resource) return 'no resource os information found'
 
-  if (!resource.branchInfo)
-    return {
-      reason: 'no os branch information found',
-      severity: findSeverityCfgByName({name: SEVERITIES.UNKNOWN}),
-    }
+  if (!resource.branchInfo) return 'no os branch information found'
 
   const now = new Date()
   const branchEol = new Date(resource.branchInfo.eol_date)
@@ -1766,50 +1756,17 @@ const evaluateResourceBranch = (resource) => {
   if (resource.branchInfo.greatest_version) {
     branchSemVer = parseRelaxedSemver(resource.branchInfo.greatest_version)
   }
-  if (!resourceSemVer && !branchSemVer) {
-    return {
-      severity: findSeverityCfgByName({name: SEVERITIES.UNKNOWN}),
-    }
-  }
 
-  if (!branchSemVer) {
-    if (now > branchEol) {
-      // eol reached
-      return {
-        reason: eolString(resource.branchInfo.eol_date),
-        severity: findSeverityCfgByName({name: SEVERITIES.CRITICAL}),
-      }
-    }
-    return {
-      reason: 'Greatest Version',
-      severity: findSeverityCfgByName({name: SEVERITIES.CLEAN}),
-    }
-  }
+  if (!resourceSemVer && !branchSemVer) return 'no versions found'
 
-  if (SemVer.eq(branchSemVer, resourceSemVer)) {
+  if (!branchSemVer || SemVer.eq(branchSemVer, resourceSemVer)) {
     // is greatest version
-    if (now > branchEol) {
-      // eol reached
-      return {
-        reason: eolString(resource.branchInfo.eol_date),
-        severity: findSeverityCfgByName({name: SEVERITIES.CRITICAL}),
-      }
-    }
-    return {
-      reason: 'Greatest Version',
-      severity: findSeverityCfgByName({name: SEVERITIES.CLEAN}),
-    }
+    if (now > branchEol) return eolString(resource.branchInfo.eol_date) // eol reached
+    return 'Greatest Version'
+
   } else if (SemVer.lt(resourceSemVer, branchSemVer)) {
-    if (now > branchEol) {
-      return {
-        reason: eolString(resource.branchInfo.eol_date),
-        severity: findSeverityCfgByName({name: SEVERITIES.CRITICAL}),
-      }
-    }
-    return {
-      reason: newerVersionAvailableString(branchSemVer),
-      severity: findSeverityCfgByName({name: SEVERITIES.MEDIUM}),
-    }
+    if (now > branchEol) return eolString(resource.branchInfo.eol_date)
+    return newerVersionAvailableString(branchSemVer)
   }
 
   /**
@@ -1817,10 +1774,7 @@ const evaluateResourceBranch = (resource) => {
    * occurred when EOL API removed debian latest release minor
    * see: https://github.com/endoflife-date/endoflife.date/issues/1396
    */
-  return {
-    reason: 'Greatest Version',
-    severity: findSeverityCfgByName({name: SEVERITIES.CLEAN}),
-  }
+  return 'Greatest Version'
 }
 
 
@@ -1905,7 +1859,7 @@ const OsCell = ({
 }) => {
   const osInfo = osData?.data.os_info
   const emptyOsId = Object.values(osInfo ?? {}).every(e => e === null)
-  const msg = evaluateResourceBranch(osData).reason
+  const msg = osInfoReason(osData)
 
   return <Tooltip
     title={
