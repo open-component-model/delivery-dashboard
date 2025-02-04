@@ -38,33 +38,32 @@ import SendIcon from '@mui/icons-material/Send'
 import PropTypes from 'prop-types'
 import { useTheme } from '@emotion/react'
 
-import { SearchParamContext } from '../App'
 import {
   useFetchComplianceSummary,
   useFetchComponentResponsibles,
-  useFetchScanConfigurations,
 } from '../fetch'
+import { CategorisationIndicator } from '../ocm/model'
 import {
-  artefactMetadataTypes,
-  findTypedefByName,
-  severityConfigs,
-  SeverityIndicator,
-} from '../ocm/model'
-import {
-  findSeverityCfgByName,
   matchObjectWithSearchQuery,
   NoMaxWidthTooltip,
-  pluralise,
   trimLongString,
 } from '../util'
 import CopyOnClickChip from '../util/copyOnClickChip'
 import {
-  SEVERITIES,
   TOKEN_KEY,
   USER_IDENTITIES,
 } from '../consts'
 import { OcmNode, OcmNodeDetails } from '../ocm/iter'
 import { RescoringModal } from '../rescoring'
+import {
+  categorisationValueToColor,
+  findCategorisationById,
+  findingCfgForType,
+  findingCfgMatchesOcmNode,
+  findingTypeToDisplayName,
+  findMinimumCategorisation,
+  rescorableFindingTypes,
+} from '../findings'
 
 
 const filterModes = {
@@ -74,80 +73,73 @@ const filterModes = {
 Object.freeze(filterModes)
 
 
-const filterForSeverity = ({
-  severity,
-  aggregatedOcmNode,
+const CategorisationFilter = ({
+  findingType,
+  setCategorisationFilter,
+  findingCfg,
 }) => {
-  const severityCfg = findSeverityCfgByName({name: severity})
-  const ocmNodeSeverityCfg = findSeverityCfgByName({name: aggregatedOcmNode.severity})
-
-  return ocmNodeSeverityCfg.value >= severityCfg.value
-}
-
-
-const SeverityFilter = ({
-  setSeverityFilter,
-  disabled,
-}) => {
-  const [severity, setSeverity] = React.useState(SEVERITIES.MEDIUM)
+  const categorisations = findingCfg.categorisations
+  const [categorisation, setCategorisation] = React.useState(findMinimumCategorisation({categorisations}))
 
   React.useEffect(() => {
-    setSeverityFilter(() => (aggregatedOcmNode) => filterForSeverity({
-      severity: severity,
-      aggregatedOcmNode: aggregatedOcmNode,
-    }))
-  }, [setSeverityFilter, severity])
+    // reset selected minimum categorisation in case selected finding type changes
+    // and the new type does not support the last selected categorisation
+    if (categorisations.map((c) => c.id).includes(categorisation.id)) return
+    setCategorisation(findMinimumCategorisation({categorisations}))
+  }, [findingType])
+
+  React.useEffect(() => {
+    setCategorisationFilter(() => (aggregatedOcmNode) => aggregatedOcmNode.categorisationValue >= categorisation.value)
+  }, [setCategorisationFilter, categorisation])
 
   return <FormControl variant='standard' fullWidth>
-    <InputLabel>Minimum Severity</InputLabel>
+    <InputLabel>Minimum Categorisation</InputLabel>
     <Select
-      value={severity}
-      label='Minimum Severity'
-      onChange={(e) => setSeverity(e.target.value)}
-      disabled={disabled}
+      value={categorisation.id}
+      label='Minimum Categorisation'
+      onChange={(e) => setCategorisation(findCategorisationById({
+        id: e.target.value,
+        findingCfg: findingCfg,
+      }))}
     >
       {
-        severityConfigs.filter(cfg => cfg.name !== SEVERITIES.UNKNOWN).map(severityCfg => {
-          return <MenuItem
-            key={severityCfg.name}
-            value={severityCfg.name}
-            color={severityCfg.color}
+        categorisations.map((categorisation) => <MenuItem
+          key={categorisation.id}
+          value={categorisation.id}
+          color={categorisationValueToColor(categorisation.value)}
+        >
+          <Typography
+            color={`${categorisationValueToColor(categorisation.value)}.main`}
+            variant='body2'
           >
-            <Typography
-              color={`${severityCfg.color}.main`}
-              variant='body2'
-            >
-              {severityCfg.name}
-            </Typography>
-          </MenuItem>
-        })
+            {categorisation.display_name}
+          </Typography>
+        </MenuItem>)
       }
     </Select>
   </FormControl>
 }
-SeverityFilter.displayName = 'SeverityFilter'
-SeverityFilter.propTypes = {
-  setSeverityFilter: PropTypes.func.isRequired,
-  disabled: PropTypes.bool.isRequired,
+CategorisationFilter.displayName = 'CategorisationFilter'
+CategorisationFilter.propTypes = {
+  findingType: PropTypes.string.isRequired,
+  setCategorisationFilter: PropTypes.func.isRequired,
+  findingCfg: PropTypes.object.isRequired,
 }
 
 
 const TypeFilter = ({
-  type,
-  setType,
+  findingType,
+  setFindingType,
+  findingCfgs,
 }) => {
-  const findingTypes = [
-    artefactMetadataTypes.LICENSE,
-    artefactMetadataTypes.VULNERABILITY,
-    artefactMetadataTypes.FINDING_MALWARE,
-  ]
+  const findingTypes = findingCfgs.map((findingCfg) => findingCfg.type)
 
   return <FormControl variant='standard' fullWidth>
     <InputLabel>Finding Type</InputLabel>
     <Select
-      value={type}
+      value={findingType}
       label='Finding Type'
-      onChange={(e) => setType(e.target.value)}
+      onChange={(e) => setFindingType(e.target.value)}
     >
       {
         findingTypes.map((findingType) => <MenuItem
@@ -156,7 +148,7 @@ const TypeFilter = ({
         >
           <Typography variant='body2'>
             {
-              pluralise(findTypedefByName({name: findingType}).friendlyName)
+              findingTypeToDisplayName(findingType)
             }
           </Typography>
         </MenuItem>)
@@ -166,14 +158,14 @@ const TypeFilter = ({
 }
 TypeFilter.displayName = 'TypeFilter'
 TypeFilter.propTypes = {
-  type: PropTypes.string.isRequired,
-  setType: PropTypes.func.isRequired,
+  findingType: PropTypes.string.isRequired,
+  setFindingType: PropTypes.func.isRequired,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
 const FreeTextFilter = ({
   setFreeTextFilter,
-  disabled,
 }) => {
   const [freeText, setFreeText] = React.useState()
 
@@ -223,28 +215,28 @@ const FreeTextFilter = ({
       ),
     }}
     fullWidth
-    disabled={disabled}
   />
 }
 FreeTextFilter.displayName = 'FreeTextFilter'
 FreeTextFilter.propTypes = {
   setFreeTextFilter: PropTypes.func.isRequired,
-  disabled: PropTypes.bool.isRequired,
 }
 
 
 const Filters = ({
   addOrUpdateFilter,
   removeFilter,
-  disabled,
-  type,
-  setType,
+  findingType,
+  setFindingType,
+  findingCfgs,
 }) => {
   const [freeTextFilter, setFreeTextFilter] = React.useState()
   const FREE_TEXT_FILTER_ID = 'filter-freetext'
 
-  const [severityFilter, setSeverityFilter] = React.useState()
-  const SEVERITY_FILTER_ID = 'filter-severity'
+  const [categorisationFilter, setCategorisationFilter] = React.useState()
+  const CATEGORISATION_FILTER_ID = 'filter-categorisation'
+
+  const findingCfg = findingCfgForType({findingType, findingCfgs})
 
   React.useEffect(() => {
     if (freeTextFilter) {
@@ -256,29 +248,28 @@ const Filters = ({
       removeFilter(FREE_TEXT_FILTER_ID)
     }
 
-    if (severityFilter) addOrUpdateFilter({
-      id: SEVERITY_FILTER_ID,
-      filter: severityFilter,
+    if (categorisationFilter) addOrUpdateFilter({
+      id: CATEGORISATION_FILTER_ID,
+      filter: categorisationFilter,
     })
-  }, [addOrUpdateFilter, removeFilter, SEVERITY_FILTER_ID, severityFilter, FREE_TEXT_FILTER_ID, freeTextFilter])
+  }, [addOrUpdateFilter, removeFilter, CATEGORISATION_FILTER_ID, categorisationFilter, FREE_TEXT_FILTER_ID, freeTextFilter])
 
   return <>
     <Grid item xs={4}>
-      <FreeTextFilter
-        setFreeTextFilter={setFreeTextFilter}
-        disabled={disabled}
-      />
+      <FreeTextFilter setFreeTextFilter={setFreeTextFilter}/>
     </Grid>
     <Grid item xs={1.5}>
       <TypeFilter
-        type={type}
-        setType={setType}
+        findingType={findingType}
+        setFindingType={setFindingType}
+        findingCfgs={findingCfgs}
       />
     </Grid>
     <Grid item xs={1.5}>
-      <SeverityFilter
-        setSeverityFilter={setSeverityFilter}
-        disabled={disabled}
+      <CategorisationFilter
+        findingType={findingType}
+        setCategorisationFilter={setCategorisationFilter}
+        findingCfg={findingCfg}
       />
     </Grid>
   </>
@@ -287,9 +278,9 @@ Filters.displayName = 'Filters'
 Filters.propTypes = {
   addOrUpdateFilter: PropTypes.func.isRequired,
   removeFilter: PropTypes.func.isRequired,
-  disabled: PropTypes.bool.isRequired,
-  type: PropTypes.string.isRequired,
-  setType: PropTypes.func.isRequired,
+  findingType: PropTypes.string.isRequired,
+  setFindingType: PropTypes.func.isRequired,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -298,6 +289,7 @@ const ArtefactRow = ({
   selectedAggregatedOcmNodes,
   setSelectedAggregatedOcmNodes,
   ocmRepo,
+  findingCfg,
 }) => {
   const theme = useTheme()
 
@@ -370,8 +362,11 @@ const ArtefactRow = ({
     </TableCell>
     <TableCell>
       {
-        aggregatedOcmNode ? <SeverityIndicator
-          severity={findSeverityCfgByName({name: aggregatedOcmNode.severity})}
+        aggregatedOcmNode ? <CategorisationIndicator
+          categorisation={findCategorisationById({
+            id: aggregatedOcmNode.categorisationId,
+            findingCfg: findingCfg,
+          })}
         /> : <Skeleton/>
       }
     </TableCell>
@@ -396,6 +391,7 @@ ArtefactRow.propTypes = {
   selectedAggregatedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedAggregatedOcmNodes: PropTypes.func.isRequired,
   ocmRepo: PropTypes.string,
+  findingCfg: PropTypes.object.isRequired,
 }
 
 
@@ -404,13 +400,14 @@ const ArtefactList = ({
   selectedAggregatedOcmNodes,
   setSelectedAggregatedOcmNodes,
   ocmRepo,
+  findingCfg,
 }) => {
   const [order, setOrder] = React.useState('asc')
   const [orderBy, setOrderBy] = React.useState('artefact')
 
   const orderAttributes = {
     ARTEFACT: 'artefact',
-    SEVERITY: 'severity',
+    CATEGORISATION: 'categorisation',
   }
 
   const initialRowsPerPage = 10
@@ -434,8 +431,8 @@ const ArtefactList = ({
   const getAccessMethod = (orderBy) => {
     if (orderBy === orderAttributes.ARTEFACT) {
       return (aggregatedOcmNode) => `${aggregatedOcmNode.ocmNode.artefact.name}:${aggregatedOcmNode.ocmNode.artefact.version}`
-    } else if (orderBy === orderAttributes.SEVERITY) {
-      return (aggregatedOcmNode) => findSeverityCfgByName({name: aggregatedOcmNode.severity}).value
+    } else if (orderBy === orderAttributes.CATEGORISATION) {
+      return (aggregatedOcmNode) => aggregatedOcmNode.categorisationValue
     }
   }
 
@@ -508,7 +505,7 @@ const ArtefactList = ({
             <TableCell>
               <TableSortLabel
                 onClick={() => handleSort(orderAttributes.ARTEFACT)}
-                active={orderBy === orderAttributes.ARTEFACT ? true : false}
+                active={orderBy === orderAttributes.ARTEFACT}
                 direction={order}
               >
                 Artefact
@@ -517,11 +514,11 @@ const ArtefactList = ({
             <TableCell>Version</TableCell>
             <TableCell>
               <TableSortLabel
-                onClick={() => handleSort(orderAttributes.SEVERITY)}
-                active={orderBy === orderAttributes.SEVERITY ? true : false}
+                onClick={() => handleSort(orderAttributes.CATEGORISATION)}
+                active={orderBy === orderAttributes.CATEGORISATION}
                 direction={order}
               >
-                Severity
+                Categorisation
               </TableSortLabel>
             </TableCell>
             <TableCell>
@@ -540,11 +537,13 @@ const ArtefactList = ({
               selectedAggregatedOcmNodes={selectedAggregatedOcmNodes}
               setSelectedAggregatedOcmNodes={setSelectedAggregatedOcmNodes}
               ocmRepo={ocmRepo}
+              findingCfg={findingCfg}
             />) : Array.from(Array(initialRowsPerPage).keys()).map((key) => <ArtefactRow
               key={key}
               selectedAggregatedOcmNodes={selectedAggregatedOcmNodes}
               setSelectedAggregatedOcmNodes={setSelectedAggregatedOcmNodes}
               ocmRepo={ocmRepo}
+              findingCfg={findingCfg}
             />)
           }
           {
@@ -577,6 +576,7 @@ ArtefactList.propTypes = {
   selectedAggregatedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedAggregatedOcmNodes: PropTypes.func.isRequired,
   ocmRepo: PropTypes.string,
+  findingCfg: PropTypes.object.isRequired,
 }
 
 
@@ -587,8 +587,9 @@ const Header = ({
   filterMode,
   toggleFilterMode,
   setMountRescoring,
-  type,
-  setType,
+  findingType,
+  setFindingType,
+  findingCfgs,
 }) => {
   const token = JSON.parse(localStorage.getItem(TOKEN_KEY))
 
@@ -597,9 +598,9 @@ const Header = ({
       <Filters
         addOrUpdateFilter={addOrUpdateFilter}
         removeFilter={removeFilter}
-        disabled={filterMode === filterModes.PERSONAL}
-        type={type}
-        setType={setType}
+        findingType={findingType}
+        setFindingType={setFindingType}
+        findingCfgs={findingCfgs}
       />
       <Grid item xs={2}>
         <Box
@@ -609,7 +610,7 @@ const Header = ({
         >
           <FormGroup>
             <Tooltip
-              title={`Filter artefacts for your responsibility (${token?.sub}, ${token?.github_oAuth.email_address}) and severity of MEDIUM or worse.`}
+              title={`Filter artefacts for your responsibility (${token?.sub}, ${token?.github_oAuth.email_address}).`}
             >
               <FormControlLabel
                 control={
@@ -676,7 +677,7 @@ const Header = ({
           <span>
             <Button
               color='secondary'
-              disabled={selectedAggregatedOcmNodes.length === 0}
+              disabled={selectedAggregatedOcmNodes.length === 0 || !rescorableFindingTypes({findingCfgs}).includes(findingType)}
               fullWidth
               onClick={() => setMountRescoring(true)}
               endIcon={<SendIcon/>}
@@ -699,8 +700,9 @@ Header.propTypes = {
   filterMode: PropTypes.string.isRequired,
   toggleFilterMode: PropTypes.func.isRequired,
   setMountRescoring: PropTypes.func.isRequired,
-  type: PropTypes.string.isRequired,
-  setType: PropTypes.func.isRequired,
+  findingType: PropTypes.string.isRequired,
+  setFindingType: PropTypes.func.isRequired,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -771,8 +773,9 @@ const Artefacts = ({
   setAggregatedOcmNodes,
   selectedAggregatedOcmNodes,
   setSelectedAggregatedOcmNodes,
-  type,
-  setType,
+  findingType,
+  setFindingType,
+  findingCfgs,
   ocmRepo,
   addOrUpdateFilter,
   removeFilter,
@@ -782,14 +785,6 @@ const Artefacts = ({
   setMountRescoring,
   refreshComplianceSummary,
 }) => {
-  const searchParamContext = React.useContext(SearchParamContext)
-  const scanConfigName = searchParamContext.get('scanConfigName')
-  const [scanConfigs] = useFetchScanConfigurations()
-
-  const scanConfig = scanConfigName
-    ? scanConfigs?.find((scanConfig) => scanConfig.name === scanConfigName)
-    : scanConfigs?.length === 1 ? scanConfigs[0] : null
-
   return <Box>
     {
       mountRescoring && <RescoringModal
@@ -797,7 +792,8 @@ const Artefacts = ({
         ocmRepo={ocmRepo}
         handleClose={() => setMountRescoring(false)}
         fetchComplianceSummary={refreshComplianceSummary}
-        scanConfig={scanConfig}
+        initialFindingType={findingType}
+        findingCfgs={findingCfgs}
       />
     }
     <Header
@@ -807,8 +803,9 @@ const Artefacts = ({
       filterMode={filterMode}
       toggleFilterMode={toggleFilterMode}
       setMountRescoring={setMountRescoring}
-      type={type}
-      setType={setType}
+      findingType={findingType}
+      setFindingType={setFindingType}
+      findingCfgs={findingCfgs}
     />
     <div style={{ padding: '1em' }} />
     {
@@ -817,6 +814,7 @@ const Artefacts = ({
         selectedAggregatedOcmNodes={selectedAggregatedOcmNodes}
         setSelectedAggregatedOcmNodes={setSelectedAggregatedOcmNodes}
         ocmRepo={ocmRepo}
+        findingCfg={findingCfgForType({findingType, findingCfgs})}
       /> : <Box
         display='flex'
         justifyContent='center'
@@ -830,7 +828,7 @@ const Artefacts = ({
     }
     {
       aggregatedOcmNodes.map((aggregatedOcmNode) => <FetchResponsibles
-        key={`${aggregatedOcmNode.ocmNode.identity()}${type}`}
+        key={`${aggregatedOcmNode.ocmNode.identity()}${findingType}`}
         aggregatedOcmNode={aggregatedOcmNode}
         setAggregatedOcmNodes={setAggregatedOcmNodes}
         ocmRepo={ocmRepo}
@@ -844,8 +842,9 @@ Artefacts.propTypes = {
   setAggregatedOcmNodes: PropTypes.func.isRequired,
   selectedAggregatedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedAggregatedOcmNodes: PropTypes.func.isRequired,
-  type: PropTypes.string.isRequired,
-  setType: PropTypes.func.isRequired,
+  findingType: PropTypes.string.isRequired,
+  setFindingType: PropTypes.func.isRequired,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
   ocmRepo: PropTypes.string,
   addOrUpdateFilter: PropTypes.func.isRequired,
   removeFilter: PropTypes.func.isRequired,
@@ -860,6 +859,7 @@ Artefacts.propTypes = {
 const ComplianceTab = ({
   component,
   ocmRepo,
+  findingCfgs,
 }) => {
   const token = JSON.parse(localStorage.getItem(TOKEN_KEY))
 
@@ -869,7 +869,7 @@ const ComplianceTab = ({
     ocmRepo: ocmRepo,
   })
 
-  const [type, setType] = React.useState(artefactMetadataTypes.VULNERABILITY)
+  const [findingType, setFindingType] = React.useState(findingCfgs[0].type) // we checked there is at least one cfg
   const [filterMode, setFilterMode] = React.useState(filterModes.CUSTOM)
 
   const personalFilters = [
@@ -890,13 +890,6 @@ const ComplianceTab = ({
           ))
         })
       }
-    },
-    {
-      id: 'filter-severity',
-      filter: (aggregatedOcmNode) => filterForSeverity({
-        severity: SEVERITIES.MEDIUM, // TODO allow configuration of desired minimum severity
-        aggregatedOcmNode: aggregatedOcmNode,
-      }),
     },
   ]
   const [customFilters, setCustomFilters] = React.useState([])
@@ -925,7 +918,7 @@ const ComplianceTab = ({
 
   const filterAggregatedOcmNodes = React.useCallback((aggregatedOcmNodes) => {
     const getFilters = () => {
-      if (filterMode === filterModes.PERSONAL && personalFilters.length > 0) return personalFilters
+      if (filterMode === filterModes.PERSONAL && personalFilters.length > 0) return personalFilters.concat(customFilters)
       return customFilters
     }
 
@@ -939,28 +932,37 @@ const ComplianceTab = ({
   React.useEffect(() => {
     setSelectedAggregatedOcmNodes([])
     setCustomSelectedAggregatedOcmNodes([])
-  }, [type])
+  }, [findingType])
 
   React.useEffect(() => {
     if (!complianceSummary) return
 
+    const findingCfg = findingCfgForType({findingType, findingCfgs})
+
     setAggregatedOcmNodes(complianceSummary.complianceSummary.reduce((aggregatedNodes, componentSummary) => {
       return componentSummary.artefacts.reduce((nodes, artefactSummary) => {
+        const ocmNode = new OcmNode(
+          [{
+            name: artefactSummary.artefact.component_name,
+            version: artefactSummary.artefact.component_version,
+          }],
+          {
+            name: artefactSummary.artefact.artefact.artefact_name,
+            version: artefactSummary.artefact.artefact.artefact_version,
+            type: artefactSummary.artefact.artefact.artefact_type,
+            extraIdentity: artefactSummary.artefact.artefact.artefact_extra_id,
+          },
+          artefactSummary.artefact.artefact_kind,
+        )
+
+        if (!findingCfgMatchesOcmNode({findingCfg, ocmNode})) return nodes
+
+        const entry = artefactSummary.entries.find((entry) => entry.type === findingType)
+
         const aggregatedOcmNode = {
-          ocmNode: new OcmNode(
-            [{
-              name: artefactSummary.artefact.component_name,
-              version: artefactSummary.artefact.component_version,
-            }],
-            {
-              name: artefactSummary.artefact.artefact.artefact_name,
-              version: artefactSummary.artefact.artefact.artefact_version,
-              type: artefactSummary.artefact.artefact.artefact_type,
-              extraIdentity: artefactSummary.artefact.artefact.artefact_extra_id,
-            },
-            artefactSummary.artefact.artefact_kind,
-          ),
-          severity: artefactSummary.entries.find((entry) => entry.type === type).severity,
+          ocmNode: ocmNode,
+          categorisationId: entry.categorisation,
+          categorisationValue: entry.value,
         }
 
         return [
@@ -969,7 +971,7 @@ const ComplianceTab = ({
         ]
       }, aggregatedNodes)
     }, []))
-  }, [complianceSummary, type])
+  }, [complianceSummary, findingType])
 
   if (complianceSummaryState.error) return <Alert severity='error'>
     Unable to load components
@@ -983,14 +985,16 @@ const ComplianceTab = ({
       filterMode={filterMode}
       toggleFilterMode={() => setFilterMode((prev) => prev === filterModes.CUSTOM ? filterModes.PERSONAL : filterModes.CUSTOM)}
       setMountRescoring={setMountRescoring}
-      type={type}
-      setType={setType}
+      findingType={findingType}
+      setFindingType={setFindingType}
+      findingCfgs={findingCfgs}
     />
     <div style={{ padding: '1em' }} />
     <ArtefactList
       selectedAggregatedOcmNodes={selected}
       setSelectedAggregatedOcmNodes={setSelected}
       ocmRepo={ocmRepo}
+      findingCfg={findingCfgForType({findingType, findingCfgs})}
     />
   </Box>
 
@@ -999,8 +1003,9 @@ const ComplianceTab = ({
     setAggregatedOcmNodes={setAggregatedOcmNodes}
     selectedAggregatedOcmNodes={selected}
     setSelectedAggregatedOcmNodes={setSelected}
-    type={type}
-    setType={setType}
+    findingType={findingType}
+    setFindingType={setFindingType}
+    findingCfgs={findingCfgs}
     ocmRepo={ocmRepo}
     addOrUpdateFilter={addOrUpdateFilter}
     removeFilter={removeFilter}
@@ -1015,6 +1020,7 @@ ComplianceTab.displayName = 'ComplianceTab'
 ComplianceTab.propTypes = {
   component: PropTypes.object.isRequired,
   ocmRepo: PropTypes.string,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 export default ComplianceTab

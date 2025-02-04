@@ -67,10 +67,8 @@ import {
   trimLongString,
   updatePathFromComponentRef,
   appendPresentParams,
-  artefactMetadatumSeverity,
   capitalise,
   ExtraIdentityHover,
-  findSeverityCfgByName,
   matchObjectWithSearchQuery,
   shortenComponentName,
   downloadObject,
@@ -78,10 +76,16 @@ import {
 import ExtraWideTooltip from '../util/extraWideTooltip'
 import FeatureDependent from '../util/featureDependent'
 import ComplianceToolPopover from '../util/complianceToolsPopover'
-import { ARTEFACT_KIND, features, COMPLIANCE_TOOLS, REPORTING_MINIMUM_SEVERITY, SEVERITIES, DEPENDENT_COMPONENT, fetchBomPopulate } from '../consts'
+import {
+  ARTEFACT_KIND,
+  COMPLIANCE_TOOLS,
+  DEPENDENT_COMPONENT,
+  features,
+  fetchBomPopulate,
+  SUMMARY_CATEGORISATIONS,
+} from '../consts'
 import {
   useFetchComponentResponsibles,
-  useFetchScanConfigurations,
   useFetchQueryMetadata,
   useFetchComplianceSummary,
   useFetchBom,
@@ -93,13 +97,23 @@ import { useTheme } from '@emotion/react'
 import { RescoringModal } from '../rescoring'
 import { OcmNode } from '../ocm/iter'
 import { artefactMetadataFilter } from '../ocm/util'
-import { MetadataViewerPopover, artefactMetadataTypes, findTypedefByName, defaultTypedefForName, datasources } from '../ocm/model'
+import { MetadataViewerPopover, artefactMetadataTypes, datasources } from '../ocm/model'
 import { components, routes } from '../api'
 import { SprintInfo } from '../util/sprint'
 import ErrorBoundary from '../util/errorBoundary'
 import { VersionOverview, evaluateVersionMatch } from '../util/versionOverview'
 import TriggerComplianceToolButton from '../util/triggerComplianceToolButton'
 import { parseRelaxedSemver } from '../os'
+import {
+  categorisationValueToColor,
+  categorisationValueToIndicator,
+  findCategorisationById,
+  FINDING_TYPES,
+  findingCfgForType,
+  findingTypeToDisplayName,
+  rescorableFindingTypes,
+  retrieveFindingsForType,
+} from '../findings'
 
 import DockerLogo from '../resources/docker-icon.svg'
 
@@ -107,6 +121,7 @@ import DockerLogo from '../resources/docker-icon.svg'
 const MetadataViewer = ({
   component,
   ocmRepo,
+  findingCfgs,
 }) => {
   const [metadataViewerPopoverOpen, setMetadataViewerPopoverOpen] = React.useState(false)
 
@@ -125,6 +140,7 @@ const MetadataViewer = ({
           componentName: component.name,
           componentVersion: component.version,
           ocmRepo: ocmRepo,
+          findingCfgs: findingCfgs,
         }}
         handleClose={(e) => {
           e.stopPropagation()
@@ -138,6 +154,7 @@ MetadataViewer.displayName = 'MetadataViewer'
 MetadataViewer.propTypes = {
   component: PropTypes.object.isRequired,
   ocmRepo: PropTypes.string,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 const ComplianceTools = ({
@@ -173,11 +190,12 @@ ComplianceTools.propTypes = {
 const ComponentSettings = ({
   component,
   ocmRepo,
+  findingCfgs,
   iconProps,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [deliveryDbFeature, setDeliveryDbFeature] = React.useState()
-  const [serviceExtensionsFeature, setServiceExtensionsFeature] = React.useState()
+  const [clusterAccessFeature, setClusterAccessFeature] = React.useState()
   const [anchorElement, setAnchorElement] = React.useState()
 
   React.useEffect(() => {
@@ -191,8 +209,8 @@ const ComponentSettings = ({
   React.useEffect(() => {
     return registerCallbackHandler({
       featureRegistrationContext: featureRegistrationContext,
-      featureName: features.SERVICE_EXTENSIONS,
-      callback: ({feature}) => setServiceExtensionsFeature(feature),
+      featureName: features.CLUSTER_ACCESS,
+      callback: ({feature}) => setClusterAccessFeature(feature),
     })
   }, [featureRegistrationContext])
 
@@ -207,7 +225,7 @@ const ComponentSettings = ({
 
   return <>
     {
-      (deliveryDbFeature?.isAvailable || serviceExtensionsFeature?.isAvailable) && <IconButton
+      (deliveryDbFeature?.isAvailable || clusterAccessFeature?.isAvailable) && <IconButton
         onClick={handleClick}
       >
         <MoreVertIcon {...iconProps}/>
@@ -231,10 +249,14 @@ const ComponentSettings = ({
           {
             // explicitly handle feature availability here and not using `FeatureDependent` component
             // because it does not work properly with popover anchors
-            deliveryDbFeature?.isAvailable && <MetadataViewer component={component} ocmRepo={ocmRepo}/>
+            deliveryDbFeature?.isAvailable && <MetadataViewer
+              component={component}
+              ocmRepo={ocmRepo}
+              findingCfgs={findingCfgs}
+            />
           }
           {
-            serviceExtensionsFeature?.isAvailable && <ComplianceTools component={component}/>
+            clusterAccessFeature?.isAvailable && <ComplianceTools component={component}/>
           }
         </List>
       </Box>
@@ -245,6 +267,7 @@ ComponentSettings.displayName = 'ComponentSettings'
 ComponentSettings.propTypes = {
   component: PropTypes.object.isRequired,
   ocmRepo: PropTypes.string,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
   iconProps: PropTypes.object,
 }
 
@@ -254,6 +277,8 @@ const Component = React.memo(({
   isComponentError,
   ocmRepo,
   isParentComponent,
+  scanCfg,
+  findingCfgs,
 }) => {
   const searchParamContext = React.useContext(SearchParamContext)
   const theme = useTheme()
@@ -333,13 +358,6 @@ const Component = React.memo(({
     searchParamContext.delete('rescoreArtefacts')
   }, [setMountRescoring])
 
-  const scanConfigName = searchParamContext.get('scanConfigName')
-  const [scanConfigs] = useFetchScanConfigurations()
-
-  const scanConfig = scanConfigName
-    ? scanConfigs?.find((scanConfig) => scanConfig.name === scanConfigName)
-    : scanConfigs?.length === 1 ? scanConfigs[0] : null
-
   return <Box
     sx={{
       paddingBottom: '0.3em',
@@ -357,7 +375,8 @@ const Component = React.memo(({
         ocmRepo={ocmRepo}
         handleClose={handleRescoringClose}
         fetchComplianceSummary={refreshComplianceSummary}
-        scanConfig={scanConfig}
+        initialFindingType={searchParamContext.get('findingType')}
+        findingCfgs={findingCfgs}
       />
     }
     <Accordion
@@ -420,16 +439,20 @@ const Component = React.memo(({
             childrenIfFeatureUnavailable={<Grid item xs={isParentComponent ? 1 : 2}/>}
           >
             <Grid item xs={isParentComponent ? 1 : 2}>
-              <ComponentChip
-                component={component}
-                complianceSummaryFetchDetails={complianceSummaryFetchDetails}
-              />
+              {
+                findingCfgs.length > 0 && <ComponentChip
+                  component={component}
+                  complianceSummaryFetchDetails={complianceSummaryFetchDetails}
+                  findingCfgs={findingCfgs}
+                />
+              }
             </Grid>
           </FeatureDependent>
           <Grid item xs={isParentComponent ? 0.5 : 1}>
             <ComponentSettings
               component={component}
               ocmRepo={ocmRepo}
+              findingCfgs={findingCfgs}
               iconProps={isParentComponent ? {sx: {color: theme.bomButton}} : {}}
             />
           </Grid>
@@ -443,7 +466,8 @@ const Component = React.memo(({
           ocmRepo={ocmRepo}
           complianceSummaryFetchDetails={complianceSummaryFetchDetails}
           fetchComplianceSummary={refreshComplianceSummary}
-          scanConfig={scanConfig}
+          scanCfg={scanCfg}
+          findingCfgs={findingCfgs}
         />
       </AccordionDetails>
     </Accordion>
@@ -456,6 +480,8 @@ Component.propTypes = {
   isComponentError: PropTypes.bool,
   ocmRepo: PropTypes.string,
   isParentComponent: PropTypes.bool,
+  scanCfg: PropTypes.object,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 const ResponsiblesHeading = ({
@@ -568,7 +594,8 @@ const ComponentDetails = React.memo(({
   ocmRepo,
   complianceSummaryFetchDetails,
   fetchComplianceSummary,
-  scanConfig,
+  scanCfg,
+  findingCfgs,
 }) => {
   if (isComponentError) return <Alert severity='error'>Unable to fetch Component</Alert>
 
@@ -581,7 +608,8 @@ const ComponentDetails = React.memo(({
           ocmRepo={ocmRepo}
           complianceSummaryFetchDetails={complianceSummaryFetchDetails}
           fetchComplianceSummary={fetchComplianceSummary}
-          scanConfig={scanConfig}
+          scanCfg={scanCfg}
+          findingCfgs={findingCfgs}
         />
     }
     <ComponentReferencedBy
@@ -602,7 +630,8 @@ ComponentDetails.propTypes = {
   ocmRepo: PropTypes.string,
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-  scanConfig: PropTypes.object,
+  scanCfg: PropTypes.object,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 const Components = ({
@@ -610,6 +639,8 @@ const Components = ({
   isComponentsLoading,
   isComponentsError,
   ocmRepo,
+  scanCfg,
+  findingCfgs,
 }) => {
   return <Box>
     {
@@ -619,6 +650,8 @@ const Components = ({
         isComponentLoading={isComponentsLoading}
         isComponentError={isComponentsError}
         ocmRepo={ocmRepo}
+        scanCfg={scanCfg}
+        findingCfgs={findingCfgs}
       />)
     }
   </Box>
@@ -629,6 +662,8 @@ Components.propTypes = {
   isComponentsLoading: PropTypes.bool,
   isComponentsError: PropTypes.bool,
   ocmRepo: PropTypes.string,
+  scanCfg: PropTypes.object,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -640,7 +675,8 @@ const ArtefactDetails = ({
   complianceSummaryFetchDetails,
   complianceDataFetchDetails,
   fetchComplianceSummary,
-  scanConfig,
+  scanCfg,
+  findingCfgs,
 }) => {
   if (artefacts.length === 0) return null
 
@@ -666,13 +702,13 @@ const ArtefactDetails = ({
             artefacts.map((artefact) => {
               return <ArtefactTableRow
                 key={generateArtefactID(artefact)}
-                component={component}
-                artefact={artefact}
+                ocmNode={new OcmNode([component], artefact, artefact.kind)}
                 ocmRepo={ocmRepo}
                 complianceSummaryFetchDetails={complianceSummaryFetchDetails}
                 complianceDataFetchDetails={complianceDataFetchDetails}
                 fetchComplianceSummary={fetchComplianceSummary}
-                scanConfig={scanConfig}
+                scanCfg={scanCfg}
+                findingCfgs={findingCfgs}
               />
             })
           }
@@ -690,7 +726,8 @@ ArtefactDetails.propTypes = {
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   complianceDataFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-  scanConfig: PropTypes.object,
+  scanCfg: PropTypes.object,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -699,7 +736,8 @@ const Artefacts = ({
   ocmRepo,
   complianceSummaryFetchDetails,
   fetchComplianceSummary,
-  scanConfig,
+  scanCfg,
+  findingCfgs,
 }) => {
   const artefacts = React.useMemo(() => {
     return [{
@@ -712,15 +750,19 @@ const Artefacts = ({
   ])
 
   const types = React.useMemo(() => {
+    const retrieveCodechecks = findingCfgs.find((findingCfg) => findingCfg.type === FINDING_TYPES.CODECHECKS_AGGREGATED)
+    const retrieveOsIds = findingCfgs.find((findingCfg) => findingCfg.type === FINDING_TYPES.OS_IDS)
+
     return [
       artefactMetadataTypes.ARTEFACT_SCAN_INFO,
-      artefactMetadataTypes.CODECHECKS_AGGREGATED,
-      artefactMetadataTypes.OS_IDS,
+      ...retrieveCodechecks ? [FINDING_TYPES.CODECHECKS_AGGREGATED] : [],
+      ...retrieveOsIds ? [FINDING_TYPES.OS_IDS] : [],
     ]
   }, [
+    findingCfgs,
     artefactMetadataTypes.ARTEFACT_SCAN_INFO,
-    artefactMetadataTypes.CODECHECKS_AGGREGATED,
-    artefactMetadataTypes.OS_IDS,
+    FINDING_TYPES.CODECHECKS_AGGREGATED,
+    FINDING_TYPES.OS_IDS,
   ])
 
   const params = React.useMemo(() => {
@@ -771,7 +813,8 @@ const Artefacts = ({
       complianceSummaryFetchDetails={complianceSummaryFetchDetails}
       complianceDataFetchDetails={complianceDataFetchDetails}
       fetchComplianceSummary={fetchComplianceSummary}
-      scanConfig={scanConfig}
+      scanCfg={scanCfg}
+      findingCfgs={findingCfgs}
     />
     <ArtefactDetails
       component={component}
@@ -781,7 +824,8 @@ const Artefacts = ({
       complianceSummaryFetchDetails={complianceSummaryFetchDetails}
       complianceDataFetchDetails={complianceDataFetchDetails}
       fetchComplianceSummary={fetchComplianceSummary}
-      scanConfig={scanConfig}
+      scanCfg={scanCfg}
+      findingCfgs={findingCfgs}
     />
     <ComponentReferences
       component={component}
@@ -795,47 +839,47 @@ Artefacts.propTypes = {
   ocmRepo: PropTypes.string,
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-  scanConfig: PropTypes.object,
+  scanCfg: PropTypes.object,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
 const ArtefactTableRow = ({
-  component,
-  artefact,
+  ocmNode,
   ocmRepo,
   complianceSummaryFetchDetails,
   complianceDataFetchDetails,
   fetchComplianceSummary,
-  scanConfig,
+  scanCfg,
+  findingCfgs,
 }) => {
-  return <TableRow
-    key={generateArtefactID(artefact)}
-    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-  >
-    <IconCell artefact={artefact}/>
-    <ArtefactCell artefact={artefact} component={component}/>
+  return <TableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+    <IconCell artefact={ocmNode.artefact}/>
+    <ArtefactCell ocmNode={ocmNode}/>
     <FeatureDependent requiredFeatures={[features.DELIVERY_DB]}>
-      <ComplianceCell
-        component={component}
-        artefact={artefact}
-        ocmRepo={ocmRepo}
-        complianceSummaryFetchDetails={complianceSummaryFetchDetails}
-        complianceDataFetchDetails={complianceDataFetchDetails}
-        fetchComplianceSummary={fetchComplianceSummary}
-        scanConfig={scanConfig}
-      />
+      {
+        findingCfgs.length > 0 && <ComplianceCell
+          ocmNode={ocmNode}
+          ocmRepo={ocmRepo}
+          complianceSummaryFetchDetails={complianceSummaryFetchDetails}
+          complianceDataFetchDetails={complianceDataFetchDetails}
+          fetchComplianceSummary={fetchComplianceSummary}
+          scanCfg={scanCfg}
+          findingCfgs={findingCfgs}
+        />
+      }
     </FeatureDependent>
   </TableRow>
 }
 ArtefactTableRow.displayName = 'ArtefactTableRow'
 ArtefactTableRow.propTypes = {
-  component: PropTypes.object,
-  artefact: PropTypes.object,
+  ocmNode: PropTypes.instanceOf(OcmNode).isRequired,
   ocmRepo: PropTypes.string,
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   complianceDataFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-  scanConfig: PropTypes.object,
+  scanCfg: PropTypes.object,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -970,7 +1014,7 @@ const ComponentReferencedBy = ({
       ? component.comp_ref
       : [{name: component.name, version: component.version}]
   )
-  
+
   if (referenced_by_path.length == 1) return null
 
   return <Stack direction='column' spacing={4}>
@@ -1321,6 +1365,8 @@ const FetchComponentRefsTab = React.memo(({
   ocmRepo,
   searchQuery,
   setComponentRefs,
+  scanCfg,
+  findingCfgs,
 }) => {
   const [componentRefs, state] = useFetchBom({
     componentName: component.name,
@@ -1348,6 +1394,8 @@ const FetchComponentRefsTab = React.memo(({
     ocmRepo={ocmRepo}
     componentRefs={componentRefs.componentDependencies}
     searchQuery={searchQuery}
+    scanCfg={scanCfg}
+    findingCfgs={findingCfgs}
   />
 })
 FetchComponentRefsTab.displayName = 'FetchComponentRefsTab'
@@ -1356,6 +1404,8 @@ FetchComponentRefsTab.propTypes = {
   ocmRepo: PropTypes.string,
   searchQuery: PropTypes.string,
   setComponentRefs: PropTypes.func.isRequired,
+  scanCfg: PropTypes.object,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -1370,12 +1420,30 @@ export const BomTab = React.memo(({
 
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [specialComponentsFeature, setSpecialComponentsFeature] = React.useState()
+  const [scanCfgFeature, setScanCfgFeature] = React.useState()
+  const [findingCfgsFeature, setFindingCfgsFeature] = React.useState()
 
   React.useEffect(() => {
     return registerCallbackHandler({
       featureRegistrationContext: featureRegistrationContext,
       featureName: features.SPECIAL_COMPONENTS,
       callback: ({feature}) => setSpecialComponentsFeature(feature),
+    })
+  }, [featureRegistrationContext])
+
+  React.useEffect(() => {
+    return registerCallbackHandler({
+      featureRegistrationContext: featureRegistrationContext,
+      featureName: features.SCAN_CONFIGURATION,
+      callback: ({feature}) => setScanCfgFeature(feature),
+    })
+  }, [featureRegistrationContext])
+
+  React.useEffect(() => {
+    return registerCallbackHandler({
+      featureRegistrationContext: featureRegistrationContext,
+      featureName: features.FINDING_CONFIGURATIONS,
+      callback: ({feature}) => setFindingCfgsFeature(feature),
     })
   }, [featureRegistrationContext])
 
@@ -1387,6 +1455,9 @@ export const BomTab = React.memo(({
 
     return specialComponentsFeature.cfg.specialComponents.find(c => c.name === component.name)
   }
+
+  const scanCfg = scanCfgFeature?.isAvailable ? scanCfgFeature.scan_cfg : null
+  const findingCfgs = findingCfgsFeature?.isAvailable ? findingCfgsFeature.finding_cfgs : []
 
   return <Box
     display='flex'
@@ -1408,6 +1479,8 @@ export const BomTab = React.memo(({
         ocmRepo={ocmRepo}
         searchQuery={searchQuery}
         setComponentRefs={setComponentRefs}
+        scanCfg={scanCfg}
+        findingCfgs={findingCfgs}
       />
     }
   </Box>
@@ -1427,6 +1500,8 @@ const FetchDependenciesTab = React.memo(({
   ocmRepo,
   componentRefs,
   searchQuery,
+  scanCfg,
+  findingCfgs,
 }) => {
   const compareComponentsByName = (a, b) => {
     return trimComponentName(a.name).localeCompare(trimComponentName(b.name))
@@ -1485,6 +1560,8 @@ const FetchDependenciesTab = React.memo(({
       component={component}
       ocmRepo={ocmRepo}
       isParentComponent={true}
+      scanCfg={scanCfg}
+      findingCfgs={findingCfgs}
     />
     <div style={{ padding: '0.5em' }} />
     <Stack
@@ -1499,6 +1576,8 @@ const FetchDependenciesTab = React.memo(({
           isComponentsLoading={state.isLoading}
           isComponentsError={state.error}
           ocmRepo={ocmRepo}
+          scanCfg={scanCfg}
+          findingCfgs={findingCfgs}
         />
       </Box>
       <Box
@@ -1509,6 +1588,8 @@ const FetchDependenciesTab = React.memo(({
           isComponentsLoading={state.isLoading}
           isComponentsError={state.error}
           ocmRepo={ocmRepo}
+          scanCfg={scanCfg}
+          findingCfgs={findingCfgs}
         />
       </Box>
     </Stack>
@@ -1520,6 +1601,8 @@ FetchDependenciesTab.propTypes = {
   ocmRepo: PropTypes.string,
   componentRefs: PropTypes.arrayOf(PropTypes.object).isRequired,
   searchQuery: PropTypes.string,
+  scanCfg: PropTypes.object,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -1625,6 +1708,7 @@ SpecialComponentStatus.propTypes = {
 export const ComponentChip = ({
   component,
   complianceSummaryFetchDetails,
+  findingCfgs,
 }) => {
   const {complianceSummary, isSummaryLoading, isSummaryError} = complianceSummaryFetchDetails
   const ErrorChip = () => <Chip
@@ -1651,40 +1735,47 @@ export const ComponentChip = ({
    */
   if (!componentSummary) return <ErrorChip/>
 
-  const mostCriticalSeverity = componentSummary.entries.reduce((max, element) => {
-    if (findSeverityCfgByName({name: element.severity}).value > findSeverityCfgByName({name: max.severity}).value) {
-      return element
-    } else {
-      return max
-    }
-  })
+  const worstEntry = componentSummary.entries.reduce((worstEntry, entry) => {
+    if (entry.value <= 0) return worstEntry
 
-  const mostCriticalSeverityValues = componentSummary.entries.filter((element) => {
-    return findSeverityCfgByName({name: element.severity}).value === findSeverityCfgByName({name: mostCriticalSeverity.severity}).value
-  })
+    return !worstEntry || entry.value > worstEntry.value ? entry : worstEntry
+  }, null)
+
+  if (!worstEntry) return null
+
+  const worstEntriesCount = componentSummary.entries.filter((entry) => entry.value === worstEntry.value).length
 
   const IndicatorTooltipTitle = ({ summaries }) => {
     return <Stack direction='column' spacing={1}>
       {
         summaries.map((summary) => {
-          let typedef = findTypedefByName({name: summary.type})
-          if (!typedef) typedef = defaultTypedefForName({name: summary.type})
-          const severityCfg = findSeverityCfgByName({name: summary.severity})
-          const Indicator = severityCfg.Indicator
+          const Indicator = categorisationValueToIndicator(summary.value)
+
+          const findingCfg = findingCfgForType({
+            findingType: summary.type,
+            findingCfgs: findingCfgs,
+          })
+          const categorisation = findCategorisationById({
+            id: summary.categorisation,
+            findingCfg: findingCfg,
+          })
+          const displayName = categorisation
+            ? categorisation.display_name
+            : summary.categorisation
 
           return <Stack
-            key={JSON.stringify(summary)}
+            key={summary.type}
             direction='column'
             spacing={1}
           >
-            <Stack direction='row' spacing={1} key={JSON.stringify(summary)+'_title'}>
-              <Indicator color={severityCfg.color} size='small'/>
+            <Stack direction='row' spacing={1} key={summary.type + '_title'}>
+              <Indicator color={categorisationValueToColor(summary.value)} size='small'/>
               <Box display='flex' alignItems='center' justifyContent='center'>
-                <Typography>{typedef.friendlyName}</Typography>
+                <Typography>{findingTypeToDisplayName(summary.type)}</Typography>
               </Box>
             </Stack>
-            <Stack direction='column' spacing={0} key={JSON.stringify(summary)+'_body'}>
-              <Typography variant='caption'>Severity: {summary.severity}</Typography>
+            <Stack direction='column' spacing={0} key={summary.type + '_body'}>
+              <Typography variant='caption'>Severity: {displayName}</Typography>
               <Typography variant='caption'>Source: {summary.source}</Typography>
               <Typography variant='caption'>ScanStatus: {summary.scanStatus}</Typography>
             </Stack>
@@ -1699,30 +1790,18 @@ export const ComponentChip = ({
     summaries: PropTypes.array.isRequired,
   }
 
-  // only medium and more severe
-  if (!(findSeverityCfgByName({name : mostCriticalSeverity.severity}).value >= findSeverityCfgByName({name: REPORTING_MINIMUM_SEVERITY}).value)) return null
-
-  componentSummary.entries.sort((left, right) => {
-    const leftCfg = findSeverityCfgByName({name: left.severity})
-    const rightCfg = findSeverityCfgByName({name: right.severity})
-    if (leftCfg.value > rightCfg.value) return -1
-    if (leftCfg.value < rightCfg.value) return 1
-    return 0
-  })
-
-  const severityCfg = findSeverityCfgByName({name: mostCriticalSeverity.severity})
-  const Indicator = severityCfg.Indicator
+  const Indicator = categorisationValueToIndicator(worstEntry.value)
 
   return <Box display='flex' alignItems='center' justifyContent='center'>
     <Tooltip
-      title={<IndicatorTooltipTitle summaries={componentSummary.entries}/>}
+      title={<IndicatorTooltipTitle summaries={componentSummary.entries.sort((left, right) => right.value - left.value)}/>}
     >
       <Badge
-        badgeContent={mostCriticalSeverityValues.length}
+        badgeContent={worstEntriesCount}
         color='primary'
-        invisible={mostCriticalSeverityValues.length > 1 ? false : true}
+        invisible={worstEntriesCount <= 1}
       >
-        <Indicator color={severityCfg.color}/>
+        <Indicator color={categorisationValueToColor(worstEntry.value)}/>
       </Badge>
     </Tooltip>
   </Box>
@@ -1731,6 +1810,7 @@ ComponentChip.displayName = 'ComponentChip'
 ComponentChip.propTypes = {
   component: PropTypes.object.isRequired,
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
@@ -1779,28 +1859,17 @@ const osInfoReason = (resource) => {
 
 
 const IssueChip = ({
-  ocmNodes,
-  component,
-  artefact,
-  scanConfig,
+  ocmNode,
+  issueReplicatorCfg,
 }) => {
-  if (!scanConfig) return
+  const ocmNodes = React.useMemo(() => [ocmNode], [ocmNode])
+  const mapping = issueReplicatorCfg.mappings.find((mapping) => ocmNode.component.name.startsWith(mapping.prefix))
 
-  // if artefact type filter is set, don't show license chip for types that are filtered out
-  const artefactTypes = scanConfig.config.issueReplicator.artefact_types
-    ? scanConfig.config.issueReplicator.artefact_types
-    : scanConfig.config.defaults.artefact_types
+  if (!mapping) return
 
-  if (
-    artefactTypes
-    && !artefactTypes.some((type) => ocmNodes.map((ocmNode) => ocmNode.artefact.type).includes(type))
-  ) {
-    return
-  }
-
-  const repoUrl = scanConfig.config.issueReplicator.github_issues_target_repository_url
+  const repoUrl = mapping.github_repository
   const issueState = encodeURIComponent('is:open')
-  const name = encodeURIComponent(`${component.name}:${artefact.name}`)
+  const name = encodeURIComponent(`${ocmNode.component.name}:${ocmNode.artefact.name}`)
   const repoUrlForArtefact = `https://${repoUrl}/issues?q=${issueState}+${name}`
 
   return <Tooltip
@@ -1808,7 +1877,6 @@ const IssueChip = ({
       <List>
         <TriggerComplianceToolButton
           ocmNodes={ocmNodes}
-          cfgName={scanConfig.name}
           service={COMPLIANCE_TOOLS.ISSUE_REPLICATOR}
         />
         <ListItemButton
@@ -1845,16 +1913,14 @@ const IssueChip = ({
 }
 IssueChip.displayName = 'IssueChip'
 IssueChip.propTypes = {
-  ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
-  component: PropTypes.object.isRequired,
-  artefact: PropTypes.object.isRequired,
-  scanConfig: PropTypes.object,
+  ocmNode: PropTypes.instanceOf(OcmNode).isRequired,
+  issueReplicatorCfg: PropTypes.object.isRequired,
 }
 
 
 const OsCell = ({
   osData,
-  severity,
+  categorisation,
   isLoading,
 }) => {
   const osInfo = osData?.data.os_info
@@ -1916,14 +1982,14 @@ const OsCell = ({
             size='small'
           /> : <Chip
             label={`${osInfo.ID} ${osInfo.VERSION_ID ?? ''}`}
-            color={severity.color}
+            color={categorisationValueToColor(categorisation.value)}
             variant='outlined'
             size='small'
           />
         ) : (
           isLoading ? <Chip
-            label={`OS Info ${capitalise(severity.name)}`}
-            color={severity.color}
+            label={`OS Info ${capitalise(categorisation.display_name)}`}
+            color={categorisationValueToColor(categorisation.value)}
             variant='outlined'
             size='small'
           /> : <Chip
@@ -1941,7 +2007,7 @@ const OsCell = ({
 OsCell.displayName = 'OsCell'
 OsCell.propTypes = {
   osData: PropTypes.object,
-  severity: PropTypes.object.isRequired,
+  categorisation: PropTypes.object.isRequired,
   isLoading: PropTypes.bool.isRequired,
 }
 
@@ -2019,15 +2085,15 @@ const lastScanTimestampStr = (lastScan) => {
 
 
 const ComplianceCell = ({
-  component,
-  artefact,
+  ocmNode,
   ocmRepo,
   complianceSummaryFetchDetails,
   complianceDataFetchDetails,
   fetchComplianceSummary,
-  scanConfig,
+  scanCfg,
+  findingCfgs,
 }) => {
-  const {complianceSummary, isSummaryLoading, isSummaryError} = complianceSummaryFetchDetails
+  const {complianceSummary, isSummaryError} = complianceSummaryFetchDetails
   const {complianceData, state} = complianceDataFetchDetails
 
   const [mountRescoring, setMountRescoring] = React.useState(false)
@@ -2035,40 +2101,41 @@ const ComplianceCell = ({
 
   const componentSummary = complianceSummary?.complianceSummary.find((componentSummary) => {
     return (
-      componentSummary.componentId.name === component.name
-      && componentSummary.componentId.version === component.version
+      componentSummary.componentId.name === ocmNode.component.name
+      && componentSummary.componentId.version === ocmNode.component.version
     )
   })
 
   const artefactSummary = componentSummary?.artefacts.find((artefactSummary) => {
     return (
-      artefactSummary.artefact.artefact_kind === artefact.kind
-      && artefactSummary.artefact.artefact.artefact_name === artefact.name
-      && artefactSummary.artefact.artefact.artefact_version === artefact.version
-      && artefactSummary.artefact.artefact.artefact_type === artefact.type
+      artefactSummary.artefact.artefact_kind === ocmNode.artefactKind
+      && artefactSummary.artefact.artefact.artefact_name === ocmNode.artefact.name
+      && artefactSummary.artefact.artefact.artefact_version === ocmNode.artefact.version
+      && artefactSummary.artefact.artefact.artefact_type === ocmNode.artefact.type
       && normaliseExtraIdentity(artefactSummary.artefact.artefact.artefact_extra_id)
-        === normaliseExtraIdentity(artefact.extraIdentity)
+        === ocmNode.normalisedExtraIdentity()
     )
   })
 
   const handleRescoringClose = React.useCallback(() => setMountRescoring(false), [setMountRescoring])
-  const ocmNodes = React.useMemo(() => [
-    new OcmNode([component], artefact, ARTEFACT_KIND.RESOURCE),
-  ], [component, artefact])
+  const ocmNodes = React.useMemo(() => [ocmNode], [ocmNode])
 
-  if (isSummaryError || state.error || (!isSummaryLoading && !artefactSummary)) return <TableCell>
+  const manuallyRescorableFindingTypes = rescorableFindingTypes({findingCfgs})
+
+  if (isSummaryError || state.error) return <TableCell>
     {
       mountRescoring && <RescoringModal
         ocmNodes={ocmNodes}
         ocmRepo={ocmRepo}
         handleClose={handleRescoringClose}
         fetchComplianceSummary={fetchComplianceSummary}
-        scanConfig={scanConfig}
+        initialFindingType={manuallyRescorableFindingTypes[0]} // we checked there is at least one finding type
+        findingCfgs={findingCfgs}
       />
     }
     {
       mountComplianceTool && <ComplianceToolPopover
-        popoverProps={{component}}
+        popoverProps={{component: ocmNode.component}}
         handleClose={(e) => {
           e.stopPropagation()
           setMountComplianceTool(false)
@@ -2083,10 +2150,12 @@ const ComplianceCell = ({
       <Tooltip
         title={
           <List>
-            <RescoringButton
-              setMountRescoring={setMountRescoring}
-              title={'Rescoring'}
-            />
+            {
+              manuallyRescorableFindingTypes.length > 0 && <RescoringButton
+                setMountRescoring={setMountRescoring}
+                title={'Rescoring'}
+              />
+            }
             <ListItemButton onClick={(e) => {
               e.stopPropagation()
               setMountComplianceTool(prev => !prev)
@@ -2115,80 +2184,112 @@ const ComplianceCell = ({
     </Grid>
   </TableCell>
 
-  const getMaxSeverity = (type) => {
-    if (!artefactSummary) return findSeverityCfgByName({name: SEVERITIES.UNKNOWN})
-    const entry = artefactSummary.entries.find((summary) => summary.type === type)
-    return findSeverityCfgByName({name: entry.severity})
+  const getCategorisation = (findingType) => {
+    const findingCfg = findingCfgForType({findingType, findingCfgs})
+    const entry = artefactSummary?.entries.find((summary) => summary.type === findingType)
+    return findCategorisationById({
+      id: entry?.categorisation ?? SUMMARY_CATEGORISATIONS.UNKNOWN,
+      findingCfg: findingCfg,
+    })
   }
 
   const complianceFiltered = complianceData?.filter(artefactMetadataFilter({
-    artefactKind: artefact.kind,
-    artefactName: artefact.name,
-    artefactVersion: artefact.version,
-    artefactType: artefact.type,
-    artefactExtraId: artefact.extraIdentity,
+    artefactKind: ocmNode.artefact.kind,
+    artefactName: ocmNode.artefact.name,
+    artefactVersion: ocmNode.artefact.version,
+    artefactType: ocmNode.artefact.type,
+    artefactExtraId: ocmNode.artefact.extraIdentity,
   }))
 
-  const osData = complianceFiltered?.find((d) => d.meta.type === artefactMetadataTypes.OS_IDS)
-  const codecheckData = complianceFiltered?.find((d) => d.meta.type === artefactMetadataTypes.CODECHECKS_AGGREGATED)
+  const osData = complianceFiltered?.find((d) => d.meta.type === FINDING_TYPES.OS_IDS)
+  const codecheckData = complianceFiltered?.find((d) => d.meta.type === FINDING_TYPES.CODECHECKS_AGGREGATED)
 
   const lastBdbaScan = findLastScan(complianceFiltered, datasources.BDBA)
   const lastMalwareScan = findLastScan(complianceFiltered, datasources.CLAMAV)
 
+  const retrieveCodecheckFindings = retrieveFindingsForType({
+    findingType: FINDING_TYPES.CODECHECKS_AGGREGATED,
+    findingCfgs: findingCfgs,
+    ocmNode: ocmNode,
+  })
+  const retrieveLicenseFindings = retrieveFindingsForType({
+    findingType: FINDING_TYPES.LICENSE,
+    findingCfgs: findingCfgs,
+    ocmNode: ocmNode,
+  })
+  const retrieveMalwareFindings = retrieveFindingsForType({
+    findingType: FINDING_TYPES.MALWARE,
+    findingCfgs: findingCfgs,
+    ocmNode: ocmNode,
+  })
+  const retrieveOsIdFindings = retrieveFindingsForType({
+    findingType: FINDING_TYPES.OS_IDS,
+    findingCfgs: findingCfgs,
+    ocmNode: ocmNode,
+  })
+  const retrieveVulnerabilityFindings = retrieveFindingsForType({
+    findingType: FINDING_TYPES.VULNERABILITY,
+    findingCfgs: findingCfgs,
+    ocmNode: ocmNode,
+  })
+
   return <TableCell>
     <Grid container direction='row-reverse' spacing={1}>
-      <IssueChip
-        ocmNodes={ocmNodes}
-        component={component}
-        artefact={artefact}
-        scanConfig={scanConfig?.config && COMPLIANCE_TOOLS.ISSUE_REPLICATOR in scanConfig.config ? scanConfig : null}
-      />
       {
-        artefact.kind === ARTEFACT_KIND.RESOURCE && <BDBACell
+        scanCfg?.issue_replicator && <IssueChip
+          ocmNode={ocmNode}
+          issueReplicatorCfg={scanCfg.issue_replicator}
+        />
+      }
+      {
+        scanCfg?.bdba && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveLicenseFindings && <RescoringCell
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
-          type={artefactMetadataTypes.LICENSE}
-          severity={getMaxSeverity(artefactMetadataTypes.LICENSE)}
+          datasource={datasources.BDBA}
+          type={FINDING_TYPES.LICENSE}
+          categorisation={getCategorisation(FINDING_TYPES.LICENSE)}
           lastScan={lastBdbaScan}
-          scanConfig={scanConfig?.config && COMPLIANCE_TOOLS.BDBA in scanConfig.config ? scanConfig : null}
+          findingCfgs={findingCfgs}
           fetchComplianceSummary={fetchComplianceSummary}
           isLoading={state.isLoading}
         />
       }
       {
-        artefact.kind === ARTEFACT_KIND.RESOURCE && <MalwareFindingCell
+        scanCfg?.clamav && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveMalwareFindings && <RescoringCell
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
-          metadataTypedef={findTypedefByName({name: artefactMetadataTypes.FINDING_MALWARE})}
-          scanConfig={scanConfig?.config && COMPLIANCE_TOOLS.CLAMAV in scanConfig.config ? scanConfig : null}
-          fetchComplianceSummary={fetchComplianceSummary}
+          datasource={datasources.CLAMAV}
+          type={FINDING_TYPES.MALWARE}
+          categorisation={getCategorisation(FINDING_TYPES.MALWARE)}
           lastScan={lastMalwareScan}
-          severity={getMaxSeverity(artefactMetadataTypes.FINDING_MALWARE)}
+          findingCfgs={findingCfgs}
+          fetchComplianceSummary={fetchComplianceSummary}
           isLoading={state.isLoading}
         />
       }
       {
-        artefact.kind === ARTEFACT_KIND.RESOURCE && <OsCell
+        ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveOsIdFindings && <OsCell
           osData={osData}
-          severity={getMaxSeverity(artefactMetadataTypes.OS_IDS)}
+          categorisation={getCategorisation(FINDING_TYPES.OS_IDS)}
           isLoading={state.isLoading}
         />
       }
       {
-        artefact.kind === ARTEFACT_KIND.SOURCE && <CodecheckCell
+        ocmNode.artefactKind === ARTEFACT_KIND.SOURCE && retrieveCodecheckFindings && <CodecheckCell
           data={codecheckData?.data}
-          severity={artefactMetadatumSeverity(codecheckData)}
+          categorisation={getCategorisation(FINDING_TYPES.CODECHECKS_AGGREGATED)}
           timestamp={codecheckData?.meta.creation_date}
         />
       }
       {
-        artefact.kind === ARTEFACT_KIND.RESOURCE && <BDBACell
+        scanCfg?.bdba && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveVulnerabilityFindings && <RescoringCell
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
-          type={artefactMetadataTypes.VULNERABILITY}
-          severity={getMaxSeverity(artefactMetadataTypes.VULNERABILITY)}
+          datasource={datasources.BDBA}
+          type={FINDING_TYPES.VULNERABILITY}
+          categorisation={getCategorisation(FINDING_TYPES.VULNERABILITY)}
           lastScan={lastBdbaScan}
-          scanConfig={scanConfig?.config && COMPLIANCE_TOOLS.BDBA in scanConfig.config ? scanConfig : null}
+          findingCfgs={findingCfgs}
           fetchComplianceSummary={fetchComplianceSummary}
           isLoading={state.isLoading}
         />
@@ -2198,20 +2299,21 @@ const ComplianceCell = ({
 }
 ComplianceCell.displayName = 'ComplianceCell'
 ComplianceCell.propTypes = {
-  component: PropTypes.object.isRequired,
-  artefact: PropTypes.object.isRequired,
+  ocmNode: PropTypes.instanceOf(OcmNode).isRequired,
   ocmRepo: PropTypes.string,
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   complianceDataFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-  scanConfig: PropTypes.object,
+  scanCfg: PropTypes.object,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
 const ArtefactCell = ({
-  artefact,
-  component,
+  ocmNode,
 }) => {
+  const component = ocmNode.component
+  const artefact = ocmNode.artefact
   const artefactDisplayName = `${artefact.name}:${artefact.version}`
   const downloadUrl = new URL(routes.ocm.artefactsBlob)
   appendPresentParams(downloadUrl, {
@@ -2300,17 +2402,16 @@ const ArtefactCell = ({
 }
 ArtefactCell.displayName = 'ArtefactCell'
 ArtefactCell.propTypes = {
-  artefact: PropTypes.object.isRequired,
-  component: PropTypes.object.isRequired,
+  ocmNode: PropTypes.instanceOf(OcmNode).isRequired,
 }
 
 
 const CodecheckCell = ({
   data,
-  severity,
+  categorisation,
   timestamp,
 }) => {
-  if (severity.name === findSeverityCfgByName({name: SEVERITIES.UNKNOWN}).name) return <Tooltip
+  if (categorisation.value === -1 || !data) return <Tooltip
     title={<Typography variant='inherit'>No last scan</Typography>}
   >
     <Grid item>
@@ -2347,7 +2448,7 @@ const CodecheckCell = ({
   >
     <Grid item>
       <Chip
-        color={severity.color}
+        color={categorisationValueToColor(categorisation.value)}
         label={<Link color={'inherit'}>Codechecks</Link>}
         variant='outlined'
         size='small'
@@ -2365,7 +2466,7 @@ const CodecheckCell = ({
 CodecheckCell.displayName = 'CodecheckCell'
 CodecheckCell.propTypes = {
   data: PropTypes.object,
-  severity: PropTypes.object.isRequired,
+  categorisation: PropTypes.object.isRequired,
   timestamp: PropTypes.string,
 }
 
@@ -2424,117 +2525,14 @@ BDBAButton.propTypes = {
 }
 
 
-const MalwareFindingCell = ({
+const RescoringCell = ({
   ocmNodes,
   ocmRepo,
-  metadataTypedef,
-  scanConfig,
-  fetchComplianceSummary,
-  lastScan,
-  severity,
-  isLoading,
-}) => {
-  const [mountRescoring, setMountRescoring] = React.useState(false)
-
-  const handleRescoringClose = () => {
-    setMountRescoring(false)
-  }
-
-  if (scanConfig) {
-    // if artefact type filter is set, don't show bdba cell for types that are filtered out
-    const artefactTypes = scanConfig.config.clamav.artefact_types
-      ? scanConfig.config.clamav.artefact_types
-      : scanConfig.config.defaults.artefact_types
-
-    if (
-      artefactTypes
-      && !artefactTypes.some((type) => ocmNodes.map((ocmNode) => ocmNode.artefact.type).includes(type))
-    ) {
-      return null
-    }
-  }
-
-  const title = metadataTypedef.friendlyName
-
-  return <Grid item onClick={(e) => e.stopPropagation()}>
-    {
-      mountRescoring && <RescoringModal
-        ocmNodes={ocmNodes}
-        ocmRepo={ocmRepo}
-        handleClose={handleRescoringClose}
-        fetchComplianceSummary={fetchComplianceSummary}
-        scanConfig={scanConfig}
-      />
-    }
-    <Tooltip
-      title={
-        <Stack>
-          <List>
-            {
-              scanConfig && <TriggerComplianceToolButton
-                ocmNodes={ocmNodes}
-                cfgName={scanConfig.name}
-                service={COMPLIANCE_TOOLS.CLAMAV}
-              />
-            }
-            <RescoringButton
-              setMountRescoring={setMountRescoring}
-              title={'Rescoring'}
-            />
-          </List>
-          {
-            isLoading ? <Skeleton/> : <Typography variant='inherit'>
-              {
-                lastScanTimestampStr(lastScan)
-              }
-            </Typography>
-          }
-        </Stack>
-      }
-    >
-      {
-        lastScan || isLoading ? <Chip
-          color={severity.color}
-          label={severity.name === SEVERITIES.CLEAN
-            ? `No ${title} Findings`
-            : `${title} ${capitalise(severity.name)}`
-          }
-          variant='outlined'
-          size='small'
-          icon={<UnfoldMoreIcon/>}
-          clickable={false}
-        /> : <Chip
-          color='default'
-          label={`No ${title} Scan`}
-          variant='outlined'
-          size='small'
-          icon={<UnfoldMoreIcon/>}
-          clickable={false}
-        />
-      }
-    </Tooltip>
-  </Grid>
-}
-MalwareFindingCell.displayName = 'MalwareFindingCell'
-MalwareFindingCell.propTypes = {
-  ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
-  ocmRepo: PropTypes.string,
-  metadataTypedef: PropTypes.object.isRequired,
-  severity: PropTypes.object.isRequired,
-  lastScan: PropTypes.object,
-  scanConfig: PropTypes.object,
-  fetchComplianceSummary: PropTypes.func.isRequired,
-  isLoading: PropTypes.bool.isRequired,
-}
-
-
-const BDBACell = ({
-  ocmNodes,
-  ocmRepo,
+  datasource,
   type,
-  severity,
+  categorisation,
   lastScan,
-  scanConfig,
+  findingCfgs,
   fetchComplianceSummary,
   isLoading,
 }) => {
@@ -2544,22 +2542,7 @@ const BDBACell = ({
     setMountRescoring(false)
   }
 
-  if (scanConfig) {
-    // if artefact type filter is set, don't show bdba cell for types that are filtered out
-    const artefactTypes = scanConfig.config.bdba.artefact_types
-      ? scanConfig.config.bdba.artefact_types
-      : scanConfig.config.defaults.artefact_types
-
-    if (
-      artefactTypes
-      && !artefactTypes.some((type) => ocmNodes.map((ocmNode) => ocmNode.artefact.type).includes(type))
-    ) {
-      return null
-    }
-  }
-
-  const title = findTypedefByName({name: type}).friendlyName
-  const reportUrl = lastScan?.data.report_url
+  const title = findingTypeToDisplayName(type)
 
   return <Grid item onClick={(e) => e.stopPropagation()}>
     {
@@ -2568,26 +2551,26 @@ const BDBACell = ({
         ocmRepo={ocmRepo}
         handleClose={handleRescoringClose}
         fetchComplianceSummary={fetchComplianceSummary}
-        scanConfig={scanConfig}
+        initialFindingType={type}
+        findingCfgs={findingCfgs}
       />
     }
     <Tooltip
       title={
         <Stack>
           <List>
-            {
-              scanConfig && <TriggerComplianceToolButton
-                ocmNodes={ocmNodes}
-                cfgName={scanConfig.name}
-                service={COMPLIANCE_TOOLS.BDBA}
-              />
-            }
+            <TriggerComplianceToolButton
+              ocmNodes={ocmNodes}
+              service={datasource}
+            />
             <RescoringButton
               setMountRescoring={setMountRescoring}
               title={'Rescoring'}
             />
             {
-              reportUrl && <BDBAButton reportUrl={reportUrl}/>
+              datasource === datasources.BDBA && lastScan?.data.report_url && <BDBAButton
+                reportUrl={lastScan?.data.report_url}
+              />
             }
           </List>
           {
@@ -2602,10 +2585,10 @@ const BDBACell = ({
     >
       {
         lastScan || isLoading ? <Chip
-          color={severity.color}
-          label={severity.name === SEVERITIES.CLEAN
+          color={categorisationValueToColor(categorisation.value)}
+          label={categorisation.value === 0
             ? `No ${title} Findings`
-            : `${title} ${capitalise(severity.name)}`
+            : `${title} ${capitalise(categorisation.display_name)}`
           }
           variant='outlined'
           size='small'
@@ -2623,14 +2606,15 @@ const BDBACell = ({
     </Tooltip>
   </Grid>
 }
-BDBACell.displayName = 'BDBACell'
-BDBACell.propTypes = {
-  ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
+RescoringCell.displayName = 'RescoringCell'
+RescoringCell.propTypes = {
+  ocmNodes: PropTypes.arrayOf(PropTypes.instanceOf(OcmNode)).isRequired,
   ocmRepo: PropTypes.string,
+  datasource: PropTypes.string.isRequired,
   type: PropTypes.string.isRequired,
-  severity: PropTypes.object.isRequired,
+  categorisation: PropTypes.object.isRequired,
   lastScan: PropTypes.object,
-  scanConfig: PropTypes.object,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
   isLoading: PropTypes.bool.isRequired,
 }

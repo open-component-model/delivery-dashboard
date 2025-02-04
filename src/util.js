@@ -8,7 +8,6 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
 
 import PropTypes from 'prop-types'
 import yaml from 'js-yaml'
@@ -20,38 +19,11 @@ import {
   META_SPRINT_NAMES,
   OCM_REPO_AUTO_OPTION,
   PATH_KEY,
-  SEVERITIES,
   healthStatuses,
   tabConfig,
 } from './consts'
-import { artefactMetadataTypes, severityConfigs, worstSeverity } from './ocm/model'
-import {
-  artefactMetadataFilter,
-  artefactMetadataSeverityFilter,
-  artefactMetadataTypeFilter,
-} from './ocm/util'
+import { FINDING_TYPES } from './findings'
 
-
-export const defaultSeverityCfgForName = ({
-  name,
-}) => {
-  return {
-    name: name,
-    value: 0, // same as UNKNOWN
-    color: 'default',
-    Indicator: HelpOutlineOutlinedIcon,
-  }
-}
-
-export const findSeverityCfgByName = ({
-  name,
-  severityCfgs = severityConfigs,
-  defaultCfg = defaultSeverityCfgForName({name: name}),
-}) => {
-  const cfg = severityCfgs.find(e => e.name === name)
-  if (!cfg) return defaultCfg
-  return cfg
-}
 
 export const shortenComponentName = (fullName) => {
   return fullName.split('/').slice(-1)[0]
@@ -187,31 +159,6 @@ export const mostSpecificRescoring = (rescorings) => {
   return orderRescoringsBySpecificity(rescorings)[0]
 }
 
-export const rescoringProposalSeverity = (rescoringProposal) => {
-  const applicableRescorings = rescoringProposal.applicable_rescorings
-
-  if (applicableRescorings.length === 0) {
-    return rescoringProposal.finding.severity
-  }
-
-  return mostSpecificRescoring(applicableRescorings).data.severity
-}
-
-export const artefactMetadatumSeverity = (artefactMetadatum) => {
-  if (!artefactMetadatum) {
-    return findSeverityCfgByName({name: SEVERITIES.UNKNOWN})
-  } else if (artefactMetadatum.rescorings?.length > 0) {
-    const rescoring = mostSpecificRescoring(artefactMetadatum.rescorings)
-    const severityName = rescoring.data.severity
-
-    // findings have the severity `NONE` if they're assessed, however compliance status
-    // reporting uses `CLEAN` for this purpose
-    return findSeverityCfgByName({name: severityName === SEVERITIES.NONE ? SEVERITIES.CLEAN : severityName})
-  } else if (artefactMetadatum.data.severity) {
-    return findSeverityCfgByName({name: artefactMetadatum.data.severity})
-  }
-  return findSeverityCfgByName({name: artefactMetadatum.meta.severity})
-}
 
 export const filterRescoringsForFinding = (finding, rescorings) => {
   return rescorings.filter((rescoring) => {
@@ -241,21 +188,21 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
         !== normaliseExtraIdentity(finding.artefact.artefact.artefact_extra_id)
     ) return false
     if (
-      finding.meta.type === artefactMetadataTypes.VULNERABILITY
+      finding.meta.type === FINDING_TYPES.VULNERABILITY
       && (
         rescoring.data.finding.cve !== finding.data.cve
         || rescoring.data.finding.package_name !== finding.data.package_name
       )
     ) return false
     if (
-      finding.meta.type === artefactMetadataTypes.LICENSE
+      finding.meta.type === FINDING_TYPES.LICENSE
       && (
         rescoring.data.finding.license.name !== finding.data.license.name
         || rescoring.data.finding.package_name !== finding.data.package_name
       )
     ) return false
     if (
-      finding.meta.type === artefactMetadataTypes.FINDING_MALWARE
+      finding.meta.type === FINDING_TYPES.MALWARE
       && (
         rescoring.data.finding.malware !== finding.data.finding.malware
         || rescoring.data.finding.content_digest !== finding.data.finding.content_digest
@@ -276,24 +223,6 @@ export const mixupFindingsWithRescorings = (findings, rescorings) => {
   })
 }
 
-export const findingIsResolved = (rescoring) => {
-  if (rescoring.applicable_rescorings.length === 0) return false
-  const rescoringsOrderedBySpecificity = orderRescoringsBySpecificity(rescoring.applicable_rescorings)
-  return rescoringsOrderedBySpecificity[0].data.severity === SEVERITIES.NONE
-}
-
-export const sprintNameForRescoring = (rescoring) => {
-  const now = new Date(new Date().setHours(0, 0, 0, 0))
-
-  if (findingIsResolved(rescoring))
-    return META_SPRINT_NAMES.RESOLVED
-  if (!rescoring.sprint)
-    return null
-  if (new Date(rescoring.sprint.end_date) < now)
-    return META_SPRINT_NAMES.OVERDUE
-
-  return rescoring.sprint.name
-}
 
 export const formatAndSortSprints = (sprints) => {
   return sprints.map((sprint) => {
@@ -351,78 +280,6 @@ export const formatAndSortSprints = (sprints) => {
   })
 }
 
-export const artefactMetadataSeverityComparator = ({
-  left,
-  right,
-  ascending,
-}) => {
-  const leftSeverityCfg = artefactMetadatumSeverity(left)
-  const rightSeverityCfg = artefactMetadatumSeverity(right)
-
-  if (ascending) {
-    if (leftSeverityCfg.value > rightSeverityCfg.value) return 1
-    if (leftSeverityCfg.value < rightSeverityCfg.value) return -1
-  } else {
-    if (leftSeverityCfg.value > rightSeverityCfg.value) return -1
-    if (leftSeverityCfg.value < rightSeverityCfg.value) return 1
-  }
-  return 0
-}
-
-export const severityComparator = ({
-  left,
-  right,
-  artefactMetadata,
-  positiveListSeverity,
-  positiveListType,
-  ascending,
-}) => {
-
-  const leftArtefactMeta = artefactMetadata.filter(
-    artefactMetadataFilter({
-      artefactName: left.name,
-      artefactVersion: left.version,
-    })
-  ).filter(
-    artefactMetadataSeverityFilter({positiveList: positiveListSeverity})
-  ).filter(
-    artefactMetadataTypeFilter({positiveList: positiveListType})
-  )
-
-  const rightArtefactMeta = artefactMetadata.filter(
-    artefactMetadataFilter({
-      artefactName: right.name,
-      artefactVersion: right.version,
-    })
-  ).filter(
-    artefactMetadataSeverityFilter({positiveList: positiveListSeverity})
-  ).filter(
-    artefactMetadataTypeFilter({positiveList: positiveListType})
-  )
-
-  if (leftArtefactMeta.length === 0) return 1
-  if (rightArtefactMeta.length === 0) return 0
-
-  const leftSeverity = worstSeverity({artefactMetadataSequence: leftArtefactMeta}).value
-  const rightSeverity = worstSeverity({artefactMetadataSequence: rightArtefactMeta}).value
-
-  if (ascending) {
-    if (leftSeverity > rightSeverity) return 1
-    if (leftSeverity < rightSeverity) return -1
-  } else {
-    if (leftSeverity > rightSeverity) return -1
-    if (leftSeverity < rightSeverity) return 1
-  }
-  return 0
-}
-severityComparator.propTypes = {
-  left: PropTypes.object.isRequired,
-  right: PropTypes.object.isRequired,
-  artefactMetadata: PropTypes.arrayOf(PropTypes.object).isRequired,
-  positiveListSeverity: PropTypes.arrayOf(PropTypes.string).isRequired,
-  positiveListType: PropTypes.arrayOf(PropTypes.string).isRequired,
-  ascending: PropTypes.bool,
-}
 
 export const isFeatureState = (
   featureContext,
@@ -441,28 +298,6 @@ export const urlsFromRepoCtxFeature = (repoCtxFeature) => {
   }
 
   return [OCM_REPO_AUTO_OPTION, ...repoCtxFeature.cfg.repoContexts.map(rc => rc.baseUrl)]
-}
-
-export const worstSeverityByType = (
-  type,
-  complianceSummary,
-) => {
-  const forType = Object.values(complianceSummary)
-    .map(e => e.entries)
-    .map(entries => entries.find(entry => entry.type === type))
-    .filter(e => e !== undefined)
-
-  if (forType.length === 0) return null
-
-  return forType.reduce((worst, current) => {
-    if (!worst) return current
-
-    const worstSeverity = findSeverityCfgByName({ name: worst.severity })
-    const currentSeverity = findSeverityCfgByName({ name: current.severity })
-
-    if (currentSeverity.value > worstSeverity.value) return current
-    return worst
-  })
 }
 
 

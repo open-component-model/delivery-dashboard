@@ -19,44 +19,39 @@ import {
   Paper,
   Select,
   Stack,
-  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
-import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import ReportProblemIcon from '@mui/icons-material/ReportProblem'
-import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined'
-import PestControlIcon from '@mui/icons-material/PestControl'
-import CoronavirusIcon from '@mui/icons-material/Coronavirus'
-import ArticleIcon from '@mui/icons-material/Article'
 
 import PropTypes from 'prop-types'
 
-import { SEVERITIES } from '../consts'
 import {
-  artefactMetadataSeverityComparator,
-  artefactMetadatumSeverity,
   ExtraIdentityHover,
-  findSeverityCfgByName,
   mixupFindingsWithRescorings,
-  severityComparator,
   toYamlString,
   trimLongString,
 } from '../util'
 import {
   artefactMetadataFilter,
   generateArtefactID,
-  artefactMetadataSeverityFilter,
-  artefactMetadataTypeFilter,
 } from './util'
 import MultilineTextViewer from '../util/multilineTextViewer'
 import { useFetchComponentDescriptor, useFetchQueryMetadata } from '../fetch'
 import CopyOnClickChip from '../util/copyOnClickChip'
+import {
+  artefactMetadataCategorisationComparator,
+  artefactMetadataCategorisationFilter,
+  artefactsCategorisationComparator,
+  categorisationValueToColor,
+  categoriseFinding,
+  FINDING_TYPES,
+  findingCfgForType,
+  findingTypeToDisplayName,
+  worstCategorisation,
+} from '../findings'
 
 
 const knownLabelNames = {
@@ -70,11 +65,6 @@ Object.freeze(knownLabelNames)
 const artefactMetadataTypes = {
   ARTEFACT_SCAN_INFO: 'meta/artefact_scan_info',
   STRUCTURE_INFO: 'structure_info',
-  LICENSE: 'finding/license',
-  VULNERABILITY: 'finding/vulnerability',
-  FINDING_MALWARE: 'finding/malware',
-  OS_IDS: 'os_ids',
-  CODECHECKS_AGGREGATED: 'codechecks/aggregated',
   RESCORINGS: 'rescorings',
 }
 Object.freeze(artefactMetadataTypes)
@@ -110,66 +100,32 @@ export const dataKey = ({type, data}) => {
     props: [data.package_name, data.package_version],
   })
 
-  if (type === artefactMetadataTypes.LICENSE) return asKey({
+  if (type === FINDING_TYPES.LICENSE) return asKey({
     props: [data.package_name, data.package_version, data.license.name],
   })
 
-  if (type === artefactMetadataTypes.VULNERABILITY) return asKey({
+  if (type === FINDING_TYPES.VULNERABILITY) return asKey({
     props: [data.package_name, data.package_version, data.cve],
   })
 
-  if (type === artefactMetadataTypes.FINDING_MALWARE) return asKey({
+  if (type === FINDING_TYPES.MALWARE) return asKey({
     props: [data.finding.content_digest, data.finding.filename, data.finding.malware],
   })
 }
 
 
-/**
- * Icon representing severity, defaults to UNKNOWN
- * @param {String} severity   Severity
- * @param {Number} threshold  Return null if severity < threshold
- */
-const SeverityIndicator = ({ severity, threshold = null }) => {
-  if (!severity) return null
-
-  let color = findSeverityCfgByName({name: SEVERITIES.UNKNOWN}).color
-
-  if (threshold && !(severity.value >= threshold)) {
-    return null
-  }
-
-  if (severity.color) color = severity.color
+const CategorisationIndicator = ({ categorisation }) => {
+  if (!categorisation) return null
 
   return <Chip
     variant={'outlined'}
-    label={severity.name}
-    color={color}
+    label={categorisation.display_name}
+    color={categorisationValueToColor(categorisation.value)}
   />
 }
-SeverityIndicator.displayName = 'SeverityIndicator'
-SeverityIndicator.propTypes = {
-  severity: PropTypes.object.isRequired,
-  threshold: PropTypes.number,
-}
-
-
-const findTypedefByName = ({
-  name,
-  typedefs = knownMetadataTypes,
-}) => {
-  return typedefs.find(typdef => typdef.name === name)
-}
-
-
-const defaultTypedefForName = ({
-  name,
-}) => {
-  return {
-    name: name,
-    friendlyName: name,
-    SpecificTypeHandler: MultilineTextViewer,
-    Icon: ArticleIcon,
-  }
+CategorisationIndicator.displayName = 'CategorisationIndicator'
+CategorisationIndicator.propTypes = {
+  categorisation: PropTypes.object,
 }
 
 
@@ -177,12 +133,11 @@ const displayNameForData = ({
   type,
   data,
 }) => {
-  const typedef = findTypedefByName({name: type})
-  const displayName = typedef ? typedef.friendlyName : defaultTypedefForName({name: type}).friendlyName
+  const displayName = findingTypeToDisplayName(type)
 
-  if (type === artefactMetadataTypes.VULNERABILITY) {
+  if (type === FINDING_TYPES.VULNERABILITY) {
     return `${displayName} ${data.cve}`
-  } else if (type === artefactMetadataTypes.LICENSE) {
+  } else if (type === FINDING_TYPES.LICENSE) {
     return `${displayName} ${data.license.name}`
   } else if (type === artefactMetadataTypes.STRUCTURE_INFO) {
     return `Package ${data.package_name} ${data.package_version}`
@@ -195,9 +150,8 @@ const displayNameForData = ({
 const MetadataViewer = ({
   type,
   data,
-  severity,
+  categorisation,
   timestamp,
-  ArtefactMetadataViewer,
 }) => {
   return <Accordion
     TransitionProps={{ unmountOnExit: true }}
@@ -215,10 +169,7 @@ const MetadataViewer = ({
         </Grid>
         <Grid item xs={2}/>
         <Grid item xs={3}>
-          <SeverityIndicator
-            severity={severity}
-            threshold={findSeverityCfgByName({name: SEVERITIES.UNKNOWN}).value}
-          />
+          <CategorisationIndicator categorisation={categorisation}/>
         </Grid>
         <Grid item xs={1}/>
         <Grid item xs={2}>
@@ -231,7 +182,7 @@ const MetadataViewer = ({
       </Grid>
     </AccordionSummary>
     <AccordionDetails>
-      <ArtefactMetadataViewer
+      <MultilineTextViewer
         text={toYamlString(data)}
       />
     </AccordionDetails>
@@ -241,113 +192,21 @@ MetadataViewer.displayName = 'MetadataViewer'
 MetadataViewer.propTypes = {
   type: PropTypes.string.isRequired,
   data: PropTypes.object.isRequired,
-  severity: PropTypes.object,
+  categorisation: PropTypes.object,
   timestamp: PropTypes.string,
-  ArtefactMetadataViewer: PropTypes.func.isRequired,
 }
 
 
-const severityConfigs = [
-  {
-    name: SEVERITIES.UNKNOWN,
-    value: 0,
-    color: 'default',
-    Indicator: HelpOutlineOutlinedIcon,
-  },
-  {
-    name: SEVERITIES.CLEAN,
-    value: 1,
-    color: 'levelInfo',
-    Indicator: CheckCircleOutlineOutlinedIcon,
-  },
-  {
-    name: SEVERITIES.LOW,
-    value: 2,
-    color: 'info',
-    Indicator: ReportProblemOutlinedIcon,
-  },
-  {
-    name: SEVERITIES.MEDIUM,
-    value: 4,
-    color: 'warning',
-    Indicator: ReportProblemOutlinedIcon,
-  },
-  {
-    name: SEVERITIES.HIGH,
-    value: 8,
-    color: 'high',
-    Indicator: ReportProblemOutlinedIcon,
-  },
-  {
-    name: SEVERITIES.CRITICAL,
-    value: 16,
-    color: 'critical',
-    Indicator: ReportProblemOutlinedIcon,
-  },
-  {
-    name: SEVERITIES.BLOCKER,
-    value: 32,
-    color: 'blocker',
-    Indicator: ReportProblemIcon,
-  },
-]
-
-
-const knownMetadataTypes = [
-  {
-    name: 'structure_info',
-    friendlyName: 'Structure Info',
-    SpecificTypeHandler: MultilineTextViewer,
-    Icon: ArticleIcon
-  },
-  {
-    name: 'finding/license',
-    friendlyName: 'License',
-    SpecificTypeHandler: MultilineTextViewer,
-    Icon: ArticleIcon
-  },
-  {
-    name: 'malware',
-    friendlyName: 'Malware',
-    SpecificTypeHandler: MultilineTextViewer,
-    Icon: ArticleIcon
-  },
-  {
-    name: 'os_ids',
-    friendlyName: 'OS Information',
-    SpecificTypeHandler: MultilineTextViewer,
-    Icon: ArticleIcon
-  },
-  {
-    name: 'finding/vulnerability',
-    friendlyName: 'Vulnerability',
-    SpecificTypeHandler: MultilineTextViewer,
-    Icon: PestControlIcon
-  },
-  {
-    name: 'codechecks/aggregated',
-    friendlyName: 'Codechecks',
-    SpecificTypeHandler: MultilineTextViewer,
-    Icon: ArticleIcon
-  },
-  {
-    name: 'finding/malware',
-    friendlyName: 'Malware',
-    SpecificTypeHandler: MultilineTextViewer,
-    Icon: CoronavirusIcon
-  },
-]
-
-
-const SeveritySelector = ({
-  selected,
-  setSelected,
+const CategorisationSelector = ({
+  selectedCategorisations,
+  setSelectedCategorisations,
+  categorisations,
 }) => {
   const theme = useTheme()
 
   return <Stack direction='column' spacing={2}>
     <Typography>
-      Severity Filter
+      Categorisation Filter
     </Typography>
     <Box
       sx={{
@@ -361,131 +220,113 @@ const SeveritySelector = ({
       component='ul'
     >
       {
-        severityConfigs.map((severityCfg) => {
-          return <li
-            key={severityCfg.name}
-            style={{
-              margin: theme.spacing(0.5),
-            }}
-          >
-            {
-              selected.includes(severityCfg.name) ? <Chip
-                label={severityCfg.name}
-                variant={'filled'}
-                onClick={() => setSelected(selected.filter(entry => entry !== severityCfg.name))}
-                color={severityCfg.color}
-                size={'small'}
-              /> : <Chip
-                label={severityCfg.name}
-                variant={'outlined'}
-                onClick={() => setSelected([...selected, severityCfg.name])}
-                color={severityCfg.color}
-                size={'small'}
-              />
-            }
-          </li>
-        })
+        categorisations.map((categorisation) => <li
+          key={categorisation.id}
+          style={{
+            margin: theme.spacing(0.5),
+          }}
+        >
+          {
+            selectedCategorisations.find((c) => c.id === categorisation.id) ? <Chip
+              label={categorisation.display_name}
+              variant='filled'
+              onClick={() => setSelectedCategorisations(selectedCategorisations.filter(c => c.id !== categorisation.id))}
+              color={categorisationValueToColor(categorisation.value)}
+              size='small'
+            /> : <Chip
+              label={categorisation.display_name}
+              variant='outlined'
+              onClick={() => setSelectedCategorisations([...selectedCategorisations, categorisation])}
+              color={categorisationValueToColor(categorisation.value)}
+              size='small'
+            />
+          }
+        </li>)
       }
     </Box>
   </Stack>
 }
-SeveritySelector.displayName = 'SeveritySelector'
-SeveritySelector.propTypes = {
-  selected: PropTypes.arrayOf(PropTypes.string).isRequired,
-  setSelected: PropTypes.func.isRequired,
+CategorisationSelector.displayName = 'CategorisationSelector'
+CategorisationSelector.propTypes = {
+  selectedCategorisations: PropTypes.arrayOf(PropTypes.object).isRequired,
+  setSelectedCategorisations: PropTypes.func.isRequired,
+  categorisations: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 
 const MetadataFilter = ({
-  selectedSeverities,
-  setSelectedSeverities,
-  selectedMetadataTypes,
-  setSelectedMetadataTypes,
+  selectedCategorisations,
+  setSelectedCategorisations,
+  categorisations,
+  metadataType,
+  setMetadataType,
   metadataTypes,
 }) => {
 
-  return <Stack direction='column' spacing={5}>
-    <Stack direction='row' spacing={5}>
-      <SeveritySelector
-        selected={selectedSeverities}
-        setSelected={setSelectedSeverities}
-      />
-      <Divider
-        orientation='vertical'
-        flexItem
-      />
-      <MetadataTypeSelector
-        selected={selectedMetadataTypes}
-        setSelected={setSelectedMetadataTypes}
-        metadataTypes={metadataTypes}
-      />
-    </Stack>
+  return <Stack
+    direction='row'
+    spacing={5}
+    display='flex'
+    alignItems='center'
+  >
+    <MetadataTypeSelector
+      metadataType={metadataType}
+      setMetadataType={setMetadataType}
+      metadataTypes={metadataTypes}
+    />
+    {
+      categorisations && <>
+        <Divider
+          orientation='vertical'
+          flexItem
+        />
+        <CategorisationSelector
+          selectedCategorisations={selectedCategorisations}
+          setSelectedCategorisations={setSelectedCategorisations}
+          categorisations={categorisations}
+        />
+      </>
+    }
   </Stack>
 }
 MetadataFilter.displayName = 'MetadataFilter'
 MetadataFilter.propTypes = {
-  selectedSeverities: PropTypes.arrayOf(PropTypes.string).isRequired,
-  setSelectedSeverities: PropTypes.func.isRequired,
-  selectedMetadataTypes: PropTypes.arrayOf(PropTypes.string).isRequired,
-  setSelectedMetadataTypes: PropTypes.func.isRequired,
-  metadataTypes: PropTypes.arrayOf(PropTypes.object).isRequired,
+  selectedCategorisations: PropTypes.arrayOf(PropTypes.object).isRequired,
+  setSelectedCategorisations: PropTypes.func.isRequired,
+  categorisations: PropTypes.arrayOf(PropTypes.object),
+  metadataType: PropTypes.string.isRequired,
+  setMetadataType: PropTypes.func.isRequired,
+  metadataTypes: PropTypes.arrayOf(PropTypes.string).isRequired,
 }
 
 
 const MetadataTypeSelector = ({
-  selected,
-  setSelected,
-  metadataTypes
+  metadataType,
+  setMetadataType,
+  metadataTypes,
 }) => {
-  const theme = useTheme()
-
-  return <Stack direction='column' spacing={2}>
-    <Typography>Metadata Type Filter</Typography>
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        flexWrap: 'wrap',
-        listStyle: 'none',
-        p: 0.5,
-        m: 0,
-      }}
-      component='ul'
+  return <FormControl variant='standard' sx={{ width: '10vw'}}>
+    <InputLabel>Metadata Type</InputLabel>
+    <Select
+      value={metadataType}
+      label='Metadata Type'
+      onChange={(e) => setMetadataType(e.target.value)}
     >
       {
-        metadataTypes.map((metadataType) => {
-          return <li
-            key={metadataType.name}
-            style={{
-              margin: theme.spacing(0.5),
-            }}
-          >
-            {
-              selected.includes(metadataType.name) ? <Chip
-                label={metadataType.friendlyName}
-                variant={'filled'}
-                onClick={() => setSelected(selected.filter(entry => entry !== metadataType.name))}
-                color={'default'}
-                size={'small'}
-              /> :  <Chip
-                label={metadataType.friendlyName}
-                variant={'outlined'}
-                onClick={() => setSelected([...selected, metadataType.name])}
-                color={'default'}
-                size={'small'}
-              />
-            }
-          </li>
-        })
+        metadataTypes.map((type) => <MenuItem key={type} value={type}>
+          <Typography variant='body2'>
+            {findingTypeToDisplayName(type)}
+          </Typography>
+        </MenuItem>)
       }
-    </Box>
-  </Stack>
+    </Select>
+  </FormControl>
 }
 MetadataTypeSelector.displayName = 'MetadataTypeSelector'
 MetadataTypeSelector.propTypes = {
-  selected: PropTypes.arrayOf(PropTypes.string).isRequired,
-  setSelected: PropTypes.func.isRequired,
-  metadataTypes: PropTypes.arrayOf(PropTypes.object).isRequired,
+  metadataType: PropTypes.string.isRequired,
+  setMetadataType: PropTypes.func.isRequired,
+  metadataTypes: PropTypes.arrayOf(PropTypes.string).isRequired,
 }
 
 
@@ -496,6 +337,7 @@ const AccordionHeader = ({
   sortDirection,
   setAttributeToSortBy,
   setSortDirection,
+  categorisations,
 }) => {
   const sortByAttribute = ({ attribute }) => {
     if (attributeToSortBy !== attribute) {
@@ -533,24 +375,26 @@ const AccordionHeader = ({
             Sort by Artefact
         </Button>
       </Grid>
-      <Grid item xs={5}/>
-      <Grid item xs={2}>
-        <Box
-          display='flex'
-          justifyContent='center'
-        >
-          <Button
-            color='secondary'
-            onClick={() => sortByAttribute({attribute: 'severity'})}
-            endIcon={
-              attributeToSortBy === 'severity' && <SortDirectionIcon
-                sortDirection={sortDirection}
-              />
-            }
+      <Grid item xs={4}/>
+      <Grid item xs={3}>
+        {
+          categorisations && <Box
+            display='flex'
+            justifyContent='center'
           >
-              Sort by Severity
-          </Button>
-        </Box>
+            <Button
+              color='secondary'
+              onClick={() => sortByAttribute({attribute: 'categorisation'})}
+              endIcon={
+                attributeToSortBy === 'categorisation' && <SortDirectionIcon
+                  sortDirection={sortDirection}
+                />
+              }
+            >
+                Sort by Categorisation
+            </Button>
+          </Box>
+        }
       </Grid>
       <Grid item xs={2}/>
       <Grid item xs={1}>
@@ -579,14 +423,15 @@ AccordionHeader.propTypes = {
   sortDirection: PropTypes.string.isRequired,
   setAttributeToSortBy: PropTypes.func.isRequired,
   setSortDirection: PropTypes.func.isRequired,
+  categorisations: PropTypes.arrayOf(PropTypes.object),
 }
 
 
 const MetadataViewerAccordion = ({
   artefact,
   artefactMetadata,
+  findingCfg,
   expandAll,
-  hiddenaArtefactMetadataTypes,
 }) => {
   const [expanded, setExpanded] = React.useState(expandAll)
   const [allExpanded, setAllExpanded] = React.useState(expandAll)
@@ -622,57 +467,17 @@ const MetadataViewerAccordion = ({
           />
         </Grid>
         <Grid item xs={2}>
-          <SeverityIndicator
-            severity={worstSeverity({artefactMetadataSequence: artefactMetadata})}
-            threshold={findSeverityCfgByName({name: SEVERITIES.UNKNOWN}).value}
-          />
+          <CategorisationIndicator categorisation={worstCategorisation({
+            findings: artefactMetadata,
+            findingCfg: findingCfg,
+          })}/>
         </Grid>
-        <Grid item xs={1}>
-          {
-            hiddenaArtefactMetadataTypes.length !== 0 && <Tooltip
-              title={
-                <Stack direction='column' spacing={1}>
-                  <Typography variant='subtitle1'>Filtered out:</Typography>
-                  <Divider orientation='horizontal' />
-                  <Stack direction='column' spacing={0}>
-                    {
-                      hiddenaArtefactMetadataTypes.map((type) => {
-                        const typedef = findTypedefByName({name: type})
-                        return <Typography
-                          variant='body1'
-                          key={type}
-                        >
-                          {typedef ? typedef.friendlyName : type}
-                        </Typography>
-                      })
-                    }
-                  </Stack>
-                </Stack>
-              }
-            >
-              <Box
-                display='flex'
-                justifyContent='center'
-              >
-                <InfoOutlinedIcon
-                  sx={{
-                    position: 'relative',
-                  }}
-                />
-              </Box>
-            </Tooltip>
-          }
-        </Grid>
-        <Grid item xs={1}/>
+        <Grid item xs={2}/>
       </Grid>
     </AccordionSummary>
     <AccordionDetails>
       {
         artefactMetadata.map((data) => {
-          const typedef = findTypedefByName({name: data.meta.type})
-          const Handler = typedef ? typedef.SpecificTypeHandler
-            : defaultTypedefForName({name: data.meta.type}).SpecificTypeHandler
-
           const key = asKey({
             props: [
               data.meta.type,
@@ -690,9 +495,11 @@ const MetadataViewerAccordion = ({
               ...data.data,
               ...data.rescorings && { rescorings: data.rescorings },
             }}
-            severity={artefactMetadatumSeverity(data)}
+            categorisation={categoriseFinding({
+              finding: data,
+              findingCfg: findingCfg,
+            })}
             timestamp={data.meta.last_update ?? data.meta.creation_date}
-            ArtefactMetadataViewer={Handler}
           />
         })
       }
@@ -703,8 +510,8 @@ MetadataViewerAccordion.displayName = 'MetadataViewerAccordion'
 MetadataViewerAccordion.propTypes = {
   artefact: PropTypes.object.isRequired,
   artefactMetadata: PropTypes.arrayOf(PropTypes.object).isRequired,
+  findingCfg: PropTypes.object,
   expandAll: PropTypes.bool.isRequired,
-  hiddenaArtefactMetadataTypes: PropTypes.arrayOf(PropTypes.string).isRequired,
 }
 
 
@@ -720,43 +527,15 @@ SortDirectionIcon.propTypes = {
   sortDirection: PropTypes.string.isRequired,
 }
 
-/**
- * Returns worst severity of all artefactMetadata with severity defined in .meta or .rescorings
- * Returns `null` if no severity is found
- */
-const worstSeverity = ({ artefactMetadataSequence }) => {
-  const severities = artefactMetadataSequence.map((artefactMetadatum) => {
-    return artefactMetadatumSeverity(artefactMetadatum)
-  })
-
-  return severities.reduce((worst, current) => {
-    if (!worst) return current
-    return current.value > worst.value ? current : worst
-  }, null)
-}
-
-
-const uniqueTypedefs = ({
-  complianceData,
-}) => {
-  const typeDefs = new Map()
-
-  complianceData.map((data) => {
-    const typedef = findTypedefByName({name: data.meta.type}) || defaultTypedefForName({name: data.meta.type})
-    typeDefs.set(typedef.name, typedef)
-  })
-
-  return [...typeDefs.values()]
-}
-
 
 const MetadataViewerPopover = ({
   popoverProps,
   handleClose,
 }) => {
-  const { componentName, componentVersion, ocmRepo } = popoverProps
+  const { componentName, componentVersion, ocmRepo, findingCfgs } = popoverProps
 
   const [open, setOpen] = React.useState(false)
+  const [metadataType, setMetadataType] = React.useState()
 
   const [cd, state] = useFetchComponentDescriptor({
     componentName: componentName,
@@ -769,11 +548,18 @@ const MetadataViewerPopover = ({
     component_version: componentVersion,
   }], [componentName, componentVersion])
 
+  // structure info might also be available in case at least one finding cfg is available which
+  // uses BDBA for scanning
+  const includeStructureInfo = findingCfgs.find((findingCfg) => [
+    FINDING_TYPES.LICENSE,
+    FINDING_TYPES.VULNERABILITY,
+  ].includes(findingCfg.type))
+
   const types = React.useMemo(() => {
-    return Object.values(artefactMetadataTypes).filter((type) => ![
-      artefactMetadataTypes.ARTEFACT_SCAN_INFO,
-      artefactMetadataTypes.RESCORINGS,
-    ].includes(type))
+    const findingTypes = findingCfgs.map((findingCfg) => findingCfg.type)
+
+    if (!includeStructureInfo) return findingTypes
+    return findingTypes.concat([artefactMetadataTypes.STRUCTURE_INFO])
   }, [artefactMetadataTypes])
 
   const [findings, findingsState] = useFetchQueryMetadata({
@@ -789,13 +575,19 @@ const MetadataViewerPopover = ({
     referenced_types: types,
   })
 
-  const [selectedSeverities, setSelectedSeverities] = React.useState([])
-  const [selectedMetadataTypes, setSelectedMetadataTypes] = React.useState([])
+  const [selectedCategorisations, setSelectedCategorisations] = React.useState([])
 
-  const [attributeToSortBy, setAttributeToSortBy] = React.useState('severity')
+  const [attributeToSortBy, setAttributeToSortBy] = React.useState('categorisation')
   const [sortDirection, setSortDirection] = React.useState('desc')
 
   const [expandAll, setExpandAll] = React.useState(false)
+
+  // only show those types for which some metadata is actually available
+  const metadataTypes = [...new Set((findings ?? []).map((finding) => finding.meta.type))].sort()
+
+  React.useEffect(() => {
+    setSelectedCategorisations([])
+  }, [metadataType])
 
   if (
     !open &&
@@ -804,13 +596,21 @@ const MetadataViewerPopover = ({
     !state.error &&
     findings &&
     rescorings &&
+    metadataTypes &&
     !findingsState.isLoading &&
     !findingsState.error &&
     !rescoringsState.isLoading &&
     !rescoringsState.error) {
+    setMetadataType(metadataTypes[0])
     setOpen(true)
   }
-  if (!open) return null
+  if (!open || !metadataType) return null
+
+  // finding cfg might not be available as we also allow plain informational metadata (e.g. structure info)
+  const findingCfg = findingCfgForType({
+    findingType: metadataType,
+    findingCfgs: findingCfgs,
+  })
 
   const compliance = mixupFindingsWithRescorings(findings, rescorings)
   const artefactMetadataCount = compliance.length
@@ -818,7 +618,7 @@ const MetadataViewerPopover = ({
 
   /**
    * Component is not passend from parent, but retrieved locally.
-   * Thus, it is mutable and modifying (e.g. sort by severity) influences other components.
+   * Thus, it is mutable and modifying (e.g. sort by categorisation) influences other components.
    *
    * --> work on a deep copy
    */
@@ -834,14 +634,15 @@ const MetadataViewerPopover = ({
         // Z -> a
         return artefacts.sort((left, right) => -left.name.localeCompare(right.name))
       }
-    } else if (attributeToSortBy === 'severity') {
-      return artefacts.sort((left ,right) => severityComparator({
+    } else if (attributeToSortBy === 'categorisation') {
+      return artefacts.sort((left, right) => artefactsCategorisationComparator({
         left: left,
         right: right,
         artefactMetadata: compliance,
+        metadataType: metadataType,
+        positiveListCategorisations: selectedCategorisations,
+        findingCfg: findingCfg,
         ascending: (sortDirection === 'asc'),
-        positiveListSeverity: selectedSeverities,
-        positiveListType: selectedMetadataTypes,
       }))
     }
   }
@@ -857,10 +658,11 @@ const MetadataViewerPopover = ({
         // Z -> a
         return artefactMetadata.sort((left, right) => -left.meta.type.localeCompare(right.meta.type))
       }
-    } else if (attributeToSortBy === 'severity') {
-      return artefactMetadata.sort((left ,right) => artefactMetadataSeverityComparator({
+    } else if (attributeToSortBy === 'categorisation') {
+      return artefactMetadata.sort((left, right) => artefactMetadataCategorisationComparator({
         left: left,
         right: right,
+        findingCfg: findingCfg,
         ascending: (sortDirection === 'asc'),
       }))
     }
@@ -907,13 +709,12 @@ const MetadataViewerPopover = ({
           justifyContent='center'
         >
           <MetadataFilter
-            selectedSeverities={selectedSeverities}
-            setSelectedSeverities={setSelectedSeverities}
-            selectedMetadataTypes={selectedMetadataTypes}
-            setSelectedMetadataTypes={setSelectedMetadataTypes}
-            metadataTypes={uniqueTypedefs({complianceData: compliance}).sort((left, right) => {
-              return left.friendlyName.localeCompare(right.friendlyName)
-            })}
+            selectedCategorisations={selectedCategorisations}
+            setSelectedCategorisations={setSelectedCategorisations}
+            categorisations={findingCfg?.categorisations}
+            metadataType={metadataType}
+            setMetadataType={setMetadataType}
+            metadataTypes={metadataTypes}
           />
         </Box>
         <AccordionHeader
@@ -923,6 +724,7 @@ const MetadataViewerPopover = ({
           sortDirection={sortDirection}
           setAttributeToSortBy={setAttributeToSortBy}
           setSortDirection={setSortDirection}
+          categorisations={findingCfg?.categorisations}
         />
       </Stack>
     </DialogTitle>
@@ -937,27 +739,20 @@ const MetadataViewerPopover = ({
       <Stack direction='column' spacing={1}>
         {
           sortArtefacts(artefacts).map((artefact) => {
-            const artefactMetadata = compliance.filter(
-              artefactMetadataFilter({
-                artefactName: artefact.name,
-                artefactVersion: artefact.version,
-                artefactExtraId: artefact.extraIdentity,
-              })
-            )
+            const artefactMetadata = compliance.filter(artefactMetadataFilter({
+              artefactName: artefact.name,
+              artefactVersion: artefact.version,
+              artefactType: artefact.type,
+              artefactExtraId: artefact.extraIdentity,
+              metadataType: metadataType,
+            }))
 
-            const filteredArtefactMetadata = artefactMetadata.filter(
-              artefactMetadataSeverityFilter({positiveList: selectedSeverities})
-            ).filter(
-              artefactMetadataTypeFilter({positiveList: selectedMetadataTypes})
-            )
+            const filteredArtefactMetadata = artefactMetadata.filter(artefactMetadataCategorisationFilter({
+              positiveList: selectedCategorisations,
+              findingCfg: findingCfg,
+            }))
 
             filteredArtefactMetadataCount += filteredArtefactMetadata.length
-
-            const artefactMetadataTypes = artefactMetadata.map(e => e.meta.type)
-            const filteredArtefactMetadataTypes = filteredArtefactMetadata.map(e => e.meta.type)
-            const hiddenaArtefactMetadataTypes = [...new Set(artefactMetadataTypes.filter((type) => {
-              return !filteredArtefactMetadataTypes.includes(type)
-            }))]
 
             if (filteredArtefactMetadata.length === 0) return null
 
@@ -967,8 +762,8 @@ const MetadataViewerPopover = ({
               artefactMetadata={sortArtefactMetadata({
                 artefactMetadata: filteredArtefactMetadata,
               })}
+              findingCfg={findingCfg}
               expandAll={expandAll}
-              hiddenaArtefactMetadataTypes={hiddenaArtefactMetadataTypes.sort()}
             />
           })
         }
@@ -1011,7 +806,7 @@ const MetadataViewerPopover = ({
 }
 MetadataViewerPopover.displayName = 'MetadataViewerPopover'
 MetadataViewerPopover.propTypes = {
-  popoverProps: PropTypes.object,
+  popoverProps: PropTypes.object.isRequired,
   handleClose: PropTypes.func.isRequired,
 }
 
@@ -1019,13 +814,7 @@ MetadataViewerPopover.propTypes = {
 export {
   artefactMetadataTypes,
   datasources,
-  defaultTypedefForName,
-  findTypedefByName,
-  knownMetadataTypes,
   knownLabelNames,
-  MetadataViewer,
   MetadataViewerPopover,
-  severityConfigs,
-  SeverityIndicator,
-  worstSeverity,
+  CategorisationIndicator,
 }

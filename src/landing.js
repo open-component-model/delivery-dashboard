@@ -59,12 +59,10 @@ import {
   getMergedSpecialComponents,
   shortenComponentName,
   urlsFromRepoCtxFeature,
-  worstSeverityByType,
 } from './util'
 import { ComponentChip } from './component/bom'
-import {PersistentDrawerLeft} from './layout'
+import { PersistentDrawerLeft } from './layout'
 import { SprintInfo } from './util/sprint'
-import { artefactMetadataTypes } from './ocm/model'
 import {
   features,
   FEATURES_CFG_KEY,
@@ -99,6 +97,7 @@ export const LandingPage = () => {
 const SpecialComponent = ({
   component,
   specialComponentsFeature,
+  findingCfgs,
 }) => {
   const [isEditMode, setIsEditMode] = React.useState(false)
 
@@ -135,6 +134,7 @@ const SpecialComponent = ({
       <div style={{ padding: '0.3em' }} />
       <DefaultFooter
         component={component}
+        findingCfgs={findingCfgs}
       />
     </Paper>
   </Grid>
@@ -143,6 +143,7 @@ SpecialComponent.displayName = 'SpecialComponent'
 SpecialComponent.propTypes = {
   component: PropTypes.object.isRequired,
   specialComponentsFeature: PropTypes.object.isRequired,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 const editDepOfCompActions = {
@@ -235,6 +236,7 @@ const SpecialComponents = () => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [specialComponentsFeature, setSpecialComponentsFeature] = React.useState()
   const [repoCtxFeature, setRepoCtxFeature] = React.useState()
+  const [findingCfgsFeature, setFindingCfgsFeature] = React.useState()
   const [dialogOpen, setDialogOpen] = React.useState(false)
 
   React.useEffect(() => {
@@ -253,6 +255,14 @@ const SpecialComponents = () => {
     })
   }, [featureRegistrationContext])
 
+  React.useEffect(() => {
+    return registerCallbackHandler({
+      featureRegistrationContext: featureRegistrationContext,
+      featureName: features.FINDING_CONFIGURATIONS,
+      callback: ({feature}) => setFindingCfgsFeature(feature),
+    })
+  }, [featureRegistrationContext])
+
   if (
     !specialComponentsFeature ||
     !specialComponentsFeature.isAvailable ||
@@ -261,6 +271,8 @@ const SpecialComponents = () => {
   ) {
     return null
   }
+
+  const findingCfgs = findingCfgsFeature?.isAvailable ? findingCfgsFeature.finding_cfgs : []
 
   const handleOpenNewSpecialComponent = () => {
     setDialogOpen(true)
@@ -322,6 +334,7 @@ const SpecialComponents = () => {
                       key={`${component.id}-${component.isAddedByUser}`}
                       component={component}
                       specialComponentsFeature={specialComponentsFeature}
+                      findingCfgs={findingCfgs}
                     />
                   })
                 }
@@ -1016,7 +1029,10 @@ const DependentComponentBox = styled(Box)(({ theme }) => ({
   backgroundColor: theme.dependentComponentOverview.color,
 }))
 
-const DefaultFooter = ({ component }) => {
+const DefaultFooter = ({
+  component,
+  findingCfgs,
+}) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [specialComponentsFeature, setSpecialComponentsFeature] = React.useState()
 
@@ -1056,9 +1072,12 @@ const DefaultFooter = ({ component }) => {
     </Grid>
     <Grid item xs={2}>
       <FeatureDependent requiredFeatures={[features.DELIVERY_DB]}>
-        <ComponentCompliance
-          component={component}
-        />
+        {
+          findingCfgs.length > 0 && <ComponentCompliance
+            component={component}
+            findingCfgs={findingCfgs}
+          />
+        }
       </FeatureDependent>
     </Grid>
     <Grid item xs={5}>
@@ -1073,6 +1092,7 @@ const DefaultFooter = ({ component }) => {
 DefaultFooter.displayName = 'DefaultFooter'
 DefaultFooter.propTypes = {
   component: PropTypes.object.isRequired,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 const PullRequestsOverview = ({
@@ -1161,26 +1181,27 @@ PullRequestReference.propTypes = {
 }
 
 
-const ComponentCompliance = ({ component }) => {
+const ComponentCompliance = ({
+  component,
+  findingCfgs,
+}) => {
   const [complianceSummary, state] = useFetchComplianceSummary({
     componentName: component.name,
     componentVersion: component.version,
     ocmRepo: component.repoContextUrl,
   })
 
-  function* iterSummaries(complianceSummary) {
-    const worstVulnerability = worstSeverityByType(artefactMetadataTypes.VULNERABILITY, complianceSummary.complianceSummary)
-    const worstOsInformation = worstSeverityByType(artefactMetadataTypes.OS_IDS, complianceSummary.complianceSummary)
-    const worstMalware = worstSeverityByType(artefactMetadataTypes.FINDING_MALWARE, complianceSummary.complianceSummary)
-    const worstLicenses = worstSeverityByType(artefactMetadataTypes.LICENSE, complianceSummary.complianceSummary)
-    const worstCodeChecks = worstSeverityByType(artefactMetadataTypes.CODECHECKS_AGGREGATED, complianceSummary.complianceSummary)
+  const worstEntries = complianceSummary ? Object.values(complianceSummary.complianceSummary.reduce((summariesByType, summary) => {
+    summary.entries.forEach((entry) => {
+      if (summariesByType[entry.type] && summariesByType[entry.type] >= entry.value) return
 
-    if (worstVulnerability) yield worstVulnerability
-    if (worstOsInformation) yield worstOsInformation
-    if (worstMalware) yield worstMalware
-    if (worstLicenses) yield worstLicenses
-    if (worstCodeChecks) yield worstCodeChecks
-  }
+      summariesByType = {
+        ...summariesByType,
+        [entry.type]: entry,
+      }
+    })
+    return summariesByType
+  }, {})) : []
 
   const componentSummary = {
     complianceSummary: [{
@@ -1188,7 +1209,7 @@ const ComponentCompliance = ({ component }) => {
         name: component.name,
         version: component.version,
       },
-      entries: complianceSummary ? [...iterSummaries(complianceSummary)] : [],
+      entries: worstEntries,
     }],
   }
 
@@ -1199,9 +1220,11 @@ const ComponentCompliance = ({ component }) => {
       isSummaryLoading: state.isLoading,
       isSummaryError: state.error,
     }}
+    findingCfgs={findingCfgs}
   />
 }
 ComponentCompliance.displayName = 'ComponentCompliance'
 ComponentCompliance.propTypes = {
   component: PropTypes.object.isRequired,
+  findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }

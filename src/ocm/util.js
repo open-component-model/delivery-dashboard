@@ -1,4 +1,4 @@
-import { artefactMetadatumSeverity, normaliseExtraIdentity } from '../util'
+import { normaliseExtraIdentity } from '../util'
 
 
 const generateArtefactID = (artefact) => {
@@ -37,31 +37,7 @@ const artefactMetadataFilter = ({
 }
 
 
-const artefactMetadataSeverityFilter = ({
-  positiveList,
-}) => {
-  return (artefactMetadata) => {
-    if (positiveList.length === 0) return true
-
-    const severity = artefactMetadatumSeverity(artefactMetadata)
-    return positiveList.includes(severity.name)
-  }
-}
-
-const artefactMetadataTypeFilter = ({
-  positiveList,
-}) => {
-  return (artefactMetadata) => {
-    if (positiveList.length === 0) return true
-
-    return positiveList.includes(artefactMetadata.meta.type)
-  }
-}
-
-
 export {
   artefactMetadataFilter,
-  artefactMetadataSeverityFilter,
-  artefactMetadataTypeFilter,
   generateArtefactID,
 }

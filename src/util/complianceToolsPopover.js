@@ -478,8 +478,10 @@ const ComplianceToolPopover = ({
   React.useEffect(() => {
     if (servicesState.isLoading || servicesState.error) return
 
-    if (!service && services.length > 0) {
-      setService(services[0])
+    const servicesWithBLIs = services.filter((s) => Object.values(COMPLIANCE_TOOLS).includes(s))
+
+    if (!service && servicesWithBLIs.length > 0) {
+      setService(servicesWithBLIs[0])
     }
   }, [services, servicesState, service])
 
@@ -492,20 +494,20 @@ const ComplianceToolPopover = ({
     setOcmNodes(components.reduce((nodes, component) => {
       return [
         ...nodes,
-        ...([COMPLIANCE_TOOLS.BDBA, COMPLIANCE_TOOLS.ISSUE_REPLICATOR, COMPLIANCE_TOOLS.CLAMAV].includes(service) ? component.resources.map((resource) => {
+        ...component.resources.map((resource) => {
           return new OcmNode(
             [component],
             resource,
             ARTEFACT_KIND.RESOURCE,
           )
-        }) : []),
-        ...([COMPLIANCE_TOOLS.ISSUE_REPLICATOR].includes(service) ? component.sources.map((source) => {
+        }),
+        ...component.sources.map((source) => {
           return new OcmNode(
             [component],
             source,
             ARTEFACT_KIND.SOURCE,
           )
-        }): []),
+        }),
       ]
     }, []))
   }, [dependencies, state.isLoading, state.error, service, servicesState.isLoading, servicesState.error])

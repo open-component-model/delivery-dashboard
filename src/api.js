@@ -103,7 +103,6 @@ export const routes = {
     base: api('service-extensions'),
     logCollections: () => `${routes.serviceExtensions.base}/log-collections`,
     containerStatuses: () => `${routes.serviceExtensions.base}/container-statuses`,
-    scanConfigurations: () => `${routes.serviceExtensions.base}/scan-configurations`,
     backlogItems: () => `${routes.serviceExtensions.base}/backlog-items`,
   },
   dora: {
@@ -445,11 +444,6 @@ const serviceExtensions = {
   containerStatuses: async ({service}) => {
     const url = new URL(routes.serviceExtensions.containerStatuses())
     appendPresentParams(url, {service})
-
-    return await _toJson(withAuth(url))
-  },
-  scanConfigurations: async () => {
-    const url = new URL(routes.serviceExtensions.scanConfigurations())
 
     return await _toJson(withAuth(url))
   },
