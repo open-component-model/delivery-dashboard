@@ -79,7 +79,6 @@ import ComplianceToolPopover from '../util/complianceToolsPopover'
 import {
   ARTEFACT_KIND,
   COMPLIANCE_TOOLS,
-  DEPENDENT_COMPONENT,
   features,
   fetchBomPopulate,
   SUMMARY_CATEGORISATIONS,
@@ -1297,7 +1296,6 @@ const DependenciesTabHeader = React.memo(({
   isComponentLoading,
   componentRefs,
   getSpecialComponentFeature,
-  componentType,
   defaultSearchValue,
 }) => {
   const searchParamContext = React.useContext(SearchParamContext)
@@ -1328,15 +1326,18 @@ const DependenciesTabHeader = React.memo(({
       </FeatureDependent>
     </Grid>
     <Grid item width='18%' alignItems='center' display='flex' flexDirection='column'>
-      {
-        (componentType !== DEPENDENT_COMPONENT) & !isComponentLoading
-          ? <SpecialComponentStatus
+      <FeatureDependent
+        requiredFeatures={[features.SPECIAL_COMPONENTS]}
+        childrenIfFeatureLoading={<Skeleton width='100%'/>} // explicitly set width as parent container is a flexbox
+      >
+        {
+          isComponentLoading ? <Skeleton width='100%'/> : <SpecialComponentStatus
             component={component}
             componentRefs={componentRefs}
             specialComponentFeature={getSpecialComponentFeature()}
           />
-          : <Skeleton width='100%'/> /* explicitly set width as parent container is a flexbox */
-      }
+        }
+      </FeatureDependent>
     </Grid>
     <Grid item width='17%' display='flex' justifyContent='right' flexDirection='column'>
       <DownloadBom
@@ -1355,7 +1356,6 @@ DependenciesTabHeader.propTypes = {
   isComponentLoading: PropTypes.bool.isRequired,
   componentRefs: PropTypes.arrayOf(PropTypes.object),
   getSpecialComponentFeature: PropTypes.func.isRequired,
-  componentType: PropTypes.string,
   defaultSearchValue: PropTypes.string,
 }
 

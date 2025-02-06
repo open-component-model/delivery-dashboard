@@ -51,9 +51,6 @@ export const COMPONENT_PATH = '/component'
 export const SERVICES_PATH = '/services'
 export const MONITORING_PATH = '/monitoring'
 
-export const DEPENDENT_COMPONENT = 'DEPENDENT_COMPONENT'
-export const CUSTOM_COMPONENT = 'CUSTOM_COMPONENT'
-
 export const snackBarConfig = {
   variant: 'error',
   anchorOrigin: {
