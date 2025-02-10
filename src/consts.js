@@ -99,7 +99,7 @@ export const features = {
   VERSION_FILTER: 'version-filter',
   JOKES_API: 'jokes-api',
   DASHBOARD_CREATE_ISSUE_URL: 'dashboard-create-issue-url',
-  SCAN_CONFIGURATION: 'scan-configuration',
+  EXTENSIONS_CONFIGURATION: 'extensions-configuration',
   FINDING_CONFIGURATIONS: 'finding-configurations',
 }
 

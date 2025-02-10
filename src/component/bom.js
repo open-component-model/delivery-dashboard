@@ -276,7 +276,7 @@ const Component = React.memo(({
   isComponentError,
   ocmRepo,
   isParentComponent,
-  scanCfg,
+  extensionsCfg,
   findingCfgs,
 }) => {
   const searchParamContext = React.useContext(SearchParamContext)
@@ -465,7 +465,7 @@ const Component = React.memo(({
           ocmRepo={ocmRepo}
           complianceSummaryFetchDetails={complianceSummaryFetchDetails}
           fetchComplianceSummary={refreshComplianceSummary}
-          scanCfg={scanCfg}
+          extensionsCfg={extensionsCfg}
           findingCfgs={findingCfgs}
         />
       </AccordionDetails>
@@ -479,7 +479,7 @@ Component.propTypes = {
   isComponentError: PropTypes.bool,
   ocmRepo: PropTypes.string,
   isParentComponent: PropTypes.bool,
-  scanCfg: PropTypes.object,
+  extensionsCfg: PropTypes.object,
   findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
@@ -593,7 +593,7 @@ const ComponentDetails = React.memo(({
   ocmRepo,
   complianceSummaryFetchDetails,
   fetchComplianceSummary,
-  scanCfg,
+  extensionsCfg,
   findingCfgs,
 }) => {
   if (isComponentError) return <Alert severity='error'>Unable to fetch Component</Alert>
@@ -607,7 +607,7 @@ const ComponentDetails = React.memo(({
           ocmRepo={ocmRepo}
           complianceSummaryFetchDetails={complianceSummaryFetchDetails}
           fetchComplianceSummary={fetchComplianceSummary}
-          scanCfg={scanCfg}
+          extensionsCfg={extensionsCfg}
           findingCfgs={findingCfgs}
         />
     }
@@ -629,7 +629,7 @@ ComponentDetails.propTypes = {
   ocmRepo: PropTypes.string,
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-  scanCfg: PropTypes.object,
+  extensionsCfg: PropTypes.object,
   findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
@@ -638,7 +638,7 @@ const Components = ({
   isComponentsLoading,
   isComponentsError,
   ocmRepo,
-  scanCfg,
+  extensionsCfg,
   findingCfgs,
 }) => {
   return <Box>
@@ -649,7 +649,7 @@ const Components = ({
         isComponentLoading={isComponentsLoading}
         isComponentError={isComponentsError}
         ocmRepo={ocmRepo}
-        scanCfg={scanCfg}
+        extensionsCfg={extensionsCfg}
         findingCfgs={findingCfgs}
       />)
     }
@@ -661,7 +661,7 @@ Components.propTypes = {
   isComponentsLoading: PropTypes.bool,
   isComponentsError: PropTypes.bool,
   ocmRepo: PropTypes.string,
-  scanCfg: PropTypes.object,
+  extensionsCfg: PropTypes.object,
   findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
@@ -674,7 +674,7 @@ const ArtefactDetails = ({
   complianceSummaryFetchDetails,
   complianceDataFetchDetails,
   fetchComplianceSummary,
-  scanCfg,
+  extensionsCfg,
   findingCfgs,
 }) => {
   if (artefacts.length === 0) return null
@@ -706,7 +706,7 @@ const ArtefactDetails = ({
                 complianceSummaryFetchDetails={complianceSummaryFetchDetails}
                 complianceDataFetchDetails={complianceDataFetchDetails}
                 fetchComplianceSummary={fetchComplianceSummary}
-                scanCfg={scanCfg}
+                extensionsCfg={extensionsCfg}
                 findingCfgs={findingCfgs}
               />
             })
@@ -725,7 +725,7 @@ ArtefactDetails.propTypes = {
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   complianceDataFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-  scanCfg: PropTypes.object,
+  extensionsCfg: PropTypes.object,
   findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
@@ -735,7 +735,7 @@ const Artefacts = ({
   ocmRepo,
   complianceSummaryFetchDetails,
   fetchComplianceSummary,
-  scanCfg,
+  extensionsCfg,
   findingCfgs,
 }) => {
   const artefacts = React.useMemo(() => {
@@ -812,7 +812,7 @@ const Artefacts = ({
       complianceSummaryFetchDetails={complianceSummaryFetchDetails}
       complianceDataFetchDetails={complianceDataFetchDetails}
       fetchComplianceSummary={fetchComplianceSummary}
-      scanCfg={scanCfg}
+      extensionsCfg={extensionsCfg}
       findingCfgs={findingCfgs}
     />
     <ArtefactDetails
@@ -823,7 +823,7 @@ const Artefacts = ({
       complianceSummaryFetchDetails={complianceSummaryFetchDetails}
       complianceDataFetchDetails={complianceDataFetchDetails}
       fetchComplianceSummary={fetchComplianceSummary}
-      scanCfg={scanCfg}
+      extensionsCfg={extensionsCfg}
       findingCfgs={findingCfgs}
     />
     <ComponentReferences
@@ -838,7 +838,7 @@ Artefacts.propTypes = {
   ocmRepo: PropTypes.string,
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-  scanCfg: PropTypes.object,
+  extensionsCfg: PropTypes.object,
   findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
@@ -849,7 +849,7 @@ const ArtefactTableRow = ({
   complianceSummaryFetchDetails,
   complianceDataFetchDetails,
   fetchComplianceSummary,
-  scanCfg,
+  extensionsCfg,
   findingCfgs,
 }) => {
   return <TableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
@@ -863,7 +863,7 @@ const ArtefactTableRow = ({
           complianceSummaryFetchDetails={complianceSummaryFetchDetails}
           complianceDataFetchDetails={complianceDataFetchDetails}
           fetchComplianceSummary={fetchComplianceSummary}
-          scanCfg={scanCfg}
+          extensionsCfg={extensionsCfg}
           findingCfgs={findingCfgs}
         />
       }
@@ -877,7 +877,7 @@ ArtefactTableRow.propTypes = {
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   complianceDataFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-  scanCfg: PropTypes.object,
+  extensionsCfg: PropTypes.object,
   findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
@@ -1365,7 +1365,7 @@ const FetchComponentRefsTab = React.memo(({
   ocmRepo,
   searchQuery,
   setComponentRefs,
-  scanCfg,
+  extensionsCfg,
   findingCfgs,
 }) => {
   const [componentRefs, state] = useFetchBom({
@@ -1394,7 +1394,7 @@ const FetchComponentRefsTab = React.memo(({
     ocmRepo={ocmRepo}
     componentRefs={componentRefs.componentDependencies}
     searchQuery={searchQuery}
-    scanCfg={scanCfg}
+    extensionsCfg={extensionsCfg}
     findingCfgs={findingCfgs}
   />
 })
@@ -1404,7 +1404,7 @@ FetchComponentRefsTab.propTypes = {
   ocmRepo: PropTypes.string,
   searchQuery: PropTypes.string,
   setComponentRefs: PropTypes.func.isRequired,
-  scanCfg: PropTypes.object,
+  extensionsCfg: PropTypes.object,
   findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
@@ -1420,7 +1420,7 @@ export const BomTab = React.memo(({
 
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [specialComponentsFeature, setSpecialComponentsFeature] = React.useState()
-  const [scanCfgFeature, setScanCfgFeature] = React.useState()
+  const [extensionsCfgFeature, setExtensionsCfgFeature] = React.useState()
   const [findingCfgsFeature, setFindingCfgsFeature] = React.useState()
 
   React.useEffect(() => {
@@ -1434,8 +1434,8 @@ export const BomTab = React.memo(({
   React.useEffect(() => {
     return registerCallbackHandler({
       featureRegistrationContext: featureRegistrationContext,
-      featureName: features.SCAN_CONFIGURATION,
-      callback: ({feature}) => setScanCfgFeature(feature),
+      featureName: features.EXTENSIONS_CONFIGURATION,
+      callback: ({feature}) => setExtensionsCfgFeature(feature),
     })
   }, [featureRegistrationContext])
 
@@ -1456,7 +1456,7 @@ export const BomTab = React.memo(({
     return specialComponentsFeature.cfg.specialComponents.find(c => c.name === component.name)
   }
 
-  const scanCfg = scanCfgFeature?.isAvailable ? scanCfgFeature.scan_cfg : null
+  const extensionsCfg = extensionsCfgFeature?.isAvailable ? extensionsCfgFeature.extensions_cfg : null
   const findingCfgs = findingCfgsFeature?.isAvailable ? findingCfgsFeature.finding_cfgs : []
 
   return <Box
@@ -1479,7 +1479,7 @@ export const BomTab = React.memo(({
         ocmRepo={ocmRepo}
         searchQuery={searchQuery}
         setComponentRefs={setComponentRefs}
-        scanCfg={scanCfg}
+        extensionsCfg={extensionsCfg}
         findingCfgs={findingCfgs}
       />
     }
@@ -1500,7 +1500,7 @@ const FetchDependenciesTab = React.memo(({
   ocmRepo,
   componentRefs,
   searchQuery,
-  scanCfg,
+  extensionsCfg,
   findingCfgs,
 }) => {
   const compareComponentsByName = (a, b) => {
@@ -1560,7 +1560,7 @@ const FetchDependenciesTab = React.memo(({
       component={component}
       ocmRepo={ocmRepo}
       isParentComponent={true}
-      scanCfg={scanCfg}
+      extensionsCfg={extensionsCfg}
       findingCfgs={findingCfgs}
     />
     <div style={{ padding: '0.5em' }} />
@@ -1576,7 +1576,7 @@ const FetchDependenciesTab = React.memo(({
           isComponentsLoading={state.isLoading}
           isComponentsError={state.error}
           ocmRepo={ocmRepo}
-          scanCfg={scanCfg}
+          extensionsCfg={extensionsCfg}
           findingCfgs={findingCfgs}
         />
       </Box>
@@ -1588,7 +1588,7 @@ const FetchDependenciesTab = React.memo(({
           isComponentsLoading={state.isLoading}
           isComponentsError={state.error}
           ocmRepo={ocmRepo}
-          scanCfg={scanCfg}
+          extensionsCfg={extensionsCfg}
           findingCfgs={findingCfgs}
         />
       </Box>
@@ -1601,7 +1601,7 @@ FetchDependenciesTab.propTypes = {
   ocmRepo: PropTypes.string,
   componentRefs: PropTypes.arrayOf(PropTypes.object).isRequired,
   searchQuery: PropTypes.string,
-  scanCfg: PropTypes.object,
+  extensionsCfg: PropTypes.object,
   findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
@@ -2090,7 +2090,7 @@ const ComplianceCell = ({
   complianceSummaryFetchDetails,
   complianceDataFetchDetails,
   fetchComplianceSummary,
-  scanCfg,
+  extensionsCfg,
   findingCfgs,
 }) => {
   const {complianceSummary, isSummaryError} = complianceSummaryFetchDetails
@@ -2236,13 +2236,13 @@ const ComplianceCell = ({
   return <TableCell>
     <Grid container direction='row-reverse' spacing={1}>
       {
-        scanCfg?.issue_replicator && <IssueChip
+        extensionsCfg?.issue_replicator && <IssueChip
           ocmNode={ocmNode}
-          issueReplicatorCfg={scanCfg.issue_replicator}
+          issueReplicatorCfg={extensionsCfg.issue_replicator}
         />
       }
       {
-        scanCfg?.bdba && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveLicenseFindings && <RescoringCell
+        extensionsCfg?.bdba && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveLicenseFindings && <RescoringCell
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
           datasource={datasources.BDBA}
@@ -2255,7 +2255,7 @@ const ComplianceCell = ({
         />
       }
       {
-        scanCfg?.clamav && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveMalwareFindings && <RescoringCell
+        extensionsCfg?.clamav && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveMalwareFindings && <RescoringCell
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
           datasource={datasources.CLAMAV}
@@ -2282,7 +2282,7 @@ const ComplianceCell = ({
         />
       }
       {
-        scanCfg?.bdba && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveVulnerabilityFindings && <RescoringCell
+        extensionsCfg?.bdba && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveVulnerabilityFindings && <RescoringCell
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
           datasource={datasources.BDBA}
@@ -2304,7 +2304,7 @@ ComplianceCell.propTypes = {
   complianceSummaryFetchDetails: PropTypes.object.isRequired,
   complianceDataFetchDetails: PropTypes.object.isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
-  scanCfg: PropTypes.object,
+  extensionsCfg: PropTypes.object,
   findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
