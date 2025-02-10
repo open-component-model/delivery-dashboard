@@ -26,6 +26,7 @@ export default [
       'eol-last': ['warn'],
       'jsx-a11y/no-autofocus': ['off'],
       'security/detect-object-injection': ['off'],
+      'security/detect-non-literal-regexp': ['off'],
     },
 
     settings: {

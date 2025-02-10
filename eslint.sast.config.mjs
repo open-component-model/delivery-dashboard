@@ -10,6 +10,7 @@ export default [
   {
     rules: {
       'security/detect-object-injection': ['off'],
+      'security/detect-non-literal-regexp': ['off'],
     },
 
     settings: {

@@ -316,7 +316,6 @@ const filterMatchesOcmNode = ({
     if (!patterns?.length > 0) return true
     if (!string) return filter.semantics === FILTER_SEMANTICS.INCLUDE
 
-    // eslint-disable-next-line security/detect-non-literal-regexp
     return Boolean(patterns.find((pattern) => (new RegExp(pattern)).test(string)))
   }
 
