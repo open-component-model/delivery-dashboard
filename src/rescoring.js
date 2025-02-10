@@ -1412,8 +1412,13 @@ const RescoringContentTableRow = ({
 
   const currentDays = currentCategorisation.allowed_processing_time / 24 / 60 / 60
   const rescoredDays = rescoredCategorisation.allowed_processing_time / 24 / 60 / 60
-  const diffDays = rescoredDays !== null && currentDays !== null && currentDays !== rescoredDays
-    ? `${rescoredDays - currentDays >= 0 ? '+' : ''}${rescoredDays - currentDays} days`
+
+  // don't show day-diff if one of both categorisations has no processing time set or there is no difference
+  const diffDays = (
+    currentCategorisation.allowed_processing_time !== null
+    && rescoredCategorisation.allowed_processing_time !== null
+    && currentDays !== rescoredDays
+  ) ? `${rescoredDays - currentDays >= 0 ? '+' : ''}${rescoredDays - currentDays} days`
     : null
 
   const newProccesingDays = diffDays ? <Tooltip
