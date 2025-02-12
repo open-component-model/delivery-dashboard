@@ -341,8 +341,8 @@ const useFetchComplianceSummary = ({
   })
 }
 
-const useFetchSpecialComponentCurrentDependencies = ({componentName}) => {
-  const params = React.useMemo(() => ({ componentName: componentName }), [componentName])
+const useFetchSpecialComponentCurrentDependencies = ({id}) => {
+  const params = React.useMemo(() => ({ id }), [id])
 
   return _useFetch({
     fetchFunction: specialComponentCurrentDependencies,

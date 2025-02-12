@@ -72,12 +72,15 @@ const LogoCorner = () => {
   </Box>
 }
 
-export const ComponentNavigation = React.memo(({ componentId, componentIsAddedByUser }) => {
+export const ComponentNavigation = React.memo(({
+  specialComponentId,
+  browserLocalOnly,
+}) => {
   return <>
     <ComponentNavigationHeader/>
     <Divider/>
     <div style={{ marginBottom: '3.5rem' }}>
-      <LandscapeList componentId={componentId} componentIsAddedByUser={componentIsAddedByUser}/>
+      <LandscapeList specialComponentId={specialComponentId} browserLocalOnly={browserLocalOnly}/>
       <ServiceList/>
     </div>
     <LogoCorner/>
@@ -85,16 +88,16 @@ export const ComponentNavigation = React.memo(({ componentId, componentIsAddedBy
 })
 ComponentNavigation.displayName = 'componentNavigation'
 ComponentNavigation.propTypes = {
-  componentId: PropTypes.any,
-  componentIsAddedByUser: PropTypes.any,
+  specialComponentId: PropTypes.string,
+  browserLocalOnly: PropTypes.bool,
 }
 
 const LandscapeListEntry = ({
   typeName,
   components,
   view,
-  selectedComponentId,
-  selectedComponentIsAddedByUser,
+  selectedSpecialComponentId,
+  selectedBrowserLocalOnly,
 }) => {
   const [open, setOpen] = React.useState(true)
 
@@ -123,12 +126,12 @@ const LandscapeListEntry = ({
               version: component.version,
               versionFilter: component.versionFilter,
               view: view,
-              ocmRepo: component.repoContextUrl,
+              ocmRepo: component.ocmRepo,
               specialComponentId: component.id,
-              specialComponentIsAddedByUser: component.isAddedByUser,
+              specialComponentBrowserLocalOnly: component.browserLocalOnly,
             }
             )}`}
-            selected={selectedComponentId === component.id && selectedComponentIsAddedByUser === component.isAddedByUser}
+            selected={selectedSpecialComponentId === component.id && selectedBrowserLocalOnly === component.browserLocalOnly}
           >
             <ListItemText>
               {
@@ -146,12 +149,15 @@ LandscapeListEntry.propTypes = {
   typeName: PropTypes.string.isRequired,
   components: PropTypes.arrayOf(PropTypes.object).isRequired,
   view: PropTypes.string,
-  selectedComponentId: PropTypes.any,
-  selectedComponentIsAddedByUser: PropTypes.any,
+  selectedSpecialComponentId: PropTypes.string,
+  selectedBrowserLocalOnly: PropTypes.bool,
 }
 
 
-const LandscapeList = ({ componentId, componentIsAddedByUser }) => {
+const LandscapeList = ({
+  specialComponentId,
+  browserLocalOnly,
+}) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [specialComponentsFeature, setSpecialComponentsFeature] = React.useState()
 
@@ -180,16 +186,16 @@ const LandscapeList = ({ componentId, componentIsAddedByUser }) => {
         typeName={type}
         components={getSpecialComponents().filter((component) => component.type === type)}
         view={searchParamContext.get('view')}
-        selectedComponentId={componentId}
-        selectedComponentIsAddedByUser={componentIsAddedByUser}
+        selectedSpecialComponentId={specialComponentId}
+        selectedBrowserLocalOnly={browserLocalOnly}
       />)
     }
   </List>
 }
 LandscapeList.displayName = 'LandscapeList'
 LandscapeList.propTypes = {
-  componentId: PropTypes.any,
-  componentIsAddedByUser: PropTypes.any,
+  specialComponentId: PropTypes.string,
+  browserLocalOnly: PropTypes.bool,
 }
 
 
@@ -285,8 +291,8 @@ export const ComponentPage = () => {
   const view = searchParamContext.get('view')
 
   const ocmRepo = searchParamContext.get('ocmRepo')
-  const specialComponentId = searchParamContext.get('id') ? parseInt(searchParamContext.get('id')) : undefined
-  const specialComponentIsAddedByUser = searchParamContext.get('isAddedByUser') ? searchParamContext.get('isAddedByUser') === 'true' : undefined
+  const specialComponentId = searchParamContext.get('id') ?? undefined
+  const specialComponentBrowserLocalOnly = searchParamContext.get('browserLocalOnly') ? searchParamContext.get('browserLocalOnly') === 'true' : undefined
 
   const authError = searchParamContext.get('error')
   const authErrorDescription = searchParamContext.get('error_description')
@@ -313,8 +319,8 @@ export const ComponentPage = () => {
   if (!repoCtxFeature || !repoCtxFeature.isAvailable) {
     return <PersistentDrawerLeft
       open={true}
-      componentId={specialComponentId}
-      componentIsAddedByUser={specialComponentIsAddedByUser}
+      specialComponentId={specialComponentId}
+      browserLocalOnly={specialComponentBrowserLocalOnly}
     >
       <CircularProgress/>
     </PersistentDrawerLeft>
@@ -324,8 +330,8 @@ export const ComponentPage = () => {
     return (
       <PersistentDrawerLeft
         open={true}
-        componentId={specialComponentId}
-        componentIsAddedByUser={specialComponentIsAddedByUser}
+        specialComponentId={specialComponentId}
+        browserLocalOnly={specialComponentBrowserLocalOnly}
       >
         <Alert severity='error'>
           Error <b>{authError}</b>: {authErrorDescription}
@@ -337,8 +343,8 @@ export const ComponentPage = () => {
   if (!componentName) {
     return <PersistentDrawerLeft
       open={true}
-      componentId={null}
-      componentIsAddedByUser={null}
+      specialComponentId={null}
+      browserLocalOnly={null}
     >
       <Alert severity='info'>
         Please select a component on the left, or use the detailed component search.
@@ -360,8 +366,8 @@ export const ComponentPage = () => {
 
   if (!knownTabIds.includes(view)) return <PersistentDrawerLeft
     open={true}
-    componentId={specialComponentId}
-    componentIsAddedByUser={specialComponentIsAddedByUser}
+    specialComponentId={specialComponentId}
+    browserLocalOnly={specialComponentBrowserLocalOnly}
   >
     <div style={{ display: 'flex', justifyContent: 'center' }}>
       <Typography variant='h4'>
@@ -378,14 +384,14 @@ export const ComponentPage = () => {
   return (
     <PersistentDrawerLeft
       open={true}
-      componentId={specialComponentId}
-      componentIsAddedByUser={specialComponentIsAddedByUser}
+      specialComponentId={specialComponentId}
+      browserLocalOnly={specialComponentBrowserLocalOnly}
     >
       <ComponentView
         componentMeta={addPresentKeyValuePairs(component, {
           versionFilter: versionFilter,
           id: specialComponentId,
-          isAddedByUser: specialComponentIsAddedByUser,
+          browserLocalOnly: specialComponentBrowserLocalOnly,
         })}
         ocmRepo={ocmRepo}
       />
@@ -417,7 +423,7 @@ ComponentDescriptorError.propTypes = {
 }
 
 
-export const ComponentView = ({
+const ComponentView = ({
   componentMeta,
   ocmRepo,
 }) => {
@@ -443,6 +449,8 @@ export const ComponentView = ({
         isLoading={state.isLoading}
         ocmRepo={ocmRepo}
         versionFilter={componentMeta.versionFilter}
+        specialComponentId={componentMeta.id}
+        browserLocalOnly={componentMeta.browserLocalOnly}
       />
     }
   </Box>
@@ -830,5 +838,3 @@ ComponentHeader.propTypes = {
   ocmRepository: PropTypes.string.isRequired,
   isLoading: PropTypes.bool,
 }
-
-export default ComponentView

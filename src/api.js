@@ -318,9 +318,9 @@ const osBranches = async (name) => {
   return _toJson(resp)
 }
 
-const specialComponentCurrentDependencies = async ({componentName}) => {
+const specialComponentCurrentDependencies = async ({id}) => {
   const url = new URL(routes.specialComponent.currentDependencies)
-  appendPresentParams(url, {component_name: componentName})
+  appendPresentParams(url, {id})
 
   return await _toJson(await withAuth(url))
 }

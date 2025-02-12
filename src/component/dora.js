@@ -875,12 +875,15 @@ DoraTab.propTypes = {
 }
 
 
-export const DoraTabWrapper = ({ componentName }) => {
-  const featuresCfg = JSON.parse(localStorage.getItem(FEATURES_CFG_KEY)) ? JSON.parse(localStorage.getItem(FEATURES_CFG_KEY)) : {}
+export const DoraTabWrapper = ({
+  componentName,
+  specialComponentId,
+}) => {
+  const featuresCfg = JSON.parse(localStorage.getItem(FEATURES_CFG_KEY)) ?? {}
   const pathItem = localStorage.getItem(PATH_KEY)
   const path = pathItem ? JSON.parse(pathItem) : null
   const isSpecialComponent = Boolean(featuresCfg.specialComponents?.some(
-    (specialComponent) => specialComponent.name == componentName,
+    (specialComponent) => specialComponent.id.toString() == specialComponentId,
   ))
 
   const filterComponentNames = React.useCallback(() => {
@@ -907,4 +910,5 @@ export const DoraTabWrapper = ({ componentName }) => {
 DoraTabWrapper.displayName = 'DoraTabWrapper'
 DoraTabWrapper.propTypes = {
   componentName: PropTypes.string.isRequired,
+  specialComponentId: PropTypes.string,
 }

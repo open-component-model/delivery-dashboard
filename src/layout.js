@@ -180,8 +180,8 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 
 export const PersistentDrawerLeft = ({
   children,
-  componentId,
-  componentIsAddedByUser,
+  specialComponentId,
+  browserLocalOnly,
 }) => {
   const theme = useTheme()
   const [open, setOpen] = React.useState(true)
@@ -249,7 +249,7 @@ export const PersistentDrawerLeft = ({
             )}
           </IconButton>
         </DrawerHeader>
-        <ComponentNavigation componentId={componentId} componentIsAddedByUser={componentIsAddedByUser}/>
+        <ComponentNavigation specialComponentId={specialComponentId} browserLocalOnly={browserLocalOnly}/>
       </Drawer>
       <Main open={open}>
         <DrawerHeader />
@@ -261,6 +261,6 @@ export const PersistentDrawerLeft = ({
 PersistentDrawerLeft.displayName = 'PersistentDrawerLeft'
 PersistentDrawerLeft.propTypes = {
   children: PropTypes.object.isRequired,
-  componentId: PropTypes.any,
-  componentIsAddedByUser: PropTypes.any,
+  specialComponentId: PropTypes.string,
+  browserLocalOnly: PropTypes.bool,
 }

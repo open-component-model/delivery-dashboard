@@ -60,7 +60,7 @@ export const componentPathQuery = ({
   view,
   ocmRepo,
   specialComponentId,
-  specialComponentIsAddedByUser,
+  specialComponentBrowserLocalOnly,
 }) => {
   const searchParams = {
     name: name,
@@ -71,7 +71,7 @@ export const componentPathQuery = ({
     versionFilter: versionFilter,
     ocmRepo: ocmRepo,
     id: specialComponentId,
-    isAddedByUser: specialComponentIsAddedByUser,
+    browserLocalOnly: specialComponentBrowserLocalOnly,
   }))
   return `${COMPONENT_PATH}?${query.toString()}`
 }
@@ -394,17 +394,28 @@ ExtraIdentityHover.propTypes = {
 
 
 export const getMergedSpecialComponents = (specialComponentsFeature) => {
-  const featuresCfg = JSON.parse(localStorage.getItem(FEATURES_CFG_KEY)) ? JSON.parse(localStorage.getItem(FEATURES_CFG_KEY)) : {}
-  const userCfgSpecialComponents = featuresCfg.specialComponents ? featuresCfg.specialComponents : []
-  const userCfgUserComponents = featuresCfg.userComponents ? featuresCfg.userComponents : []
+  const featuresCfg = JSON.parse(localStorage.getItem(FEATURES_CFG_KEY)) ?? {}
+  const userCfgSpecialComponents = featuresCfg.specialComponents ?? []
+  const userCfgUserComponents = featuresCfg.userComponents ?? []
 
   const specialComponents = userCfgSpecialComponents.length > 0 ?
-    specialComponentsFeature.cfg.specialComponents.map((comp) => {
-      const userCfgSpecialComponent = userCfgSpecialComponents.find((c) => c.id === comp.id)
-      return userCfgSpecialComponent ? {...comp, ...userCfgSpecialComponent, version: comp.version} : comp
-    }) : specialComponentsFeature.cfg.specialComponents
+    specialComponentsFeature.specialComponents.map((comp) => {
+      const userCfgSpecialComponent = userCfgSpecialComponents.find((c) => c.id.toString() === comp.id)
+      return {
+        ...comp,
+        displayName: userCfgSpecialComponent?.displayName ?? comp.displayName,
+        dependencies: userCfgSpecialComponent?.dependencies ?? comp.dependencies,
+      }
+    }) : specialComponentsFeature.specialComponents
 
-  return specialComponents.concat(userCfgUserComponents.sort((a, b) => a.id - b.id))
+  return specialComponents.concat(userCfgUserComponents.sort((a, b) => a.id - b.id).map((comp) => {
+    return {
+      ...comp,
+      // be backwards compatible for now
+      id: comp.id.toString(),
+      browserLocalOnly: comp.browserLocalOnly ?? comp.isAddedByUser,
+    }
+  }))
 }
 
 

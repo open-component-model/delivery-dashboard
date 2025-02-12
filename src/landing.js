@@ -80,8 +80,8 @@ import { registerCallbackHandler } from './feature'
 export const LandingPage = () => {
   return <PersistentDrawerLeft
     open={true}
-    componentId={null}
-    componentIsAddedByUser={null}
+    specialComponentId={null}
+    browserLocalOnly={null}
   >
     <Stack
       direction='column'
@@ -202,27 +202,22 @@ const editDepOfComp = (depName, component, actionObject) => {
     }
   }
 
-  const featuresCfg = JSON.parse(localStorage.getItem(FEATURES_CFG_KEY)) ? JSON.parse(localStorage.getItem(FEATURES_CFG_KEY)) : {}
+  const featuresCfg = JSON.parse(localStorage.getItem(FEATURES_CFG_KEY)) ?? {}
+  const components = component.browserLocalOnly ? (featuresCfg.userComponents ?? []) : (featuresCfg.specialComponents ?? [])
 
-  const userComponents = featuresCfg.userComponents ? featuresCfg.userComponents : []
-  const specialComponents = featuresCfg.specialComponents ? featuresCfg.specialComponents : []
-  const components = component.isAddedByUser ? userComponents : specialComponents
-
-  const cfg = components.find((comp) => comp.id === component.id)
-  const dependencies = cfg?.dependencies ? cfg.dependencies : []
+  const cfg = components.find((comp) => comp.id.toString() === component.id)
+  const dependencies = cfg?.dependencies ?? []
 
   const modifiedComponents = [
-    ...components.filter((comp) => comp.id !== component.id),
+    ...components.filter((comp) => comp.id.toString() !== component.id),
     {
       ...cfg,
       id: component.id,
-      name: component.name,
-      version: component.version,
       dependencies: updateDeps(dependencies),
     },
   ]
 
-  if (component.isAddedByUser) {
+  if (component.browserLocalOnly) {
     featuresCfg.userComponents = modifiedComponents
   } else {
     featuresCfg.specialComponents = modifiedComponents
@@ -263,14 +258,7 @@ const SpecialComponents = () => {
     })
   }, [featureRegistrationContext])
 
-  if (
-    !specialComponentsFeature ||
-    !specialComponentsFeature.isAvailable ||
-    !repoCtxFeature ||
-    !repoCtxFeature.isAvailable
-  ) {
-    return null
-  }
+  if (!specialComponentsFeature?.isAvailable || !repoCtxFeature?.isAvailable) return null
 
   const findingCfgs = findingCfgsFeature?.isAvailable ? findingCfgsFeature.finding_cfgs : []
 
@@ -293,18 +281,18 @@ const SpecialComponents = () => {
 
   const handleDragEnd = (result) => {
     if (!result.destination || result.reason === 'CANCEL' || result.destination.index === result.source.index) return
-    const [depName, componentId, componentIsAddedByUser] = result.draggableId.split('|')
+    const [depName, specialComponentId, browserLocalOnly] = result.draggableId.split('|')
 
     const componentIdentity = (comp) => {
       return JSON.stringify({
         id: comp.id,
-        isAddedByUser: String(comp.isAddedByUser),
+        browserLocalOnly: String(comp.browserLocalOnly),
       })
     }
 
     const localComp = {
-      id: parseInt(componentId),
-      isAddedByUser: componentIsAddedByUser,
+      id: specialComponentId,
+      browserLocalOnly: browserLocalOnly,
     }
 
     const component = mergedSpecialComponents.find((comp) => {
@@ -331,7 +319,7 @@ const SpecialComponents = () => {
                 {
                   components.map((component) => {
                     return <SpecialComponent
-                      key={`${component.id}-${component.isAddedByUser}`}
+                      key={`${component.id}-${component.browserLocalOnly}`}
                       component={component}
                       specialComponentsFeature={specialComponentsFeature}
                       findingCfgs={findingCfgs}
@@ -377,7 +365,7 @@ const SpecialComponentDialog = ({
   const [ocmRepo, setOcmRepo] = React.useState(OCM_REPO_AUTO_OPTION)
   const [icon, setIcon] = React.useState('')
 
-  const remove = () => {
+  const add = () => {
     if (!componentName) {
       setDialogError('Please specify a component name')
       return
@@ -391,24 +379,24 @@ const SpecialComponentDialog = ({
       return
     }
 
-    const featuresCfg = JSON.parse(localStorage.getItem(FEATURES_CFG_KEY)) ? JSON.parse(localStorage.getItem(FEATURES_CFG_KEY)) : {}
+    const featuresCfg = JSON.parse(localStorage.getItem(FEATURES_CFG_KEY)) ?? {}
 
     const id = featuresCfg.nextUserComponentId ? featuresCfg.nextUserComponentId : 0
     featuresCfg.nextUserComponentId = id + 1
 
     const specialComponent = {
-      id: id,
+      id: id.toString(),
       name: componentName,
       displayName: displayName,
       type: type,
       version: 'greatest',
-      ...ocmRepo && ocmRepo !== OCM_REPO_AUTO_OPTION && {repoContextUrl: ocmRepo},
+      ...ocmRepo && ocmRepo !== OCM_REPO_AUTO_OPTION && {ocmRepo: ocmRepo},
       ...icon !== '' && {icon: icon},
-      isAddedByUser: true,
+      browserLocalOnly: true,
     }
 
     featuresCfg.userComponents = [
-      ...(featuresCfg.userComponents ? featuresCfg.userComponents : []),
+      ...(featuresCfg.userComponents ?? []),
       specialComponent,
     ]
 
@@ -425,7 +413,7 @@ const SpecialComponentDialog = ({
       <DialogContentText>
         To add a component, please enter its component name and the preferred
         displayed name. Also, specify the type which is used to group multiple
-        components as well as the repository context.
+        components as well as the OCM repository.
       </DialogContentText>
       <Stack spacing={1} sx={{ mt: 2 }}>
         {dialogError && <Alert severity='error'>{dialogError}</Alert>}
@@ -488,7 +476,7 @@ const SpecialComponentDialog = ({
               <TextField
                 {...params}
                 variant='standard'
-                label='Repo context'
+                label='OCM Repository'
                 InputProps={{
                   ...params.InputProps,
                 }}
@@ -515,7 +503,7 @@ const SpecialComponentDialog = ({
       <Button color='inherit' onClick={handleClose}>
         Cancel
       </Button>
-      <Button color='inherit' onClick={remove}>
+      <Button color='inherit' onClick={add}>
         Ok
       </Button>
     </DialogActions>
@@ -538,23 +526,25 @@ const ComponentBody = ({
 }) => {
   const theme = useTheme()
   const [addDepDialogOpen, setAddDepDialogOpen] = React.useState(false)
-  const [specialComponentStatus, specialComponentStatusState] = useFetchSpecialComponentCurrentDependencies({componentName: component.name})
+  const [specialComponentStatus, specialComponentStatusState] = useFetchSpecialComponentCurrentDependencies({
+    id: component.id,
+  })
 
   const componentUrl = `#${componentPathQuery({
     name: component.name,
     version: component.version,
     versionFilter: component.versionFilter,
     view: 'bom',
-    ocmRepo: component.repoContextUrl,
+    ocmRepo: component.ocmRepo,
     specialComponentId: component.id,
-    specialComponentIsAddedByUser: component.isAddedByUser,
+    specialComponentBrowserLocalOnly: component.browserLocalOnly,
   })}`
 
   // component derived from specialComponents has version 'greatest', therefore retrieve again
   const [cd, state] = useFetchComponentDescriptor({
     componentName: component.name,
     componentVersion: component.version,
-    ocmRepo: component.repoContextUrl,
+    ocmRepo: component.ocmRepo,
     versionFilter: component.versionFilter,
   })
   const { componentDependencies, isComponentDependenciesLoading, isComponentDependenciesError } = componentDependenciesFetchDetails
@@ -590,7 +580,7 @@ const ComponentBody = ({
 
   const dependencies = [...new Set(componentDependencies.componentDependencies.map((dep) => dep.name))].map((depName, idx) => {
     const userCfgDep = component.dependencies?.find((d) => d.name === depName)
-    const remoteDep = specialComponentStatus.component_dependencies?.find((d) => d.name === depName)
+    const remoteDep = !component.browserLocalOnly && specialComponentStatus.componentDependencies?.find((d) => d.name === depName)
 
     // Init position property of displayed deps (only applies for the first run)
     if (!userCfgDep?.disabled && // Dep is not manually disabled
@@ -605,7 +595,7 @@ const ComponentBody = ({
         name: component.name,
         displayName: component.displayName,
         localVersions: [cd.component.version],
-        remoteVersion: specialComponentStatus.version,
+        remoteVersion: !component.browserLocalOnly ? specialComponentStatus.version : null,
         disabled: userCfgDep ? userCfgDep.disabled : false,
         position: userCfgDep ? userCfgDep.position : idx,
       }
@@ -622,7 +612,9 @@ const ComponentBody = ({
     }
   })
 
-  const versionsMatch = specialComponentStatus.component_dependencies ? evaluateVersionMatch(dependencies.filter((dep) => dep.name !== component.name)) : undefined
+  const versionsMatch = !component.browserLocalOnly && specialComponentStatus.componentDependencies
+    ? evaluateVersionMatch(dependencies.filter((dep) => dep.name !== component.name))
+    : undefined
 
   const handleAddDep = (e) => {
     e.preventDefault()
@@ -657,7 +649,7 @@ const ComponentBody = ({
           marginTop: '0.5rem',
           marginBottom: '0.5rem',
         }}>
-          <Droppable droppableId={`${component.id}|${component.isAddedByUser}`} type={`${component.id}-${component.isAddedByUser}`}>
+          <Droppable droppableId={`${component.id}|${component.browserLocalOnly}`} type={`${component.id}-${component.browserLocalOnly}`}>
             {(provided) => (
               <Stack ref={provided.innerRef} {...provided.droppableProps} direction='column'>
                 <VersionOverview
@@ -823,32 +815,28 @@ const ComponentHeader = ({
   }
 
   const handleChangeDisplayName = (e) => {
-    const featuresCfg = JSON.parse(localStorage.getItem(FEATURES_CFG_KEY)) ? JSON.parse(localStorage.getItem(FEATURES_CFG_KEY)) : {}
-    const components = component.isAddedByUser ?
-      (featuresCfg.userComponents ? featuresCfg.userComponents : []) :
-      (featuresCfg.specialComponents ? featuresCfg.specialComponents : [])
+    const featuresCfg = JSON.parse(localStorage.getItem(FEATURES_CFG_KEY)) ?? {}
+    const components = component.browserLocalOnly ? (featuresCfg.userComponents ?? []) : (featuresCfg.specialComponents ?? [])
 
-    let cfg = components.find((comp) => comp.id === component.id)
+    let cfg = components.find((comp) => comp.id.toString() === component.id)
 
     if (cfg) {
       cfg.displayName = e.target.value
     } else {
       cfg = {
         id: component.id,
-        name: component.name,
-        version: component.version,
         displayName: e.target.value,
       }
     }
 
-    if (component.isAddedByUser) {
+    if (component.browserLocalOnly) {
       featuresCfg.userComponents = [
-        ...components.filter((comp) => comp.id !== component.id),
+        ...components.filter((comp) => comp.id.toString() !== component.id),
         cfg,
       ]
     } else {
       featuresCfg.specialComponents = [
-        ...components.filter((comp) => comp.id !== component.id),
+        ...components.filter((comp) => comp.id.toString() !== component.id),
         cfg,
       ]
     }
@@ -856,10 +844,9 @@ const ComponentHeader = ({
   }
 
   const getSpecialComponentFeature = () => {
-    if (!specialComponentsFeature || !specialComponentsFeature.isAvailable)
-      return null
+    if (!specialComponentsFeature?.isAvailable) return null
 
-    return specialComponentsFeature.cfg.specialComponents.find(c => c.name === component.name)
+    return specialComponentsFeature.specialComponents.find(c => c.id === component.id)
   }
 
   const specialComponentFeature = getSpecialComponentFeature()
@@ -950,7 +937,7 @@ const ComponentHeader = ({
             <ListItemText primary={'Edit Component'} />
           </ListItemButton>
           {
-            component.isAddedByUser && <ListItem disablePadding>
+            component.browserLocalOnly && <ListItem disablePadding>
               <ListItemButton onClick={handleDeleteDialogOpen}>
                 <DeleteIcon/>
                 <div style={{ padding: '0.3em' }} />
@@ -991,7 +978,7 @@ const DeleteUserComponentDialog = ({
     const featuresCfg = JSON.parse(localStorage.getItem(FEATURES_CFG_KEY))
 
     featuresCfg.userComponents = [
-      ...featuresCfg.userComponents.filter((comp) => comp.id !== component.id),
+      ...featuresCfg.userComponents.filter((comp) => comp.id.toString() !== component.id),
     ]
     localStorage.setItem(FEATURES_CFG_KEY, JSON.stringify(featuresCfg))
 
@@ -1044,14 +1031,6 @@ const DefaultFooter = ({
     })
   }, [featureRegistrationContext])
 
-  const sprintRules = () => {
-    if (!specialComponentsFeature || !specialComponentsFeature.isAvailable) {
-      return null
-    }
-
-    const sprintComponent = specialComponentsFeature.cfg.specialComponents.find(c => c.name === component.name)
-    return sprintComponent ? sprintComponent.sprintRules : null
-  }
   const now = new Date()
 
   return <Grid
@@ -1064,7 +1043,7 @@ const DefaultFooter = ({
       <FeatureDependent requiredFeatures={[features.SPRINTS]}>
         <ErrorBoundary>
           <SprintInfo
-            sprintRules={sprintRules()}
+            sprintRules={specialComponentsFeature?.specialComponents.find(c => c.id === component.id)?.sprintRules}
             date={now}
           />
         </ErrorBoundary>
@@ -1144,9 +1123,9 @@ const PullRequestsOverview = ({
           version: component.version,
           versionFilter: component.versionFilter,
           view: tabConfig.COMPONENT_DIFF.id,
-          ocmRepo: component.repoContextUrl,
+          ocmRepo: component.ocmRepo,
           specialComponentId: component.id,
-          specialComponentIsAddedByUser: component.isAddedByUser,
+          specialComponentBrowserLocalOnly: component.browserLocalOnly,
         })}`}>
         {`PRs(${prs.length})`}
       </Button>
@@ -1188,7 +1167,7 @@ const ComponentCompliance = ({
   const [complianceSummary, state] = useFetchComplianceSummary({
     componentName: component.name,
     componentVersion: component.version,
-    ocmRepo: component.repoContextUrl,
+    ocmRepo: component.ocmRepo,
   })
 
   const worstEntries = complianceSummary ? Object.values(complianceSummary.complianceSummary.reduce((summariesByType, summary) => {
