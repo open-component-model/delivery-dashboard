@@ -198,7 +198,7 @@ const CveCategorisationLabel = ({
   })
 
   if (state.isLoading) return <CircularProgress/>
-  if (state.isError) return <Alert severity='error'>
+  if (state.error) return <Alert severity='error'>
     Unable to fetch CVE Categorisation Label
   </Alert>
 
@@ -213,6 +213,9 @@ const CveCategorisationLabel = ({
       && normaliseExtraIdentity(artefact.extraIdentity) === ocmNode.normalisedExtraIdentity()
     )
   })
+
+  // there might be no respective artefact if component-descriptor and ocm-node are not in sync yet
+  if (!artefact) return <CircularProgress/>
 
   const cveCategorisationLabel = new OcmNode(
     [componentDescriptor.component],
