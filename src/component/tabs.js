@@ -52,6 +52,8 @@ export const ComponentTabs = ({
   isLoading,
   ocmRepo,
   versionFilter,
+  specialComponentId,
+  browserLocalOnly,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [upgradePRsFeature, setUpgradePRsFeature] = React.useState()
@@ -154,6 +156,8 @@ export const ComponentTabs = ({
         component={componentDescriptor?.component}
         isLoading={isLoading}
         ocmRepo={ocmRepo}
+        specialComponentId={specialComponentId}
+        browserLocalOnly={browserLocalOnly}
         searchQuery={searchQuery}
         updateSearchQuery={delaySearchQueryUpdate}
       />
@@ -204,6 +208,7 @@ export const ComponentTabs = ({
       {
         isLoading ? <CenteredSpinner sx={{ height: '90vh' }} /> : <DoraTabWrapper
           componentName={componentDescriptor.component.name}
+          specialComponentId={specialComponentId}
         />
       }
     </TabPanel>
@@ -215,4 +220,6 @@ ComponentTabs.propTypes = {
   isLoading: PropTypes.bool.isRequired,
   ocmRepo: PropTypes.string,
   versionFilter: PropTypes.string,
+  specialComponentId: PropTypes.string,
+  browserLocalOnly: PropTypes.bool,
 }

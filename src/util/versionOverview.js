@@ -143,7 +143,7 @@ export const VersionOverview = ({
         return (
           provided ? <Draggable
             key={info.name}
-            draggableId={`${info.name}|${component.id}|${component.isAddedByUser}`}
+            draggableId={`${info.name}|${component.id}|${component.browserLocalOnly}`}
             index={idx}
             isDragDisabled={!isEditMode}
           >

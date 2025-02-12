@@ -1296,6 +1296,8 @@ const DependenciesTabHeader = React.memo(({
   isComponentLoading,
   componentRefs,
   getSpecialComponentFeature,
+  specialComponentId,
+  browserLocalOnly,
   defaultSearchValue,
 }) => {
   const searchParamContext = React.useContext(SearchParamContext)
@@ -1331,11 +1333,15 @@ const DependenciesTabHeader = React.memo(({
         childrenIfFeatureLoading={<Skeleton width='100%'/>} // explicitly set width as parent container is a flexbox
       >
         {
-          isComponentLoading ? <Skeleton width='100%'/> : <SpecialComponentStatus
-            component={component}
-            componentRefs={componentRefs}
-            specialComponentFeature={getSpecialComponentFeature()}
-          />
+          !browserLocalOnly && specialComponentId !== undefined && (isComponentLoading
+            ? <Skeleton width='100%'/>
+            : <SpecialComponentStatus
+              component={component}
+              componentRefs={componentRefs}
+              specialComponentFeature={getSpecialComponentFeature()}
+              specialComponentId={specialComponentId}
+            />
+          )
         }
       </FeatureDependent>
     </Grid>
@@ -1356,6 +1362,8 @@ DependenciesTabHeader.propTypes = {
   isComponentLoading: PropTypes.bool.isRequired,
   componentRefs: PropTypes.arrayOf(PropTypes.object),
   getSpecialComponentFeature: PropTypes.func.isRequired,
+  specialComponentId: PropTypes.string,
+  browserLocalOnly: PropTypes.bool,
   defaultSearchValue: PropTypes.string,
 }
 
@@ -1413,6 +1421,8 @@ export const BomTab = React.memo(({
   component,
   isLoading,
   ocmRepo,
+  specialComponentId,
+  browserLocalOnly,
   searchQuery,
   updateSearchQuery,
 }) => {
@@ -1448,12 +1458,11 @@ export const BomTab = React.memo(({
   }, [featureRegistrationContext])
 
   const getSpecialComponentFeature = () => {
-    if (isLoading) return null
+    if (isLoading || browserLocalOnly) return null
 
-    if (!specialComponentsFeature || !specialComponentsFeature.isAvailable)
-      return null
+    if (!specialComponentsFeature?.isAvailable) return null
 
-    return specialComponentsFeature.cfg.specialComponents.find(c => c.name === component.name)
+    return specialComponentsFeature.specialComponents.find(c => c.id === specialComponentId)
   }
 
   const extensionsCfg = extensionsCfgFeature?.isAvailable ? extensionsCfgFeature.extensions_cfg : null
@@ -1470,6 +1479,8 @@ export const BomTab = React.memo(({
       isComponentLoading={isLoading}
       componentRefs={componentRefs}
       getSpecialComponentFeature={getSpecialComponentFeature}
+      specialComponentId={specialComponentId}
+      browserLocalOnly={browserLocalOnly}
       defaultSearchValue={searchQuery}
     />
     <div style={{ padding: '0.5em' }} />
@@ -1490,6 +1501,8 @@ BomTab.propTypes = {
   component: PropTypes.object,
   isLoading: PropTypes.bool.isRequired,
   ocmRepo: PropTypes.string,
+  specialComponentId: PropTypes.string,
+  browserLocalOnly: PropTypes.bool,
   searchQuery: PropTypes.string,
   updateSearchQuery: PropTypes.func.isRequired,
 }
@@ -1610,8 +1623,9 @@ const SpecialComponentStatus = ({
   component,
   componentRefs,
   specialComponentFeature,
+  specialComponentId,
 }) => {
-  const [specialComponentStatus, state] = useFetchSpecialComponentCurrentDependencies({componentName: component.name})
+  const [specialComponentStatus, state] = useFetchSpecialComponentCurrentDependencies({id: specialComponentId})
 
   if (!componentRefs) return <Skeleton width='100%'/>
 
@@ -1622,14 +1636,14 @@ const SpecialComponentStatus = ({
     return <Skeleton width='100%'/>
   }
 
-  if (!specialComponentStatus.component_dependencies) {
+  if (!specialComponentStatus.componentDependencies) {
     // Because no remote versions are specified, the status of a release cannot be calculated
     return null
   }
 
   const deps = [...new Set(componentRefs.map((dep) => dep.name))].map((depName, idx) => {
     const userCfgDep = component.dependencies?.find((d) => d.name === depName)
-    const remoteDep = specialComponentStatus.component_dependencies.find((d) => d.name === depName)
+    const remoteDep = specialComponentStatus.componentDependencies.find((d) => d.name === depName)
 
     const localVersions = componentRefs.filter((d) => d.name === depName).map((d) => d.version)
     if (component.name === depName) {
@@ -1702,6 +1716,7 @@ SpecialComponentStatus.propTypes = {
   component: PropTypes.object,
   componentRefs: PropTypes.array,
   specialComponentFeature: PropTypes.object,
+  specialComponentId: PropTypes.string.isRequired,
 }
 
 
