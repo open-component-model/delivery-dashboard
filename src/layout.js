@@ -1,31 +1,25 @@
 import React from 'react'
 
 import { styled, useTheme } from '@mui/material/styles'
-import { Box, CssBaseline, Drawer, Toolbar, Tooltip, Typography, Collapse, Divider, Grid, Link, List, ListItemButton, ListItemText, capitalize } from '@mui/material'
+import { Box, CssBaseline, Drawer, Toolbar, Tooltip, Typography } from '@mui/material'
 import MuiAppBar from '@mui/material/AppBar'
 import IconButton from '@mui/material/IconButton'
 import MenuIcon from '@mui/icons-material/Menu'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import ExpandLess from '@mui/icons-material/ExpandLess'
-import ExpandMore from '@mui/icons-material/ExpandMore'
 
-import { useNavigate } from 'react-router-dom'
 import PropTypes from 'prop-types'
 
 import { fetchJoke } from './api'
 import ServiceExtensionStatus from './util/serviceExtensionStatuses'
 import { SettingsMenu } from './util/settingsMenu'
-import { FeatureRegistrationContext, SearchParamContext } from './App'
-import { features, MONITORING_PATH, SERVICES_PATH } from './consts'
+import { FeatureRegistrationContext } from './App'
+import { features } from './consts'
 import { registerCallbackHandler } from './feature'
 import FeatureDependent from './util/featureDependent'
 import { ConnectivityIndicator } from './util/connectivity'
-import { camelCaseToDisplayText, componentPathQuery, getMergedSpecialComponents } from './util'
-import { useFetchServiceExtensions } from './fetch'
+import { ComponentNavigation } from './component/common'
 
-import GardenerLogo from './resources/gardener-logo.svg'
-import SAPLogo from './resources/sap-logo.svg'
 
 const Title = () => {
   const [joke, setJoke] = React.useState()
@@ -270,252 +264,3 @@ PersistentDrawerLeft.propTypes = {
   componentId: PropTypes.any,
   componentIsAddedByUser: PropTypes.any,
 }
-
-
-
-const ComponentNavigationHeader = () => {
-  return <div>
-    <div style={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
-      <Grid item xs={12}>
-        <Link href='#'>
-          <img src={GardenerLogo} alt='gardener-logo'/>
-        </Link>
-      </Grid>
-      <Grid item xs={12}>
-        <Typography variant='h5' gutterBottom>
-          {
-            // eslint-disable-next-line no-undef
-            document.title = process.env.REACT_APP_DASHBOARD_TITLE
-          }
-        </Typography>
-      </Grid>
-      <Typography
-        variant='caption'
-        marginRight='0.4em'
-        display='flex'
-        alignSelf='flex-end'
-        color='grey'
-        gutterBottom
-      >
-        Build:{' '}
-        {
-          // eslint-disable-next-line no-undef
-          process.env.REACT_APP_BUILD_VERSION
-        }
-      </Typography>
-    </div>
-  </div>
-}
-
-const LogoCorner = () => {
-  return <Box
-    sx={{
-      position: 'fixed',
-      paddingLeft: '1rem',
-      bottom: 0,
-    }}
-  >
-    <img src={SAPLogo} alt='sap-logo'/>
-  </Box>
-}
-
-export const ComponentNavigation = React.memo(({ componentId, componentIsAddedByUser }) => {
-  return <>
-    <ComponentNavigationHeader/>
-    <Divider/>
-    <div style={{ marginBottom: '3.5rem' }}>
-      <LandscapeList componentId={componentId} componentIsAddedByUser={componentIsAddedByUser}/>
-      <ServiceList/>
-    </div>
-    <LogoCorner/>
-  </>
-})
-ComponentNavigation.displayName = 'componentNavigation'
-ComponentNavigation.propTypes = {
-  componentId: PropTypes.any,
-  componentIsAddedByUser: PropTypes.any,
-}
-
-const LandscapeListEntry = ({
-  typeName,
-  components,
-  view,
-  selectedComponentId,
-  selectedComponentIsAddedByUser,
-}) => {
-  const [open, setOpen] = React.useState(true)
-
-  const handleClick = () => {
-    setOpen(!open)
-  }
-
-  return <div>
-    <ListItemButton onClick={handleClick}>
-      <ListItemText primary={capitalize(typeName)}/>
-      {
-        open ? <ExpandLess/> : <ExpandMore/>
-      }
-    </ListItemButton>
-    <Collapse in={open} timeout='auto' unmountOnExit>
-      <List disablePadding>
-        {
-          components.map(component => <ListItemButton
-            key={JSON.stringify(component)}
-            sx={{
-              paddingLeft: 4,
-            }}
-            // use href rather than router to enable "open in new tab"
-            href={`#${componentPathQuery({
-              name: component.name,
-              version: component.version,
-              versionFilter: component.versionFilter,
-              view: view,
-              ocmRepo: component.repoContextUrl,
-              specialComponentId: component.id,
-              specialComponentIsAddedByUser: component.isAddedByUser,
-            }
-            )}`}
-            selected={selectedComponentId === component.id && selectedComponentIsAddedByUser === component.isAddedByUser}
-          >
-            <ListItemText>
-              {
-                capitalize(component.displayName)
-              }
-            </ListItemText>
-          </ListItemButton>)
-        }
-      </List>
-    </Collapse>
-  </div>
-}
-LandscapeListEntry.displayName = 'LandscapeListEntry'
-LandscapeListEntry.propTypes = {
-  typeName: PropTypes.string.isRequired,
-  components: PropTypes.arrayOf(PropTypes.object).isRequired,
-  view: PropTypes.string,
-  selectedComponentId: PropTypes.any,
-  selectedComponentIsAddedByUser: PropTypes.any,
-}
-
-
-const LandscapeList = ({ componentId, componentIsAddedByUser }) => {
-  const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
-  const [specialComponentsFeature, setSpecialComponentsFeature] = React.useState()
-
-  const searchParamContext = React.useContext(SearchParamContext)
-
-  React.useEffect(() => {
-    return registerCallbackHandler({
-      featureRegistrationContext: featureRegistrationContext,
-      featureName: features.SPECIAL_COMPONENTS,
-      callback: ({feature}) => setSpecialComponentsFeature(feature),
-    })
-  }, [featureRegistrationContext])
-
-  const getSpecialComponents = () => {
-    return specialComponentsFeature?.isAvailable
-      ? getMergedSpecialComponents(specialComponentsFeature)
-      : []
-  }
-
-  const specialComponentTypes = [... new Set(getSpecialComponents().map((c) => c.type))]
-
-  return <List component='nav'>
-    {
-      specialComponentTypes.map((type) => <LandscapeListEntry
-        key={type}
-        typeName={type}
-        components={getSpecialComponents().filter((component) => component.type === type)}
-        view={searchParamContext.get('view')}
-        selectedComponentId={componentId}
-        selectedComponentIsAddedByUser={componentIsAddedByUser}
-      />)
-    }
-  </List>
-}
-LandscapeList.displayName = 'LandscapeList'
-LandscapeList.propTypes = {
-  componentId: PropTypes.any,
-  componentIsAddedByUser: PropTypes.any,
-}
-
-
-const ServiceListEntry = ({
-  service,
-}) => {
-  const query = new URLSearchParams({
-    service: service,
-  })
-  return <ListItemButton
-    // use href rather than router to enable "open in new tab"
-    href={`#${MONITORING_PATH}?${query.toString()}`}
-    sx={{
-      paddingLeft: 4
-    }}
-  >
-    <ListItemText>
-      {
-        camelCaseToDisplayText(service)
-      }
-    </ListItemText>
-  </ListItemButton>
-}
-ServiceListEntry.displayName = 'ServiceListEntry'
-ServiceListEntry.propTypes = {
-  service: PropTypes.string.isRequired,
-}
-
-
-const ServiceList = () => {
-  const [services, state] = useFetchServiceExtensions()
-  const [open, setOpen] = React.useState(true)
-  const navigate = useNavigate()
-
-  const handleToggleClick = (event) => {
-    event.stopPropagation()
-    setOpen(!open)
-  }
-
-  const handleToggleKeyDown = (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.stopPropagation()
-      setOpen(!open)
-    }
-  }
-
-  const handleNavigationClick = () => {
-    navigate(SERVICES_PATH)
-  }
-
-  if (state.isLoading || state.error || !services) {
-    return null
-  }
-
-  return <List component='nav'>
-    <ListItemButton onClick={handleNavigationClick}>
-      <ListItemText primary='Extensions'/>
-      <div
-        role='button'
-        tabIndex={0}
-        onClick={handleToggleClick}
-        onKeyDown={handleToggleKeyDown}
-        style={{ 
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        {open ? <ExpandLess/> : <ExpandMore/>}
-      </div>
-    </ListItemButton>
-    <Collapse in={open} timeout='auto' unmountOnExit>
-      <List disablePadding>
-        {
-          services.map((service) => <ServiceListEntry key={service} service={service}/>)
-        }
-      </List>
-    </Collapse>
-  </List>
-}
-ServiceList.displayName = 'ServiceList'
-ServiceList.propTypes = {}
