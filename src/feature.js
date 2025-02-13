@@ -2,7 +2,12 @@ import React from 'react'
 
 import { features } from './api'
 import { FeatureContext } from './App'
-import { features as featureNames, featureStates, TOKEN_KEY } from './consts'
+import {
+  features as featureNames,
+  featureStates,
+  PROFILE_KEY,
+  TOKEN_KEY,
+} from './consts'
 
 
 const featureCfgsFromEnv = () => {
@@ -33,14 +38,20 @@ const FeatureProvider = () => {
   const [allFeatures, setAllFeatures] = React.useState()
   const [isFeaturesLoading, setIsFeaturesLoading] = React.useState()
   const featureContext = React.useContext(FeatureContext)
+  const [profile, setProfile] = React.useState(localStorage.getItem(PROFILE_KEY))
   const [token, setToken] = React.useState(JSON.parse(localStorage.getItem(TOKEN_KEY)))
 
+  addEventListener('profile', () => {
+    // re-fetch features as they may differ based on the profile selection
+    setAllFeatures()
+    setProfile(localStorage.getItem(PROFILE_KEY))
+  })
   addEventListener('token', () => setToken(JSON.parse(localStorage.getItem(TOKEN_KEY))))
 
   React.useEffect(() => {
     const loadFeatures = async () => {
       setIsFeaturesLoading(true)
-      const remoteFeatures = await features()
+      const remoteFeatures = await features({profile})
       const localFeatures = featureCfgsFromEnv()
       setAllFeatures([...remoteFeatures, ...localFeatures])
       setIsFeaturesLoading(false)
@@ -75,7 +86,7 @@ const FeatureProvider = () => {
       callCallbacks()
     else
       loadFeatures()
-  }, [featureContext, allFeatures, isFeaturesLoading, token])
+  }, [featureContext, allFeatures, isFeaturesLoading, profile, token])
 
   return null
 }

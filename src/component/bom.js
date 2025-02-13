@@ -81,6 +81,7 @@ import {
   COMPLIANCE_TOOLS,
   features,
   fetchBomPopulate,
+  PROFILE_KEY,
   SUMMARY_CATEGORISATIONS,
 } from '../consts'
 import {
@@ -281,6 +282,8 @@ const Component = React.memo(({
 }) => {
   const searchParamContext = React.useContext(SearchParamContext)
   const theme = useTheme()
+  const [profile, setProfile] = React.useState(localStorage.getItem(PROFILE_KEY))
+  addEventListener('profile', () => setProfile(localStorage.getItem(PROFILE_KEY)))
 
   const name = trimComponentName(component.name)
 
@@ -291,6 +294,7 @@ const Component = React.memo(({
     componentVersion: component.version,
     recursionDepth: 0,
     ocmRepo: ocmRepo,
+    profile: profile,
   })
 
   const complianceSummaryFetchDetails = React.useMemo(() => {

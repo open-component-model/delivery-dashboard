@@ -11,6 +11,7 @@ import {
   artefactsQueryMetadata,
   serviceExtensions,
   dora,
+  profiles,
   routes,
 } from './api'
 import {
@@ -252,6 +253,17 @@ const _useFetch = ({
 }
 
 
+const useFetchProfiles = () => {
+  return _useFetch({
+    fetchFunction: profiles,
+    errorMessage: 'Profiles could not be fetched',
+    cacheKey: JSON.stringify({
+      route: routes.profiles,
+    }),
+  })
+}
+
+
 const useFetchUpgradePRs = ({
   componentName,
   state,
@@ -317,6 +329,7 @@ const useFetchComplianceSummary = ({
   componentVersion,
   ocmRepo,
   recursionDepth,
+  profile,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [deliveryDbFeature, setDeliveryDbFeature] = React.useState()
@@ -338,11 +351,13 @@ const useFetchComplianceSummary = ({
     componentVersion,
     ocmRepo,
     recursionDepth,
+    profile,
   }), [
     componentName,
     componentVersion,
     ocmRepo,
     recursionDepth,
+    profile,
   ])
 
   return _useFetch({
@@ -705,6 +720,7 @@ export {
   useFetchContainerStatuses,
   useFetchBacklogItems,
   useFetchDoraMetrics,
+  useFetchProfiles,
 }
 
 

@@ -68,6 +68,7 @@ import {
   FEATURES_CFG_KEY,
   fetchBomPopulate,
   OCM_REPO_AUTO_OPTION,
+  PROFILE_KEY,
   pullRequestsStates,
   tabConfig,
 } from './consts'
@@ -1164,10 +1165,14 @@ const ComponentCompliance = ({
   component,
   findingCfgs,
 }) => {
+  const [profile, setProfile] = React.useState(localStorage.getItem(PROFILE_KEY))
+  addEventListener('profile', () => setProfile(localStorage.getItem(PROFILE_KEY)))
+
   const [complianceSummary, state] = useFetchComplianceSummary({
     componentName: component.name,
     componentVersion: component.version,
     ocmRepo: component.ocmRepo,
+    profile: profile,
   })
 
   const worstEntries = complianceSummary ? Object.values(complianceSummary.complianceSummary.reduce((summariesByType, summary) => {

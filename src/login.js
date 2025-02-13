@@ -26,8 +26,10 @@ import PropTypes from 'prop-types'
 import { useSnackbar } from 'notistack'
 
 import { auth } from './api'
-import { DASHBOARD_TITLE, errorSnackbarProps, TOKEN_KEY } from './consts'
+import { useFetchProfiles } from './fetch'
+import { DASHBOARD_TITLE, errorSnackbarProps, PROFILE_KEY, TOKEN_KEY } from './consts'
 import { ConfigContext } from './App'
+import ProfileSelector from './util/profileSelector'
 
 import GardenerLogo from './resources/gardener-logo.svg'
 
@@ -80,7 +82,7 @@ const LoginPanel = () => {
   }}>
     <div style={{
       width: '29rem',
-      height: '37rem',
+      height: '48rem',
     }}>
       <div style={{
         width: '100%',
@@ -150,6 +152,9 @@ const LoginPanelBottom = () => {
   const [token, setToken] = React.useState('')
   const [showToken, setShowToken] = React.useState(false)
 
+  const [selectedProfile, setSelectedProfile] = React.useState(localStorage.getItem(PROFILE_KEY))
+  const [profiles, profilesState] = useFetchProfiles()
+
   React.useEffect(() => {
     const retrieveAuthCfgs = async () => {
       try {
@@ -174,6 +179,12 @@ const LoginPanelBottom = () => {
       setSelectedAuthConfig(authConfigs[0])
     }
   }, [selectedAuthConfig, authConfigs])
+
+  React.useEffect(() => {
+    if (!selectedProfile && profiles?.length > 0) {
+      setSelectedProfile(profiles[0])
+    }
+  }, [selectedProfile, profiles])
 
   return <div style={{
     width: '100%',
@@ -207,6 +218,10 @@ const LoginPanelBottom = () => {
         selectedAuthConfig={selectedAuthConfig}
         setSelectedAuthConfig={setSelectedAuthConfig}
         authConfigs={authConfigs}
+        selectedProfile={selectedProfile}
+        setSelectedProfile={setSelectedProfile}
+        profiles={profiles}
+        profilesState={profilesState}
       /> : <TokenTab
         selectedAuthConfig={selectedAuthConfig}
         setSelectedAuthConfig={setSelectedAuthConfig}
@@ -215,6 +230,10 @@ const LoginPanelBottom = () => {
         setToken={setToken}
         showToken={showToken}
         setShowToken={setShowToken}
+        selectedProfile={selectedProfile}
+        setSelectedProfile={setSelectedProfile}
+        profiles={profiles}
+        profilesState={profilesState}
       />
     }
   </div>
@@ -226,6 +245,10 @@ const OAuthTab = ({
   selectedAuthConfig,
   setSelectedAuthConfig,
   authConfigs,
+  selectedProfile,
+  setSelectedProfile,
+  profiles,
+  profilesState,
 }) => {
   const theme = useTheme()
 
@@ -261,6 +284,20 @@ const OAuthTab = ({
       label='OAuth Provider Configuration'
       authConfigKey='name'
     />
+    {
+      (profilesState.isLoading || profiles.length > 0) && <ProfileSelector
+        selectedProfile={selectedProfile}
+        setSelectedProfile={setSelectedProfile}
+        profiles={profiles}
+        profilesState={profilesState}
+        props={{
+          sx: {
+            width: '80%',
+            marginTop: '1rem',
+          },
+        }}
+      />
+    }
     <LoginButton login={() => login(selectedAuthConfig)}/>
   </>
 }
@@ -269,6 +306,10 @@ OAuthTab.propTypes = {
   selectedAuthConfig: PropTypes.object,
   setSelectedAuthConfig: PropTypes.func.isRequired,
   authConfigs: PropTypes.arrayOf(PropTypes.object),
+  selectedProfile: PropTypes.string,
+  setSelectedProfile: PropTypes.func.isRequired,
+  profiles: PropTypes.arrayOf(PropTypes.string),
+  profilesState: PropTypes.object.isRequired,
 }
 
 
@@ -280,6 +321,10 @@ const TokenTab = ({
   setToken,
   showToken,
   setShowToken,
+  selectedProfile,
+  setSelectedProfile,
+  profiles,
+  profilesState,
 }) => {
   const theme = useTheme()
 
@@ -343,6 +388,20 @@ const TokenTab = ({
       helperText={error && 'Wrong credentials'}
       error={error}
     />
+    {
+      (profilesState.isLoading || profiles.length > 0) && <ProfileSelector
+        selectedProfile={selectedProfile}
+        setSelectedProfile={setSelectedProfile}
+        profiles={profiles}
+        profilesState={profilesState}
+        props={{
+          sx: {
+            width: '80%',
+            marginTop: '1rem',
+          },
+        }}
+      />
+    }
     <LoginButton login={() => login(selectedAuthConfig)}/>
   </>
 }
@@ -355,6 +414,10 @@ TokenTab.propTypes = {
   setToken: PropTypes.func.isRequired,
   showToken: PropTypes.bool.isRequired,
   setShowToken: PropTypes.func.isRequired,
+  selectedProfile: PropTypes.string,
+  setSelectedProfile: PropTypes.func.isRequired,
+  profiles: PropTypes.arrayOf(PropTypes.string),
+  profilesState: PropTypes.object.isRequired,
 }
 
 
