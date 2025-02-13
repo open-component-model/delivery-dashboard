@@ -1193,7 +1193,7 @@ const ComponentCompliance = ({
 
   const worstEntries = complianceSummary ? Object.values(complianceSummary.complianceSummary.reduce((summariesByType, summary) => {
     summary.entries.forEach((entry) => {
-      if (summariesByType[entry.type] && summariesByType[entry.type] >= entry.value) return
+      if (summariesByType[entry.type] && summariesByType[entry.type].value >= entry.value) return
 
       summariesByType = {
         ...summariesByType,
