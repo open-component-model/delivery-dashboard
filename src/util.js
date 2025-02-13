@@ -209,6 +209,10 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
         || rescoring.data.finding.filename !== finding.data.finding.filename
       )
     ) return false
+    if (
+      finding.meta.type === FINDING_TYPES.SAST
+      && rescoring.data.finding.sub_type !== finding.data.sub_type
+    ) return false
 
     return true
   })
