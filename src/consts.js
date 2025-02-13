@@ -91,6 +91,7 @@ export const features = {
   AUTHENTICATION: 'authentication',
   DELIVERY_DB: 'delivery-db',
   CLUSTER_ACCESS: 'cluster-access',
+  PROFILES: 'profiles',
   TESTS: 'tests',
   REPO_CONTEXTS: 'repo-contexts',
   SPECIAL_COMPONENTS: 'special-components',
@@ -120,6 +121,7 @@ export const FEATURES_CFG_KEY = 'features'
 export const PATH_KEY = 'path'
 export const PATH_POS_KEY = 'path_pos'
 export const SHOW_SNOWFLAKES = 'show_snowflakes'
+export const PROFILE_KEY = 'profile'
 
 export const OCM_REPO_AUTO_OPTION = '<auto>'
 

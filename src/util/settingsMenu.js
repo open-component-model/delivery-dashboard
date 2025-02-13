@@ -23,10 +23,11 @@ import PropTypes from 'prop-types'
 import { useTheme } from '@emotion/react'
 import { useSnackbar } from 'notistack'
 
-import { features, TOKEN_KEY, errorSnackbarProps } from '../consts.js'
+import { features, PROFILE_KEY, TOKEN_KEY, errorSnackbarProps } from '../consts.js'
 import { auth } from '../api.js'
 import DarkModeSwitch from './darkModeSwitch.js'
 import FeatureDependent from './featureDependent.js'
+import ProfileSelector from './profileSelector.js'
 import { ConfigContext, FeatureRegistrationContext } from '../App.js'
 import { registerCallbackHandler } from '../feature.js'
 import { isWinterComing } from '../util.js'
@@ -37,11 +38,20 @@ export const SettingsMenu = () => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const context = React.useContext(ConfigContext)
 
+  const [profilesFeature, setProfilesFeature] = React.useState()
   const [dashboardCreateIssueUrlFeature, setDashboardCreateIssueUrlFeature] = React.useState()
   const [anchorElement, setAnchorElement] = React.useState(null)
   const [token, setToken] = React.useState(JSON.parse(localStorage.getItem(TOKEN_KEY)))
 
   addEventListener('token', () => setToken(JSON.parse(localStorage.getItem(TOKEN_KEY))))
+
+  React.useEffect(() => {
+    return registerCallbackHandler({
+      featureRegistrationContext: featureRegistrationContext,
+      featureName: features.PROFILES,
+      callback: ({feature}) => setProfilesFeature(feature),
+    })
+  }, [featureRegistrationContext])
 
   React.useEffect(() => {
     return registerCallbackHandler({
@@ -129,7 +139,10 @@ export const SettingsMenu = () => {
           >
             <DarkModeSwitch />
           </ListItem>
-          <LoginPanel token={token}/>
+          <LoginPanel
+            token={token}
+            profiles={profilesFeature?.profiles.map((profile) => profile.name) ?? []}
+          />
           <ListItemButton
             component='a'
             href='https://ocm.software'
@@ -161,7 +174,9 @@ export const SettingsMenu = () => {
 
 const LoginPanel = ({
   token,
+  profiles,
 }) => {
+  const [selectedProfile, setSelectedProfile] = React.useState(localStorage.getItem(PROFILE_KEY))
   const { enqueueSnackbar } = useSnackbar()
 
   const logout = async () => {
@@ -181,12 +196,32 @@ const LoginPanel = ({
     }
   }
 
+  React.useEffect(() => {
+    if (!selectedProfile && profiles.length > 0) {
+      setSelectedProfile(profiles[0])
+    }
+  }, [selectedProfile, profiles])
+
   return <FeatureDependent requiredFeatures={[features.AUTHENTICATION]}>
     <ListItem sx={{ display: 'flex', justifyContent: 'center' }}>
       <Tooltip title={`logged in as ${token?.sub}`}>
         <Avatar/>
       </Tooltip>
     </ListItem>
+    {
+      profiles.length > 0 && <ListItem>
+        <ProfileSelector
+          selectedProfile={selectedProfile}
+          setSelectedProfile={setSelectedProfile}
+          profiles={profiles}
+          props={{
+            sx: {
+              width: '100%',
+            },
+          }}
+        />
+      </ListItem>
+    }
     <ListItem disablePadding>
       <ListItemButton onClick={() => logout()}>
         <Logout color='error'/>
@@ -199,4 +234,5 @@ const LoginPanel = ({
 LoginPanel.displayName = 'LoginPanel'
 LoginPanel.propTypes = {
   token: PropTypes.object,
+  profiles: PropTypes.arrayOf(PropTypes.string).isRequired,
 }

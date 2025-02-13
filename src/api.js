@@ -65,6 +65,7 @@ export const routes = {
     logout: () => `${routes.auth.base}/logout`,
   },
   features: api('features'),
+  profiles: api('profiles'),
   artefacts: {
     queryMetadata: api('artefacts/metadata/query'),
   },
@@ -111,10 +112,17 @@ export const routes = {
   },
 }
 
-const features = async () => {
+const features = async ({profile}) => {
   const url = new URL(routes.features)
+  appendPresentParams(url, {profile})
 
   return (await _toJson(withAuth(url))).features
+}
+
+const profiles = async () => {
+  const url = new URL(routes.profiles)
+
+  return (await _toJson(await fetch(url))).profiles
 }
 
 const ocmComponent = async ({
@@ -251,6 +259,7 @@ const componentsComplianceSummary = async ({
   componentVersion,
   ocmRepo,
   recursionDepth,
+  profile,
   headers,
 }) => {
   const url = new URL(routes.components.complianceSummary())
@@ -259,6 +268,7 @@ const componentsComplianceSummary = async ({
     version: componentVersion,
     ocm_repo_url: ocmRepo,
     recursion_depth: recursionDepth,
+    profile: profile,
   })
 
   return await _toJson(withAuth(url, {
@@ -532,6 +542,7 @@ const dora = {
 export {
   auth,
   features,
+  profiles,
   components,
   specialComponentCurrentDependencies,
   fetchJoke,

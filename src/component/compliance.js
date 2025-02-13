@@ -50,6 +50,7 @@ import {
 } from '../util'
 import CopyOnClickChip from '../util/copyOnClickChip'
 import {
+  PROFILE_KEY,
   TOKEN_KEY,
   USER_IDENTITIES,
 } from '../consts'
@@ -862,11 +863,14 @@ const ComplianceTab = ({
   findingCfgs,
 }) => {
   const token = JSON.parse(localStorage.getItem(TOKEN_KEY))
+  const [profile, setProfile] = React.useState(localStorage.getItem(PROFILE_KEY))
+  addEventListener('profile', () => setProfile(localStorage.getItem(PROFILE_KEY)))
 
   const [complianceSummary, complianceSummaryState, refreshComplianceSummary] = useFetchComplianceSummary({
     componentName: component.name,
     componentVersion: component.version,
     ocmRepo: ocmRepo,
+    profile: profile,
   })
 
   const [findingType, setFindingType] = React.useState(findingCfgs[0].type) // we checked there is at least one cfg
@@ -928,6 +932,10 @@ const ComplianceTab = ({
       return aggregatedOcmNodes.filter((aggregatedOcmNode) => filter.filter(aggregatedOcmNode))
     }, aggregatedOcmNodes)
   }, [customFilters, filterMode])
+
+  React.useEffect(() => {
+    setFindingType(findingCfgs[0].type)
+  }, [profile])
 
   React.useEffect(() => {
     setSelectedAggregatedOcmNodes([])
