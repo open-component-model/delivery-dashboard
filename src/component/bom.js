@@ -2225,6 +2225,7 @@ const ComplianceCell = ({
 
   const lastBdbaScan = findLastScan(complianceFiltered, datasources.BDBA)
   const lastMalwareScan = findLastScan(complianceFiltered, datasources.CLAMAV)
+  const lastSastScan = findLastScan(complianceFiltered, datasources.SAST)
 
   const retrieveCodecheckFindings = retrieveFindingsForType({
     findingType: FINDING_TYPES.CODECHECKS_AGGREGATED,
@@ -2248,6 +2249,11 @@ const ComplianceCell = ({
   })
   const retrieveVulnerabilityFindings = retrieveFindingsForType({
     findingType: FINDING_TYPES.VULNERABILITY,
+    findingCfgs: findingCfgs,
+    ocmNode: ocmNode,
+  })
+  const retrieveSastFindings = retrieveFindingsForType({
+    findingType: FINDING_TYPES.SAST,
     findingCfgs: findingCfgs,
     ocmNode: ocmNode,
   })
@@ -2308,6 +2314,19 @@ const ComplianceCell = ({
           type={FINDING_TYPES.VULNERABILITY}
           categorisation={getCategorisation(FINDING_TYPES.VULNERABILITY)}
           lastScan={lastBdbaScan}
+          findingCfgs={findingCfgs}
+          fetchComplianceSummary={fetchComplianceSummary}
+          isLoading={state.isLoading}
+        />
+      }
+      {
+        extensionsCfg?.sast && ocmNode.artefactKind === ARTEFACT_KIND.SOURCE && retrieveSastFindings && <RescoringCell
+          ocmNodes={ocmNodes}
+          ocmRepo={ocmRepo}
+          datasource={datasources.SAST}
+          type={FINDING_TYPES.SAST}
+          categorisation={getCategorisation(FINDING_TYPES.SAST)}
+          lastScan={lastSastScan}
           findingCfgs={findingCfgs}
           fetchComplianceSummary={fetchComplianceSummary}
           isLoading={state.isLoading}
