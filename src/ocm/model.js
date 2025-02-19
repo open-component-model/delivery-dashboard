@@ -73,6 +73,7 @@ Object.freeze(artefactMetadataTypes)
 const datasources = {
   BDBA: 'bdba',
   CLAMAV: 'clamav',
+  SAST: 'sast-lint-check',
   CC_UTILS: 'cc-utils',
 }
 Object.freeze(datasources)
@@ -111,6 +112,10 @@ export const dataKey = ({type, data}) => {
   if (type === FINDING_TYPES.MALWARE) return asKey({
     props: [data.finding.content_digest, data.finding.filename, data.finding.malware],
   })
+
+  if (type === FINDING_TYPES.SAST) return asKey({
+    props: [data.sast_status, data.sub_type],
+  })
 }
 
 
@@ -139,6 +144,8 @@ const displayNameForData = ({
     return `${displayName} ${data.cve}`
   } else if (type === FINDING_TYPES.LICENSE) {
     return `${displayName} ${data.license.name}`
+  } else if (type === FINDING_TYPES.SAST) {
+    return `${displayName} ${data.sub_type}`
   } else if (type === artefactMetadataTypes.STRUCTURE_INFO) {
     return `Package ${data.package_name} ${data.package_version}`
   } else {
