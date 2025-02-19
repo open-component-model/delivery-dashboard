@@ -64,7 +64,6 @@ import {
 } from './App'
 import { rescore } from './api'
 import {
-  ARTEFACT_KIND,
   errorSnackbarProps,
   META_RESCORING_RULES,
   META_SPRINT_NAMES,
@@ -1231,6 +1230,13 @@ const Subject = ({
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
+  } else if (rescoring.finding_type === FINDING_TYPES.SAST) {
+    return <Stack>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <Typography variant='inherit'>{finding.sub_type}</Typography>
+        <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
+      </div>
+    </Stack>
   }
 }
 Subject.displayName = 'Subject'
@@ -1369,6 +1375,16 @@ const Finding = ({
         </Typography>
       </div>
       <Typography variant='inherit' marginRight='0.4rem'>{finding.malware}</Typography>
+    </Stack>
+  } else if (rescoring.finding_type === FINDING_TYPES.SAST) {
+    return <Stack spacing={0.5}>
+      <div style={{ display: 'flex' }}>
+        <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
+        <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
+          {finding.severity}
+        </Typography>
+      </div>
+      <Typography variant='inherit' marginRight='0.4rem'>{finding.sast_status}</Typography>
     </Stack>
   }
 }
@@ -1763,6 +1779,17 @@ const RescoringContent = ({
       }).value,
     }
 
+    const sastAccesses = {
+      [orderAttributes.SUBJECT]: rescoring.finding.sub_type,
+      [orderAttributes.FINDING]: rescoring.finding.sast_status,
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
+      [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
+      [orderAttributes.RESCORED]: findCategorisationById({
+        id: rescoring.severity,
+        findingCfg: findingCfg,
+      }).value,
+    }
+
     if (
       rescoringType === FINDING_TYPES.VULNERABILITY
       || rescoringType === FINDING_TYPES.LICENSE
@@ -1770,6 +1797,8 @@ const RescoringContent = ({
       return bdbaAccesses[desired]
     } else if (rescoringType === FINDING_TYPES.MALWARE) {
       return malwareAccess[desired]
+    } else if (rescoringType === FINDING_TYPES.SAST) {
+      return sastAccesses[desired]
     }
 
   }
@@ -2173,7 +2202,7 @@ const Rescore = ({
     const artefact = {
       component_name: [scopeOptions.COMPONENT, scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? rescoring.ocmNode.component.name : null,
       component_version: scopeOptions.SINGLE === scope ? rescoring.ocmNode.component.version : null,
-      artefact_kind: ARTEFACT_KIND.RESOURCE,
+      artefact_kind: rescoring.ocmNode.artefactKind,
       artefact: {
         artefact_name: [scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? rescoring.ocmNode.artefact.name : null,
         artefact_version: scopeOptions.SINGLE === scope ? rescoring.ocmNode.artefact.version : null,
@@ -2206,6 +2235,11 @@ const Rescore = ({
           content_digest: rescoring.finding.finding.content_digest,
           filename: rescoring.finding.finding.filename,
           malware: rescoring.finding.finding.malware,
+        }
+      } else if (type === FINDING_TYPES.SAST) {
+        return {
+          sast_status: rescoring.finding.sast_status,
+          sub_type: rescoring.finding.sub_type,
         }
       }
     }
