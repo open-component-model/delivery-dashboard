@@ -318,6 +318,21 @@ const useFetchComplianceSummary = ({
   ocmRepo,
   recursionDepth,
 }) => {
+  const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
+  const [deliveryDbFeature, setDeliveryDbFeature] = React.useState()
+
+  React.useEffect(() => {
+    return registerCallbackHandler({
+      featureRegistrationContext: featureRegistrationContext,
+      featureName: features.DELIVERY_DB,
+      callback: ({feature}) => setDeliveryDbFeature(feature),
+    })
+  }, [featureRegistrationContext])
+
+  const fetchCondition = React.useCallback(() => {
+    return deliveryDbFeature?.isAvailable
+  }, [deliveryDbFeature])
+
   const params = React.useMemo(() => ({
     componentName,
     componentVersion,
@@ -333,6 +348,7 @@ const useFetchComplianceSummary = ({
   return _useFetch({
     fetchFunction: components.complianceSummary,
     fetchParams: params,
+    fetchCondition: fetchCondition,
     errorMessage: 'Compliance Summary could not be fetched',
     cacheKey: JSON.stringify({
       route: routes.components.complianceSummary(),
@@ -418,6 +434,21 @@ const useFetchQueryMetadata = ({
   types,
   referenced_types = React.useMemo(() => {[]}, []),
 }) => {
+  const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
+  const [deliveryDbFeature, setDeliveryDbFeature] = React.useState()
+
+  React.useEffect(() => {
+    return registerCallbackHandler({
+      featureRegistrationContext: featureRegistrationContext,
+      featureName: features.DELIVERY_DB,
+      callback: ({feature}) => setDeliveryDbFeature(feature),
+    })
+  }, [featureRegistrationContext])
+
+  const fetchCondition = React.useCallback(() => {
+    return deliveryDbFeature?.isAvailable
+  }, [deliveryDbFeature])
+
   const params = React.useMemo(() => ({
     artefacts,
     types,
@@ -431,6 +462,7 @@ const useFetchQueryMetadata = ({
   return _useFetch({
     fetchFunction: artefactsQueryMetadata,
     fetchParams: params,
+    fetchCondition: fetchCondition,
     errorMessage: 'Unable to fetch artefact metadata',
     cacheKey: JSON.stringify({
       route: routes.artefacts.queryMetadata,
