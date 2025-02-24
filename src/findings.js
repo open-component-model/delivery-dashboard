@@ -61,13 +61,7 @@ export const retrieveFindingsForType = ({
 export const rescorableFindingTypes = ({findingCfgs}) => {
   return findingCfgs.filter((findingCfg) => {
     return findingCfg.categorisations.find((categorisation) => {
-      if (!categorisation.rescoring) return false
-
-      if (Array.isArray(categorisation.rescoring)) {
-        return categorisation.rescoring.includes(RESCORING_MODES.MANUAL)
-      } else {
-        return categorisation.rescoring === RESCORING_MODES.MANUAL
-      }
+      return categorisation.rescoring?.includes(RESCORING_MODES.MANUAL)
     })
   }).map((findingCfg) => findingCfg.type)
 }
