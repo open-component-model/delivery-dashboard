@@ -67,6 +67,7 @@ import {
   errorSnackbarProps,
   META_RESCORING_RULES,
   META_SPRINT_NAMES,
+  RESCORING_MODES,
 } from './consts'
 import { OcmNode, OcmNodeDetails } from './ocm/iter'
 import {
@@ -1561,7 +1562,9 @@ const RescoringContentTableRow = ({
               sx={{ marginY: '0.5rem' }}
             >
               {
-                findingCfg.categorisations.map((categorisation) => <MenuItem
+                findingCfg.categorisations.filter((categorisation) => {
+                  return categorisation.rescoring?.includes(RESCORING_MODES.MANUAL)
+                }).map((categorisation) => <MenuItem
                   key={categorisation.id}
                   value={categorisation.id}
                 >
