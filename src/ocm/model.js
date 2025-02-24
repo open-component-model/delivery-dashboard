@@ -62,9 +62,20 @@ const knownLabelNames = {
 Object.freeze(knownLabelNames)
 
 
+const cryptoAssetTypes = {
+  ALGORITHM: 'algorithm',
+  CERTIFICATE: 'certificate',
+  LIBRARY: 'library',
+  PROTOCOL: 'protocol',
+  RELATED_CRYPTO_MATERIAL: 'related-crypto-material',
+}
+Object.freeze(cryptoAssetTypes)
+
+
 const artefactMetadataTypes = {
   ARTEFACT_SCAN_INFO: 'meta/artefact_scan_info',
   STRUCTURE_INFO: 'structure_info',
+  CRYPTO_ASSET: 'crypto_asset',
   RESCORINGS: 'rescorings',
 }
 Object.freeze(artefactMetadataTypes)
@@ -75,6 +86,7 @@ const datasources = {
   CLAMAV: 'clamav',
   SAST: 'sast',
   CC_UTILS: 'cc-utils',
+  CRYPTO: 'crypto',
 }
 Object.freeze(datasources)
 
@@ -116,6 +128,34 @@ export const dataKey = ({type, data}) => {
   if (type === FINDING_TYPES.SAST) return asKey({
     props: [data.sast_status, data.sub_type],
   })
+
+  if (type === cryptoAssetTypes.ALGORITHM) return asKey({
+    props: [data.name, data.primitive, data.parameter_set_identifier, data.curve, data.padding],
+  })
+
+  if (type === cryptoAssetTypes.CERTIFICATE) return asKey({
+    props: [data.kind, data.validity_years?.toString(), data.signature_algorithm_ref, data.subject_public_key_ref],
+  })
+
+  if (type === cryptoAssetTypes.LIBRARY) return asKey({
+    props: [data.name, data.version],
+  })
+
+  if (type === cryptoAssetTypes.PROTOCOL) return asKey({
+    props: [data.type, data.version],
+  })
+
+  if (type === cryptoAssetTypes.RELATED_CRYPTO_MATERIAL) return asKey({
+    props: [data.type, data.algorithm_ref, data.curve, data.size?.toString()],
+  })
+
+  if (type === artefactMetadataTypes.CRYPTO_ASSET) return asKey({
+    props: [data.asset_type, dataKey({type: data.asset_type, data: data.properties})],
+  })
+
+  if (type === FINDING_TYPES.CRYPTO) return asKey({
+    props: [data.standard, dataKey({type: artefactMetadataTypes.CRYPTO_ASSET, data: data.asset})],
+  })
 }
 
 
@@ -140,6 +180,13 @@ const displayNameForData = ({
 }) => {
   const displayName = findingTypeToDisplayName(type)
 
+  const cryptoAssetToDisplayName = (cryptoAsset) => {
+    const assetType = cryptoAsset.asset_type
+
+    // if asset type is certificate, don't show all names as they are not of interest
+    return `${assetType} ${assetType !== cryptoAssetTypes.CERTIFICATE ? cryptoAsset.names.sort().join(', ') : ''}`
+  }
+
   if (type === FINDING_TYPES.VULNERABILITY) {
     return `${displayName} ${data.cve}`
   } else if (type === FINDING_TYPES.LICENSE) {
@@ -148,6 +195,10 @@ const displayNameForData = ({
     return `${displayName} ${data.sub_type}`
   } else if (type === artefactMetadataTypes.STRUCTURE_INFO) {
     return `Package ${data.package_name} ${data.package_version}`
+  } else if (type === FINDING_TYPES.CRYPTO) {
+    return `${displayName} ${cryptoAssetToDisplayName(data.asset)} (${data.standard})`
+  } else if (type === artefactMetadataTypes.CRYPTO_ASSET) {
+    return `${displayName} ${cryptoAssetToDisplayName(data)}`
   } else {
     return displayName
   }
@@ -562,12 +613,14 @@ const MetadataViewerPopover = ({
     FINDING_TYPES.VULNERABILITY,
   ].includes(findingCfg.type))
 
-  const types = React.useMemo(() => {
-    const findingTypes = findingCfgs.map((findingCfg) => findingCfg.type)
+  // crypto assets might also be available in case crypto findings are enabled
+  const includeCryptoAssets = findingCfgs.find((findingCfg) => findingCfg.type === FINDING_TYPES.CRYPTO)
 
-    if (!includeStructureInfo) return findingTypes
-    return findingTypes.concat([artefactMetadataTypes.STRUCTURE_INFO])
-  }, [artefactMetadataTypes])
+  const types = React.useMemo(() => [
+    ...findingCfgs.map((findingCfg) => findingCfg.type),
+    ...(includeStructureInfo ? [artefactMetadataTypes.STRUCTURE_INFO] : []),
+    ...(includeCryptoAssets ? [artefactMetadataTypes.CRYPTO_ASSET] : []),
+  ], [artefactMetadataTypes])
 
   const [findings, findingsState] = useFetchQueryMetadata({
     artefacts: components,

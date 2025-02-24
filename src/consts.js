@@ -162,6 +162,7 @@ export const VERSION_FILTER = {
 export const COMPLIANCE_TOOLS = {
   BDBA: 'bdba',
   CLAMAV: 'clamav',
+  CRYPTO: 'crypto',
   SAST: 'sast',
   ISSUE_REPLICATOR: 'issueReplicator',
 }

@@ -1205,6 +1205,55 @@ MalwareExtraInfo.propTypes = {
 }
 
 
+const CryptoExtraInfo = ({
+  locations,
+  properties,
+}) => {
+  return <ExtraWideTooltip
+    title={
+      <div style={{ overflowY: 'auto', maxHeight: '15rem' }}>
+        <Typography
+          variant='inherit'
+          sx={{
+            fontWeight: 'bold',
+          }}
+          marginBottom='0.5rem'
+        >
+          Properties
+        </Typography>
+        <Typography variant='inherit' whiteSpace='pre-wrap'>
+          {
+            JSON.stringify(properties, null, 2)
+          }
+        </Typography>
+        <Divider/>
+        <Typography
+          variant='inherit'
+          sx={{
+            fontWeight: 'bold',
+          }}
+          marginBottom='0.5rem'
+        >
+          Locations
+        </Typography>
+        <Typography variant='inherit' whiteSpace='pre-wrap'>
+          {
+            JSON.stringify(locations, null, 2)
+          }
+        </Typography>
+      </div>
+    }
+  >
+    <InfoOutlinedIcon sx={{ height: '1rem' }}/>
+  </ExtraWideTooltip>
+}
+CryptoExtraInfo.displayName = 'CryptoExtraInfo'
+CryptoExtraInfo.propTypes = {
+  locations: PropTypes.arrayOf(PropTypes.string).isRequired,
+  properties: PropTypes.object.isRequired,
+}
+
+
 const Subject = ({
   rescoring,
   ocmNode,
@@ -1232,10 +1281,26 @@ const Subject = ({
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
+
   } else if (rescoring.finding_type === FINDING_TYPES.SAST) {
     return <Stack>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <Typography variant='inherit'>{finding.sub_type}</Typography>
+        <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
+      </div>
+    </Stack>
+
+  } else if (rescoring.finding_type === FINDING_TYPES.CRYPTO) {
+    return <Stack>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <TruncatedTextWithTooltip
+          text={`${finding.asset.names.sort().join('\n')}${finding.asset.properties.version ? '\n' : ''}${finding.asset.properties.version ? finding.asset.properties.version : ''}`}
+          maxLength={30}
+          typographyProps={{
+            variant: 'inherit',
+            whiteSpace: 'pre-line',
+          }}
+        />
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
@@ -1393,6 +1458,42 @@ const Finding = ({
         </Typography>
       </div>
       <Typography variant='inherit' marginRight='0.4rem'>{finding.sast_status}</Typography>
+    </Stack>
+
+  } else if (rescoring.finding_type === FINDING_TYPES.CRYPTO) {
+    return <Stack spacing={0.5}>
+      <Tooltip
+        title={<div style={{ overflowY: 'auto', maxHeight: '15rem' }}>
+          <Typography variant='inherit' whiteSpace='pre-line'>
+            {
+              finding.summary ?? 'No summary available'
+            }
+          </Typography>
+        </div>}
+      >
+        <Typography variant='inherit' marginRight='0.4rem'>
+          {
+            finding.asset.asset_type
+          }
+        </Typography>
+      </Tooltip>
+      <div style={{ display: 'flex' }}>
+        <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
+        <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
+          {
+            categorisation.display_name
+          }
+        </Typography>
+        <CryptoExtraInfo
+          locations={finding.asset.locations}
+          properties={finding.asset.properties}
+        />
+      </div>
+      <Typography variant='inherit'>
+        {
+          finding.standard
+        }
+      </Typography>
     </Stack>
   }
 }
@@ -1809,6 +1910,17 @@ const RescoringContent = ({
       }).value,
     }
 
+    const cryptoAccess = {
+      [orderAttributes.SUBJECT]: rescoring.finding.asset?.names.sort(),
+      [orderAttributes.FINDING]: `${FINDING_TYPES.CRYPTO}_${rescoring.finding.standard}_${rescoring.finding.asset?.asset_type}`,
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
+      [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
+      [orderAttributes.RESCORED]: findCategorisationById({
+        id: rescoring.severity,
+        findingCfg: findingCfg,
+      }).value,
+    }
+
     if (
       rescoringType === FINDING_TYPES.VULNERABILITY
       || rescoringType === FINDING_TYPES.LICENSE
@@ -1818,6 +1930,8 @@ const RescoringContent = ({
       return malwareAccess[desired]
     } else if (rescoringType === FINDING_TYPES.SAST) {
       return sastAccesses[desired]
+    } else if (rescoringType === FINDING_TYPES.CRYPTO) {
+      return cryptoAccess[desired]
     }
 
   }
@@ -2259,6 +2373,11 @@ const Rescore = ({
         return {
           sast_status: rescoring.finding.sast_status,
           sub_type: rescoring.finding.sub_type,
+        }
+      } else if (type === FINDING_TYPES.CRYPTO) {
+        return {
+          standard: rescoring.finding.standard,
+          asset: rescoring.finding.asset,
         }
       }
     }

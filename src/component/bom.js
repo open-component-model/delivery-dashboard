@@ -2224,11 +2224,17 @@ const ComplianceCell = ({
   const codecheckData = complianceFiltered?.find((d) => d.meta.type === FINDING_TYPES.CODECHECKS_AGGREGATED)
 
   const lastBdbaScan = findLastScan(complianceFiltered, datasources.BDBA)
+  const lastCryptoScan = findLastScan(complianceFiltered, datasources.CRYPTO)
   const lastMalwareScan = findLastScan(complianceFiltered, datasources.CLAMAV)
   const lastSastScan = findLastScan(complianceFiltered, datasources.SAST)
 
   const retrieveCodecheckFindings = retrieveFindingsForType({
     findingType: FINDING_TYPES.CODECHECKS_AGGREGATED,
+    findingCfgs: findingCfgs,
+    ocmNode: ocmNode,
+  })
+  const retrieveCryptoFindings = retrieveFindingsForType({
+    findingType: FINDING_TYPES.CRYPTO,
     findingCfgs: findingCfgs,
     ocmNode: ocmNode,
   })
@@ -2287,6 +2293,19 @@ const ComplianceCell = ({
           type={FINDING_TYPES.MALWARE}
           categorisation={getCategorisation(FINDING_TYPES.MALWARE)}
           lastScan={lastMalwareScan}
+          findingCfgs={findingCfgs}
+          fetchComplianceSummary={fetchComplianceSummary}
+          isLoading={state.isLoading}
+        />
+      }
+      {
+        extensionsCfg?.crypto?.enabled && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveCryptoFindings && <RescoringCell
+          ocmNodes={ocmNodes}
+          ocmRepo={ocmRepo}
+          datasource={datasources.CRYPTO}
+          type={FINDING_TYPES.CRYPTO}
+          categorisation={getCategorisation(FINDING_TYPES.CRYPTO)}
+          lastScan={lastCryptoScan}
           findingCfgs={findingCfgs}
           fetchComplianceSummary={fetchComplianceSummary}
           isLoading={state.isLoading}
