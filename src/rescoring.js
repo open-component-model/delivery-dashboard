@@ -1314,7 +1314,7 @@ const Finding = ({
         <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
         <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
           {
-            finding.severity
+            categorisation.display_name
           }
         </Typography>
       </div>
@@ -1341,7 +1341,9 @@ const Finding = ({
       <div style={{ display: 'flex' }}>
         <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
         <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
-          {finding.severity}
+          {
+            categorisation.display_name
+          }
         </Typography>
         <MalwareExtraInfo
           contentDigest={finding.finding.content_digest}
@@ -1372,7 +1374,9 @@ const Finding = ({
       <div style={{ display: 'flex' }}>
         <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
         <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
-          {finding.severity}
+          {
+            categorisation.display_name
+          }
         </Typography>
       </div>
       <Typography variant='inherit' marginRight='0.4rem'>{finding.malware}</Typography>
@@ -1382,7 +1386,9 @@ const Finding = ({
       <div style={{ display: 'flex' }}>
         <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
         <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
-          {finding.severity}
+          {
+            categorisation.display_name
+          }
         </Typography>
       </div>
       <Typography variant='inherit' marginRight='0.4rem'>{finding.sast_status}</Typography>
@@ -1427,6 +1433,10 @@ const RescoringContentTableRow = ({
     id: severity,
     findingCfg: findingCfg,
   })
+  const originalCategorisationProposal = findCategorisationById({
+    id: originalSeverityProposal,
+    findingCfg: findingCfg,
+  })
 
   const sprintInfo = sprints.find((s) => s.name === sprintNameForRescoring({rescoring, findingCfg}))
 
@@ -1442,7 +1452,7 @@ const RescoringContentTableRow = ({
     : null
 
   const newProccesingDays = diffDays ? <Tooltip
-    title={`Rescoring to ${severity} will modify the due date by ${diffDays}`}
+    title={`Rescoring to "${rescoredCategorisation.display_name}" will modify the due date by ${diffDays}`}
   >
     <Typography variant='inherit'>{diffDays}</Typography>
   </Tooltip> : <Typography variant='inherit' visibility='hidden'>Dummy</Typography>
@@ -1575,7 +1585,7 @@ const RescoringContentTableRow = ({
           </div>
           {
             severity !== originalSeverityProposal && <Tooltip
-              title={`Reset to ${originalSeverityProposal}`}
+              title={`Reset to ${originalCategorisationProposal.display_name}`}
             >
               <IconButton
                 onClick={(e) => {
