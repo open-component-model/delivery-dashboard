@@ -673,29 +673,29 @@ const RescoringRowLoading = () => {
       height: '15vh',
     }}
   >
-    <TableCell width='50vw'/>
-    <TableCell width='90vw'>
+    <TableCell width='6%'/>
+    <TableCell width='12%'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='100vw'>
+    <TableCell width='16%'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='80vw'>
+    <TableCell width='11%'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='70vw'>
+    <TableCell width='9%'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='50vw' align='center'>
+    <TableCell width='6%' align='center'>
       <TrendingFlatIcon/>
     </TableCell>
-    <TableCell width='70vw'>
+    <TableCell width='13%'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='200vw'>
+    <TableCell width='21%'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='50vw'/>
+    <TableCell width='6%'/>
   </TableRow>
 }
 RescoringRowLoading.displayName = 'RescoringRowLoading'
@@ -1089,7 +1089,7 @@ const ApplicableRescorings = ({
           <Table sx={{ tableLayout: 'fixed', overflowX: 'hidden' }}>
             <TableHead>
               <TableRow>
-                <TableCell width='40vw' align='center'>
+                <TableCell width='5%' align='center'>
                   <Tooltip
                     title={`
                       The rescoring with priority "1" is the one that is used for this finding.
@@ -1104,8 +1104,8 @@ const ApplicableRescorings = ({
                     </div>
                   </Tooltip>
                 </TableCell>
-                <TableCell width='100vw' align='center'>Date</TableCell>
-                <TableCell width='100vw'>
+                <TableCell width='12%' align='center'>Date</TableCell>
+                <TableCell width='12%'>
                   <Tooltip
                     title={<Typography
                       variant='inherit'
@@ -1122,13 +1122,13 @@ const ApplicableRescorings = ({
                     </div>
                   </Tooltip>
                 </TableCell>
-                <TableCell width='90vw' align='center'>Categorisation</TableCell>
-                <TableCell width='90vw' align='center'>User</TableCell>
-                <TableCell width='200vw'>Comment</TableCell>
-                <TableCell width='150vw'>
+                <TableCell width='11%' align='center'>Categorisation</TableCell>
+                <TableCell width='11%' align='center'>User</TableCell>
+                <TableCell width='25%'>Comment</TableCell>
+                <TableCell width='19%'>
                   <Typography variant='inherit'>Applied Rules</Typography>
                 </TableCell>
-                <TableCell width='40vw' sx={{ border: 0 }}/>
+                <TableCell width='5%' sx={{ border: 0 }}/>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -1900,7 +1900,7 @@ const SprintHeader = ({
   direction,
 }) => {
 
-  if (sprintsLoading) return <TableCell width='80vw' align='center' sx={{ background: headerBackground }}>
+  if (sprintsLoading) return <TableCell width='11%' align='center' sx={{ background: headerBackground }}>
     <Skeleton/>
   </TableCell>
 
@@ -1908,11 +1908,11 @@ const SprintHeader = ({
   if (
     !sprints
     || sprints.length === 0
-  ) return <TableCell width='80vw' align='center' sx={{ background: headerBackground }}>
+  ) return <TableCell width='11%' align='center' sx={{ background: headerBackground }}>
     <></>
   </TableCell>
 
-  return <TableCell width='80vw' align='center' sx={{ background: headerBackground }}>
+  return <TableCell width='11%' align='center' sx={{ background: headerBackground }}>
     <TableSortLabel
       onClick={onSort}
       active={active}
@@ -1952,7 +1952,7 @@ const RescoringContentTableHeader = ({
   return <TableHead>
     <TableRow>
       <TableCell
-        width='50vw'
+        width='6%'
         onClick={() => {
           if (allSelected()) {
             clearSelectedRescorings()
@@ -1969,7 +1969,7 @@ const RescoringContentTableHeader = ({
       >
         <Checkbox checked={allSelected() && !rescoringsLoading}/>
       </TableCell>
-      <TableCell width='90vw' sx={{ background: headerBackground }}>
+      <TableCell width='12%' sx={{ background: headerBackground }}>
         <TableSortLabel
           onClick={() => handleSort(orderAttributes.SUBJECT)}
           active={orderBy === orderAttributes.SUBJECT}
@@ -1978,7 +1978,7 @@ const RescoringContentTableHeader = ({
           Subject
         </TableSortLabel>
       </TableCell>
-      <TableCell width='100vw' sx={{ background: headerBackground }}>
+      <TableCell width='16%' sx={{ background: headerBackground }}>
         <TableSortLabel
           onClick={() => handleSort(orderAttributes.FINDING)}
           active={orderBy === orderAttributes.FINDING}
@@ -1995,7 +1995,7 @@ const RescoringContentTableHeader = ({
         active={orderBy === orderAttributes.SPRINT}
         direction={order}
       />
-      <TableCell width='70vw' align='right' sx={{ background: headerBackground }}>
+      <TableCell width='9%' align='right' sx={{ background: headerBackground }}>
         <TableSortLabel
           onClick={() => handleSort(orderAttributes.CURRENT)}
           active={orderBy === orderAttributes.CURRENT}
@@ -2004,8 +2004,8 @@ const RescoringContentTableHeader = ({
           Current
         </TableSortLabel>
       </TableCell>
-      <TableCell width='50vw' sx={{ background: headerBackground }}/>
-      <TableCell width='70vw' sx={{ background: headerBackground }}>
+      <TableCell width='6%' sx={{ background: headerBackground }}/>
+      <TableCell width='13%' sx={{ background: headerBackground }}>
         <TableSortLabel
           onClick={() => handleSort(orderAttributes.RESCORED)}
           active={orderBy === orderAttributes.RESCORED}
@@ -2014,10 +2014,10 @@ const RescoringContentTableHeader = ({
           Rescored
         </TableSortLabel>
       </TableCell>
-      <TableCell width='200vw' sx={{ background: headerBackground }}>
+      <TableCell width='21%' sx={{ background: headerBackground }}>
         Comment
       </TableCell>
-      <TableCell width='50vw' sx={{ background: headerBackground }}/>
+      <TableCell width='6%' sx={{ background: headerBackground }}/>
     </TableRow>
   </TableHead>
 }
