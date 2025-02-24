@@ -22,6 +22,7 @@ import {
   healthStatuses,
   tabConfig,
 } from './consts'
+import { dataKey } from './ocm/model'
 import { FINDING_TYPES } from './findings'
 
 
@@ -203,15 +204,13 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
     ) return false
     if (
       finding.meta.type === FINDING_TYPES.MALWARE
-      && (
-        rescoring.data.finding.malware !== finding.data.finding.malware
-        || rescoring.data.finding.content_digest !== finding.data.finding.content_digest
-        || rescoring.data.finding.filename !== finding.data.finding.filename
-      )
+      && dataKey({type: FINDING_TYPES.MALWARE, data: rescoring.data})
+        !== dataKey({type: FINDING_TYPES.MALWARE, data: finding.data})
     ) return false
     if (
       finding.meta.type === FINDING_TYPES.SAST
-      && rescoring.data.finding.sub_type !== finding.data.sub_type
+      && dataKey({type: FINDING_TYPES.SAST, data: rescoring.data.finding})
+        !== dataKey({type: FINDING_TYPES.SAST, data: finding.data})
     ) return false
 
     return true
