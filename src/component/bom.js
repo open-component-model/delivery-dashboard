@@ -2261,13 +2261,13 @@ const ComplianceCell = ({
   return <TableCell>
     <Grid container direction='row-reverse' spacing={1}>
       {
-        extensionsCfg?.issue_replicator && <IssueChip
+        extensionsCfg?.issue_replicator?.enabled && <IssueChip
           ocmNode={ocmNode}
           issueReplicatorCfg={extensionsCfg.issue_replicator}
         />
       }
       {
-        extensionsCfg?.bdba && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveLicenseFindings && <RescoringCell
+        extensionsCfg?.bdba?.enabled && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveLicenseFindings && <RescoringCell
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
           datasource={datasources.BDBA}
@@ -2280,7 +2280,7 @@ const ComplianceCell = ({
         />
       }
       {
-        extensionsCfg?.clamav && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveMalwareFindings && <RescoringCell
+        extensionsCfg?.clamav?.enabled && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveMalwareFindings && <RescoringCell
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
           datasource={datasources.CLAMAV}
@@ -2307,7 +2307,7 @@ const ComplianceCell = ({
         />
       }
       {
-        extensionsCfg?.bdba && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveVulnerabilityFindings && <RescoringCell
+        extensionsCfg?.bdba?.enabled && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveVulnerabilityFindings && <RescoringCell
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
           datasource={datasources.BDBA}
@@ -2320,7 +2320,7 @@ const ComplianceCell = ({
         />
       }
       {
-        extensionsCfg?.sast && ocmNode.artefactKind === ARTEFACT_KIND.SOURCE && retrieveSastFindings && <RescoringCell
+        extensionsCfg?.sast?.enabled && ocmNode.artefactKind === ARTEFACT_KIND.SOURCE && retrieveSastFindings && <RescoringCell
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
           datasource={datasources.SAST}
