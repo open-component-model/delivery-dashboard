@@ -2224,11 +2224,17 @@ const ComplianceCell = ({
   const codecheckData = complianceFiltered?.find((d) => d.meta.type === FINDING_TYPES.CODECHECKS_AGGREGATED)
 
   const lastBdbaScan = findLastScan(complianceFiltered, datasources.BDBA)
+  const lastCryptoScan = findLastScan(complianceFiltered, datasources.CRYPTO)
   const lastMalwareScan = findLastScan(complianceFiltered, datasources.CLAMAV)
   const lastSastScan = findLastScan(complianceFiltered, datasources.SAST)
 
   const retrieveCodecheckFindings = retrieveFindingsForType({
     findingType: FINDING_TYPES.CODECHECKS_AGGREGATED,
+    findingCfgs: findingCfgs,
+    ocmNode: ocmNode,
+  })
+  const retrieveCryptoFindings = retrieveFindingsForType({
+    findingType: FINDING_TYPES.CRYPTO,
     findingCfgs: findingCfgs,
     ocmNode: ocmNode,
   })
@@ -2261,13 +2267,13 @@ const ComplianceCell = ({
   return <TableCell>
     <Grid container direction='row-reverse' spacing={1}>
       {
-        extensionsCfg?.issue_replicator && <IssueChip
+        extensionsCfg?.issue_replicator?.enabled && <IssueChip
           ocmNode={ocmNode}
           issueReplicatorCfg={extensionsCfg.issue_replicator}
         />
       }
       {
-        extensionsCfg?.bdba && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveLicenseFindings && <RescoringCell
+        extensionsCfg?.bdba?.enabled && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveLicenseFindings && <RescoringCell
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
           datasource={datasources.BDBA}
@@ -2280,13 +2286,26 @@ const ComplianceCell = ({
         />
       }
       {
-        extensionsCfg?.clamav && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveMalwareFindings && <RescoringCell
+        extensionsCfg?.clamav?.enabled && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveMalwareFindings && <RescoringCell
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
           datasource={datasources.CLAMAV}
           type={FINDING_TYPES.MALWARE}
           categorisation={getCategorisation(FINDING_TYPES.MALWARE)}
           lastScan={lastMalwareScan}
+          findingCfgs={findingCfgs}
+          fetchComplianceSummary={fetchComplianceSummary}
+          isLoading={state.isLoading}
+        />
+      }
+      {
+        extensionsCfg?.crypto?.enabled && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveCryptoFindings && <RescoringCell
+          ocmNodes={ocmNodes}
+          ocmRepo={ocmRepo}
+          datasource={datasources.CRYPTO}
+          type={FINDING_TYPES.CRYPTO}
+          categorisation={getCategorisation(FINDING_TYPES.CRYPTO)}
+          lastScan={lastCryptoScan}
           findingCfgs={findingCfgs}
           fetchComplianceSummary={fetchComplianceSummary}
           isLoading={state.isLoading}
@@ -2307,7 +2326,7 @@ const ComplianceCell = ({
         />
       }
       {
-        extensionsCfg?.bdba && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveVulnerabilityFindings && <RescoringCell
+        extensionsCfg?.bdba?.enabled && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveVulnerabilityFindings && <RescoringCell
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
           datasource={datasources.BDBA}
@@ -2320,7 +2339,7 @@ const ComplianceCell = ({
         />
       }
       {
-        extensionsCfg?.sast && ocmNode.artefactKind === ARTEFACT_KIND.SOURCE && retrieveSastFindings && <RescoringCell
+        extensionsCfg?.sast?.enabled && ocmNode.artefactKind === ARTEFACT_KIND.SOURCE && retrieveSastFindings && <RescoringCell
           ocmNodes={ocmNodes}
           ocmRepo={ocmRepo}
           datasource={datasources.SAST}

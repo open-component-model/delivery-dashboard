@@ -67,6 +67,7 @@ import {
   errorSnackbarProps,
   META_RESCORING_RULES,
   META_SPRINT_NAMES,
+  RESCORING_MODES,
 } from './consts'
 import { OcmNode, OcmNodeDetails } from './ocm/iter'
 import {
@@ -672,29 +673,29 @@ const RescoringRowLoading = () => {
       height: '15vh',
     }}
   >
-    <TableCell width='50vw'/>
-    <TableCell width='90vw'>
+    <TableCell width='6%'/>
+    <TableCell width='12%'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='100vw'>
+    <TableCell width='16%'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='80vw'>
+    <TableCell width='11%'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='70vw'>
+    <TableCell width='9%'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='50vw' align='center'>
+    <TableCell width='6%' align='center'>
       <TrendingFlatIcon/>
     </TableCell>
-    <TableCell width='70vw'>
+    <TableCell width='13%'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='200vw'>
+    <TableCell width='21%'>
       <Skeleton/>
     </TableCell>
-    <TableCell width='50vw'/>
+    <TableCell width='6%'/>
   </TableRow>
 }
 RescoringRowLoading.displayName = 'RescoringRowLoading'
@@ -1088,7 +1089,7 @@ const ApplicableRescorings = ({
           <Table sx={{ tableLayout: 'fixed', overflowX: 'hidden' }}>
             <TableHead>
               <TableRow>
-                <TableCell width='40vw' align='center'>
+                <TableCell width='5%' align='center'>
                   <Tooltip
                     title={`
                       The rescoring with priority "1" is the one that is used for this finding.
@@ -1103,8 +1104,8 @@ const ApplicableRescorings = ({
                     </div>
                   </Tooltip>
                 </TableCell>
-                <TableCell width='100vw' align='center'>Date</TableCell>
-                <TableCell width='100vw'>
+                <TableCell width='12%' align='center'>Date</TableCell>
+                <TableCell width='12%'>
                   <Tooltip
                     title={<Typography
                       variant='inherit'
@@ -1121,13 +1122,13 @@ const ApplicableRescorings = ({
                     </div>
                   </Tooltip>
                 </TableCell>
-                <TableCell width='90vw' align='center'>Categorisation</TableCell>
-                <TableCell width='90vw' align='center'>User</TableCell>
-                <TableCell width='200vw'>Comment</TableCell>
-                <TableCell width='150vw'>
+                <TableCell width='11%' align='center'>Categorisation</TableCell>
+                <TableCell width='11%' align='center'>User</TableCell>
+                <TableCell width='25%'>Comment</TableCell>
+                <TableCell width='19%'>
                   <Typography variant='inherit'>Applied Rules</Typography>
                 </TableCell>
-                <TableCell width='40vw' sx={{ border: 0 }}/>
+                <TableCell width='5%' sx={{ border: 0 }}/>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -1203,6 +1204,55 @@ MalwareExtraInfo.propTypes = {
 }
 
 
+const CryptoExtraInfo = ({
+  locations,
+  properties,
+}) => {
+  return <ExtraWideTooltip
+    title={
+      <div style={{ overflowY: 'auto', maxHeight: '15rem' }}>
+        <Typography
+          variant='inherit'
+          sx={{
+            fontWeight: 'bold',
+          }}
+          marginBottom='0.5rem'
+        >
+          Properties
+        </Typography>
+        <Typography variant='inherit' whiteSpace='pre-wrap'>
+          {
+            JSON.stringify(properties, null, 2)
+          }
+        </Typography>
+        <Divider/>
+        <Typography
+          variant='inherit'
+          sx={{
+            fontWeight: 'bold',
+          }}
+          marginBottom='0.5rem'
+        >
+          Locations
+        </Typography>
+        <Typography variant='inherit' whiteSpace='pre-wrap'>
+          {
+            JSON.stringify(locations, null, 2)
+          }
+        </Typography>
+      </div>
+    }
+  >
+    <InfoOutlinedIcon sx={{ height: '1rem' }}/>
+  </ExtraWideTooltip>
+}
+CryptoExtraInfo.displayName = 'CryptoExtraInfo'
+CryptoExtraInfo.propTypes = {
+  locations: PropTypes.arrayOf(PropTypes.string).isRequired,
+  properties: PropTypes.object.isRequired,
+}
+
+
 const Subject = ({
   rescoring,
   ocmNode,
@@ -1230,10 +1280,26 @@ const Subject = ({
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
+
   } else if (rescoring.finding_type === FINDING_TYPES.SAST) {
     return <Stack>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <Typography variant='inherit'>{finding.sub_type}</Typography>
+        <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
+      </div>
+    </Stack>
+
+  } else if (rescoring.finding_type === FINDING_TYPES.CRYPTO) {
+    return <Stack>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <TruncatedTextWithTooltip
+          text={`${finding.asset.names.sort().join('\n')}${finding.asset.properties.version ? '\n' : ''}${finding.asset.properties.version ? finding.asset.properties.version : ''}`}
+          maxLength={30}
+          typographyProps={{
+            variant: 'inherit',
+            whiteSpace: 'pre-line',
+          }}
+        />
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
@@ -1313,7 +1379,7 @@ const Finding = ({
         <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
         <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
           {
-            finding.severity
+            categorisation.display_name
           }
         </Typography>
       </div>
@@ -1340,7 +1406,9 @@ const Finding = ({
       <div style={{ display: 'flex' }}>
         <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
         <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
-          {finding.severity}
+          {
+            categorisation.display_name
+          }
         </Typography>
         <MalwareExtraInfo
           contentDigest={finding.finding.content_digest}
@@ -1371,7 +1439,9 @@ const Finding = ({
       <div style={{ display: 'flex' }}>
         <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
         <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
-          {finding.severity}
+          {
+            categorisation.display_name
+          }
         </Typography>
       </div>
       <Typography variant='inherit' marginRight='0.4rem'>{finding.malware}</Typography>
@@ -1381,10 +1451,48 @@ const Finding = ({
       <div style={{ display: 'flex' }}>
         <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
         <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
-          {finding.severity}
+          {
+            categorisation.display_name
+          }
         </Typography>
       </div>
       <Typography variant='inherit' marginRight='0.4rem'>{finding.sast_status}</Typography>
+    </Stack>
+
+  } else if (rescoring.finding_type === FINDING_TYPES.CRYPTO) {
+    return <Stack spacing={0.5}>
+      <Tooltip
+        title={<div style={{ overflowY: 'auto', maxHeight: '15rem' }}>
+          <Typography variant='inherit' whiteSpace='pre-line'>
+            {
+              finding.summary ?? 'No summary available'
+            }
+          </Typography>
+        </div>}
+      >
+        <Typography variant='inherit' marginRight='0.4rem'>
+          {
+            finding.asset.asset_type
+          }
+        </Typography>
+      </Tooltip>
+      <div style={{ display: 'flex' }}>
+        <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
+        <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
+          {
+            categorisation.display_name
+          }
+        </Typography>
+        <CryptoExtraInfo
+          locations={finding.asset.locations}
+          properties={finding.asset.properties}
+        />
+      </div>
+      <Typography variant='inherit'>
+        {
+          finding.standard
+        }
+      </Typography>
     </Stack>
   }
 }
@@ -1426,6 +1534,10 @@ const RescoringContentTableRow = ({
     id: severity,
     findingCfg: findingCfg,
   })
+  const originalCategorisationProposal = findCategorisationById({
+    id: originalSeverityProposal,
+    findingCfg: findingCfg,
+  })
 
   const sprintInfo = sprints.find((s) => s.name === sprintNameForRescoring({rescoring, findingCfg}))
 
@@ -1441,7 +1553,7 @@ const RescoringContentTableRow = ({
     : null
 
   const newProccesingDays = diffDays ? <Tooltip
-    title={`Rescoring to ${severity} will modify the due date by ${diffDays}`}
+    title={`Rescoring to "${rescoredCategorisation.display_name}" will modify the due date by ${diffDays}`}
   >
     <Typography variant='inherit'>{diffDays}</Typography>
   </Tooltip> : <Typography variant='inherit' visibility='hidden'>Dummy</Typography>
@@ -1551,7 +1663,9 @@ const RescoringContentTableRow = ({
               sx={{ marginY: '0.5rem' }}
             >
               {
-                findingCfg.categorisations.map((categorisation) => <MenuItem
+                findingCfg.categorisations.filter((categorisation) => {
+                  return categorisation.rescoring?.includes(RESCORING_MODES.MANUAL)
+                }).map((categorisation) => <MenuItem
                   key={categorisation.id}
                   value={categorisation.id}
                 >
@@ -1569,7 +1683,7 @@ const RescoringContentTableRow = ({
           </div>
           {
             severity !== originalSeverityProposal && <Tooltip
-              title={`Reset to ${originalSeverityProposal}`}
+              title={`Reset to ${originalCategorisationProposal.display_name}`}
             >
               <IconButton
                 onClick={(e) => {
@@ -1790,6 +1904,17 @@ const RescoringContent = ({
       }).value,
     }
 
+    const cryptoAccess = {
+      [orderAttributes.SUBJECT]: rescoring.finding.asset?.names.sort(),
+      [orderAttributes.FINDING]: `${FINDING_TYPES.CRYPTO}_${rescoring.finding.standard}_${rescoring.finding.asset?.asset_type}`,
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
+      [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
+      [orderAttributes.RESCORED]: findCategorisationById({
+        id: rescoring.severity,
+        findingCfg: findingCfg,
+      }).value,
+    }
+
     if (
       rescoringType === FINDING_TYPES.VULNERABILITY
       || rescoringType === FINDING_TYPES.LICENSE
@@ -1799,6 +1924,8 @@ const RescoringContent = ({
       return malwareAccess[desired]
     } else if (rescoringType === FINDING_TYPES.SAST) {
       return sastAccesses[desired]
+    } else if (rescoringType === FINDING_TYPES.CRYPTO) {
+      return cryptoAccess[desired]
     }
 
   }
@@ -1894,7 +2021,7 @@ const SprintHeader = ({
   direction,
 }) => {
 
-  if (sprintsLoading) return <TableCell width='80vw' align='center' sx={{ background: headerBackground }}>
+  if (sprintsLoading) return <TableCell width='11%' align='center' sx={{ background: headerBackground }}>
     <Skeleton/>
   </TableCell>
 
@@ -1902,11 +2029,11 @@ const SprintHeader = ({
   if (
     !sprints
     || sprints.length === 0
-  ) return <TableCell width='80vw' align='center' sx={{ background: headerBackground }}>
+  ) return <TableCell width='11%' align='center' sx={{ background: headerBackground }}>
     <></>
   </TableCell>
 
-  return <TableCell width='80vw' align='center' sx={{ background: headerBackground }}>
+  return <TableCell width='11%' align='center' sx={{ background: headerBackground }}>
     <TableSortLabel
       onClick={onSort}
       active={active}
@@ -1946,7 +2073,7 @@ const RescoringContentTableHeader = ({
   return <TableHead>
     <TableRow>
       <TableCell
-        width='50vw'
+        width='6%'
         onClick={() => {
           if (allSelected()) {
             clearSelectedRescorings()
@@ -1963,7 +2090,7 @@ const RescoringContentTableHeader = ({
       >
         <Checkbox checked={allSelected() && !rescoringsLoading}/>
       </TableCell>
-      <TableCell width='90vw' sx={{ background: headerBackground }}>
+      <TableCell width='12%' sx={{ background: headerBackground }}>
         <TableSortLabel
           onClick={() => handleSort(orderAttributes.SUBJECT)}
           active={orderBy === orderAttributes.SUBJECT}
@@ -1972,7 +2099,7 @@ const RescoringContentTableHeader = ({
           Subject
         </TableSortLabel>
       </TableCell>
-      <TableCell width='100vw' sx={{ background: headerBackground }}>
+      <TableCell width='16%' sx={{ background: headerBackground }}>
         <TableSortLabel
           onClick={() => handleSort(orderAttributes.FINDING)}
           active={orderBy === orderAttributes.FINDING}
@@ -1989,7 +2116,7 @@ const RescoringContentTableHeader = ({
         active={orderBy === orderAttributes.SPRINT}
         direction={order}
       />
-      <TableCell width='70vw' align='right' sx={{ background: headerBackground }}>
+      <TableCell width='9%' align='right' sx={{ background: headerBackground }}>
         <TableSortLabel
           onClick={() => handleSort(orderAttributes.CURRENT)}
           active={orderBy === orderAttributes.CURRENT}
@@ -1998,8 +2125,8 @@ const RescoringContentTableHeader = ({
           Current
         </TableSortLabel>
       </TableCell>
-      <TableCell width='50vw' sx={{ background: headerBackground }}/>
-      <TableCell width='70vw' sx={{ background: headerBackground }}>
+      <TableCell width='6%' sx={{ background: headerBackground }}/>
+      <TableCell width='13%' sx={{ background: headerBackground }}>
         <TableSortLabel
           onClick={() => handleSort(orderAttributes.RESCORED)}
           active={orderBy === orderAttributes.RESCORED}
@@ -2008,10 +2135,10 @@ const RescoringContentTableHeader = ({
           Rescored
         </TableSortLabel>
       </TableCell>
-      <TableCell width='200vw' sx={{ background: headerBackground }}>
+      <TableCell width='21%' sx={{ background: headerBackground }}>
         Comment
       </TableCell>
-      <TableCell width='50vw' sx={{ background: headerBackground }}/>
+      <TableCell width='6%' sx={{ background: headerBackground }}/>
     </TableRow>
   </TableHead>
 }
@@ -2240,6 +2367,11 @@ const Rescore = ({
         return {
           sast_status: rescoring.finding.sast_status,
           sub_type: rescoring.finding.sub_type,
+        }
+      } else if (type === FINDING_TYPES.CRYPTO) {
+        return {
+          standard: rescoring.finding.standard,
+          asset: rescoring.finding.asset,
         }
       }
     }
