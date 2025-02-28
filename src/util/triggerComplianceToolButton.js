@@ -93,7 +93,9 @@ export const triggerComplianceTool = ({
     // so a backlog item for one version is enough
     // -> use the node with the first occurrence/idx
     return nodes.findIndex((node) => {
-      if ([COMPLIANCE_TOOLS.BDBA, COMPLIANCE_TOOLS.CLAMAV].includes(service)) {
+      if (
+        [COMPLIANCE_TOOLS.BDBA, COMPLIANCE_TOOLS.CLAMAV, COMPLIANCE_TOOLS.SAST].includes(service)
+      ) {
         return JSON.stringify(normaliseObject(ocmNode)) === JSON.stringify(normaliseObject(node))
       }
       if (service === COMPLIANCE_TOOLS.ISSUE_REPLICATOR) {
