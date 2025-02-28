@@ -73,7 +73,7 @@ Object.freeze(artefactMetadataTypes)
 const datasources = {
   BDBA: 'bdba',
   CLAMAV: 'clamav',
-  SAST: 'sast-lint-check',
+  SAST: 'sast',
   CC_UTILS: 'cc-utils',
 }
 Object.freeze(datasources)
