@@ -2403,7 +2403,6 @@ const RescoringModal = ({
   const [sprints, setSprints] = React.useState([])
   const [sprintsLoading, setSprintsLoading] = React.useState(true)
 
-  const [scope, setScope] = React.useState(scopeOptions.ARTEFACT)
   const [filters, setFilters] = React.useState({})
   /**
    * a filter is a key:value pair whereas key MUST be a unique str identity and value a callback.
@@ -2486,6 +2485,11 @@ const RescoringModal = ({
     )
   })
   const filteredOutRescoringsLength = filteredRescorings ? selectedRescorings.length - allowedRescorings.length : 0
+
+  const scope = findingCfg.default_scope
+  const scopeChange = (newScope) => {
+    setFindingCfg(prev => ({ ...prev, default_scope: newScope }))
+  }
 
   React.useEffect(() => {
     if (!rescoringsForType) return
@@ -2680,7 +2684,7 @@ const RescoringModal = ({
             </Tooltip>
             <Select
               value={scope}
-              onChange={(e) => setScope(e.target.value)}
+              onChange={(e) => scopeChange(e.target.value)}
               variant='standard'
               fullWidth
             >
