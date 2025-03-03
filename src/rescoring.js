@@ -81,6 +81,7 @@ import {
   pluralise,
   toYamlString,
   trimLongString,
+  capitalise,
 } from './util'
 import CopyOnClickChip from './util/copyOnClickChip'
 import ErrorBoundary from './util/errorBoundary'
@@ -100,10 +101,10 @@ import {
 
 
 const scopeOptions = {
-  GLOBAL: 'Global',
-  COMPONENT: 'Component',
-  ARTEFACT: 'Artefact',
-  SINGLE: 'Single',
+  GLOBAL: 'global',
+  COMPONENT: 'component',
+  ARTEFACT: 'artefact',
+  SINGLE: 'single',
 }
 Object.freeze(scopeOptions)
 const scopeHelp = (
@@ -961,7 +962,7 @@ const ApplicableRescoringsRow = ({
     </TableCell>
     <TableCell align='center'>
       <CopyOnClickChip
-        value={scope}
+        value={capitalise(scope)}
         message='Scope copied!'
         chipProps={{
           variant: 'outlined',
@@ -2403,7 +2404,7 @@ const RescoringModal = ({
   const [sprints, setSprints] = React.useState([])
   const [sprintsLoading, setSprintsLoading] = React.useState(true)
 
-  const [scope, setScope] = React.useState(scopeOptions.ARTEFACT)
+  const [scope, setScope] = React.useState(findingCfg.default_scope)
   const [filters, setFilters] = React.useState({})
   /**
    * a filter is a key:value pair whereas key MUST be a unique str identity and value a callback.
@@ -2449,7 +2450,9 @@ const RescoringModal = ({
 
   React.useEffect(() => {
     setSelectedRescorings([])
-    setFindingCfg(findingCfgForType({findingType, findingCfgs}))
+    const newFindingCfg = findingCfgForType({findingType, findingCfgs})
+    setFindingCfg(newFindingCfg)
+    setScope(newFindingCfg.default_scope)
   }, [findingType])
 
   React.useEffect(() => {
@@ -2686,7 +2689,7 @@ const RescoringModal = ({
             >
               {
                 Object.values(scopeOptions).map((scopeOption) => <MenuItem key={scopeOption} value={scopeOption}>
-                  <Typography variant='inherit'>{scopeOption}</Typography>
+                  <Typography variant='inherit'>{capitalise(scopeOption)}</Typography>
                 </MenuItem>)
               }
             </Select>
