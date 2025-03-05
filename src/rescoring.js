@@ -1549,7 +1549,12 @@ const RescoringContentTableRow = ({
               }}
               onClick={(e) => e.stopPropagation()}
               variant='standard'
-              sx={{ marginY: '0.5rem' }}
+              sx={{
+                marginY: '0.5rem',
+                '& .MuiSelect-select': {
+                  whiteSpace: 'normal',
+                },
+              }}
             >
               {
                 findingCfg.categorisations.map((categorisation) => <MenuItem
