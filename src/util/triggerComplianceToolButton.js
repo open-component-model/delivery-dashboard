@@ -11,16 +11,9 @@ import PublishedWithChangesIcon from '@mui/icons-material/PublishedWithChanges'
 import PropTypes from 'prop-types'
 import { useSnackbar } from 'notistack'
 
-import {
-  COMPLIANCE_TOOLS,
-  errorSnackbarProps,
-} from '../consts'
+import { errorSnackbarProps } from '../consts'
 import { serviceExtensions } from '../api'
-import {
-  camelCaseToDisplayText,
-  normaliseExtraIdentity,
-  normaliseObject,
-} from '../util'
+import { camelCaseToDisplayText } from '../util'
 
 
 export const triggerComplianceTool = ({
@@ -87,28 +80,6 @@ export const triggerComplianceTool = ({
         artefact_extra_id: ocmNode.artefact.extraIdentity,
       },
     }
-  }).filter((ocmNode, idx, nodes) => {
-    // don't create multiple backlog items which have the same purpose
-    // e.g. for the issue replicator, we group issues across versions
-    // so a backlog item for one version is enough
-    // -> use the node with the first occurrence/idx
-    return nodes.findIndex((node) => {
-      if (
-        [COMPLIANCE_TOOLS.BDBA, COMPLIANCE_TOOLS.CLAMAV, COMPLIANCE_TOOLS.SAST].includes(service)
-      ) {
-        return JSON.stringify(normaliseObject(ocmNode)) === JSON.stringify(normaliseObject(node))
-      }
-      if (service === COMPLIANCE_TOOLS.ISSUE_REPLICATOR) {
-        return (
-          ocmNode.artefact_kind == node.artefact_kind &&
-          ocmNode.component_name == node.component_name &&
-          ocmNode.artefact.artefact_name == node.artefact.artefact_name &&
-          ocmNode.artefact.artefact_type == node.artefact.artefact_type &&
-          normaliseExtraIdentity(ocmNode.artefact.artefact_extra_id)
-            === normaliseExtraIdentity(node.artefact.artefact_extra_id)
-        )
-      }
-    }) === idx
   })
 
   return fetchBacklogItems({artefacts})
