@@ -34,6 +34,15 @@ delivery-dashboard:
               image: europe-docker.pkg.dev/gardener-project/releases/ocm-gear/delivery-dashboard
               dockerfile: Dockerfile
               tag_as_latest: True
+              resource_labels:
+              - name: 'gardener.cloud/cve-categorisation'
+                value:
+                  network_exposure: 'public'
+                  authentication_enforced: false
+                  user_interaction: 'end-user'
+                  confidentiality_requirement: 'none'
+                  integrity_requirement: 'high'
+                  availability_requirement: 'high'
           helmcharts:
           - name: delivery-dashboard
             dir: charts/delivery-dashboard
