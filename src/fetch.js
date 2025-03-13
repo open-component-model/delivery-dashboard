@@ -490,7 +490,7 @@ const useFetchQueryMetadata = ({
 const useFetchServiceExtensions = () => {
   return _useFetch({
     fetchFunction: serviceExtensions.services,
-    errorMessage: 'Service extensions could not be fetched',
+    showSnackbar: false,
     cacheKey: JSON.stringify({
       route: routes.serviceExtensions.base,
     }),
