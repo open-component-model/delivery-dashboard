@@ -42,7 +42,6 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import GitHubIcon from '@mui/icons-material/GitHub'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
-import IosShareIcon from '@mui/icons-material/IosShare'
 import LaunchIcon from '@mui/icons-material/Launch'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import PublishedWithChangesIcon from '@mui/icons-material/PublishedWithChanges'
@@ -753,18 +752,15 @@ const Artefacts = ({
   ])
 
   const types = React.useMemo(() => {
-    const retrieveCodechecks = findingCfgs.find((findingCfg) => findingCfg.type === FINDING_TYPES.CODECHECKS_AGGREGATED)
     const retrieveOsIds = findingCfgs.find((findingCfg) => findingCfg.type === FINDING_TYPES.OS_IDS)
 
     return [
       artefactMetadataTypes.ARTEFACT_SCAN_INFO,
-      ...retrieveCodechecks ? [FINDING_TYPES.CODECHECKS_AGGREGATED] : [],
       ...retrieveOsIds ? [FINDING_TYPES.OS_IDS] : [],
     ]
   }, [
     findingCfgs,
     artefactMetadataTypes.ARTEFACT_SCAN_INFO,
-    FINDING_TYPES.CODECHECKS_AGGREGATED,
     FINDING_TYPES.OS_IDS,
   ])
 
@@ -2221,18 +2217,12 @@ const ComplianceCell = ({
   }))
 
   const osData = complianceFiltered?.find((d) => d.meta.type === FINDING_TYPES.OS_IDS)
-  const codecheckData = complianceFiltered?.find((d) => d.meta.type === FINDING_TYPES.CODECHECKS_AGGREGATED)
 
   const lastBdbaScan = findLastScan(complianceFiltered, datasources.BDBA)
   const lastCryptoScan = findLastScan(complianceFiltered, datasources.CRYPTO)
   const lastMalwareScan = findLastScan(complianceFiltered, datasources.CLAMAV)
   const lastSastScan = findLastScan(complianceFiltered, datasources.SAST)
 
-  const retrieveCodecheckFindings = retrieveFindingsForType({
-    findingType: FINDING_TYPES.CODECHECKS_AGGREGATED,
-    findingCfgs: findingCfgs,
-    ocmNode: ocmNode,
-  })
   const retrieveCryptoFindings = retrieveFindingsForType({
     findingType: FINDING_TYPES.CRYPTO,
     findingCfgs: findingCfgs,
@@ -2316,13 +2306,6 @@ const ComplianceCell = ({
           osData={osData}
           categorisation={getCategorisation(FINDING_TYPES.OS_IDS)}
           isLoading={state.isLoading}
-        />
-      }
-      {
-        ocmNode.artefactKind === ARTEFACT_KIND.SOURCE && retrieveCodecheckFindings && <CodecheckCell
-          data={codecheckData?.data}
-          categorisation={getCategorisation(FINDING_TYPES.CODECHECKS_AGGREGATED)}
-          timestamp={codecheckData?.meta.creation_date}
         />
       }
       {
@@ -2460,71 +2443,6 @@ const ArtefactCell = ({
 ArtefactCell.displayName = 'ArtefactCell'
 ArtefactCell.propTypes = {
   ocmNode: PropTypes.instanceOf(OcmNode).isRequired,
-}
-
-
-const CodecheckCell = ({
-  data,
-  categorisation,
-  timestamp,
-}) => {
-  if (categorisation.value === -1 || !data) return <Tooltip
-    title={<Typography variant='inherit'>No last scan</Typography>}
-  >
-    <Grid item>
-      <Chip
-        color='default'
-        label='No Codecheck'
-        variant='outlined'
-        size='small'
-        clickable={false}
-      />
-    </Grid>
-  </Tooltip>
-
-  const localeDateTime = new Date(timestamp).toLocaleString()
-  const findings = data.findings
-
-  return <Tooltip
-    title={
-      <Stack direction='column' spacing={1}>
-        <Stack direction='column' spacing={0} key={JSON.stringify(data)+'_body'}>
-          <Typography variant='caption'>High: {findings.high}</Typography>
-          <Typography variant='caption'>Medium: {findings.medium}</Typography>
-          <Typography variant='caption'>Low: {findings.low}</Typography>
-          <Typography variant='caption'>Info: {findings.info}</Typography>
-          <Typography variant='caption'>Risk Rating: {data.risk_rating}</Typography>
-          <Typography variant='caption'>Risk Severity: {data.risk_severity}</Typography>
-        </Stack>
-        <Divider/>
-        <Typography variant='inherit'>
-          {`Last scan: ${localeDateTime}`}
-        </Typography>
-      </Stack>
-    }
-  >
-    <Grid item>
-      <Chip
-        color={categorisationValueToColor(categorisation.value)}
-        label={<Link color={'inherit'}>Codechecks</Link>}
-        variant='outlined'
-        size='small'
-        icon={<IosShareIcon/>}
-        clickable={true}
-        onClick={() => {
-          data
-            ? window.open(data.overview_url, '_blank')
-            : null
-        }}
-      />
-    </Grid>
-  </Tooltip>
-}
-CodecheckCell.displayName = 'CodecheckCell'
-CodecheckCell.propTypes = {
-  data: PropTypes.object,
-  categorisation: PropTypes.object.isRequired,
-  timestamp: PropTypes.string,
 }
 
 

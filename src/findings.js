@@ -18,7 +18,6 @@ import { artefactMetadataFilter } from './ocm/util'
 
 
 export const FINDING_TYPES = {
-  CODECHECKS_AGGREGATED: 'codechecks/aggregated',
   CRYPTO: 'finding/crypto',
   DIKI: 'finding/diki',
   LICENSE: 'finding/license',
