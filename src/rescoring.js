@@ -1299,6 +1299,9 @@ const Subject = ({
           typographyProps={{
             variant: 'inherit',
             whiteSpace: 'pre-line',
+            sx: {
+              wordBreak: 'break-word',
+            },
           }}
         />
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
