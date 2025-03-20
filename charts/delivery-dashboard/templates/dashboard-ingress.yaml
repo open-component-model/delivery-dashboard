@@ -11,7 +11,7 @@ metadata:
     {{ $annotation }}: {{ $value }}
     {{- end }}
 spec:
-  ingressClassName: {{ default "nginx" .Values.ingress.class }}
+  ingressClassName: nginx
   rules:
   {{- range $host := .Values.ingress.hosts }}
     - host: {{ $host }}
