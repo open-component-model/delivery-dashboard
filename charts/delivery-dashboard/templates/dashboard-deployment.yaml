@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: delivery-dashboard
+  namespace: {{ .Values.target_namespace | default .Release.Namespace }}
 spec:
   replicas: {{ default 1 .Values.replicas }}
   selector:
