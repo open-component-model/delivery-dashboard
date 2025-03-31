@@ -31,7 +31,7 @@ import { DASHBOARD_TITLE, errorSnackbarProps, PROFILE_KEY, TOKEN_KEY } from './c
 import { ConfigContext } from './App'
 import ProfileSelector from './util/profileSelector'
 
-import GardenerLogo from './resources/gardener-logo.svg'
+import ODGLogo from './resources/odg-logo.svg'
 
 
 const loginTabs = {
@@ -128,8 +128,8 @@ const LoginPanelTop = () => {
   }}>
     <img
       height='62%'
-      src={GardenerLogo}
-      alt='gardener-logo'
+      src={ODGLogo}
+      alt='odg-logo'
     />
     <Typography marginTop='1rem' variant='h5' color={theme.palette.secondary.main}>
       {

@@ -22,7 +22,7 @@ import NotFoundPage from '../notFound'
 import { ComponentTabs } from './tabs'
 import { PersistentDrawerLeft } from '../layout'
 
-import GardenerLogo from '../resources/gardener-logo.svg'
+import ODGLogo from '../resources/odg-logo.svg'
 import SAPLogo from '../resources/sap-logo.svg'
 
 
@@ -31,7 +31,7 @@ const ComponentNavigationHeader = () => {
     <div style={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
       <Grid item xs={12}>
         <Link href='#'>
-          <img src={GardenerLogo} alt='gardener-logo'/>
+          <img src={ODGLogo} alt='odg-logo'/>
         </Link>
       </Grid>
       <Grid item xs={12}>
