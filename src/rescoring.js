@@ -1307,6 +1307,14 @@ const Subject = ({
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
+  } else if (rescoring.finding_type === FINDING_TYPES.OS_ID) {
+    return <Stack>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <Typography variant='inherit'>{finding.os_id.NAME}</Typography>
+        <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
+      </div>
+    </Stack>
+
   }
 }
 Subject.displayName = 'Subject'
@@ -1497,6 +1505,18 @@ const Finding = ({
           finding.standard
         }
       </Typography>
+    </Stack>
+  } else if (rescoring.finding_type === FINDING_TYPES.OS_ID) {
+    return <Stack spacing={0.5}>
+      <div style={{ display: 'flex' }}>
+        <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
+        <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
+          {
+            categorisation.display_name
+          }
+        </Typography>
+      </div>
+      <Typography variant='inherit' marginRight='0.4rem'>{finding.os_id.VERSION_ID} → {finding.greatest_version}</Typography>
     </Stack>
   }
 }
@@ -2381,6 +2401,10 @@ const Rescore = ({
         return {
           standard: rescoring.finding.standard,
           asset: rescoring.finding.asset,
+        }
+      } else if (type === FINDING_TYPES.OS_ID) {
+        return {
+          os_id: rescoring.finding.os_id,
         }
       }
     }

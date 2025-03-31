@@ -165,6 +165,7 @@ export const COMPLIANCE_TOOLS = {
   CRYPTO: 'crypto',
   SAST: 'sast',
   ISSUE_REPLICATOR: 'issueReplicator',
+  OS_ID: 'osId',
 }
 
 export const PRIORITIES = {
