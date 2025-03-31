@@ -217,8 +217,11 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
       && dataKey({type: FINDING_TYPES.CRYPTO, data: rescoring.data.finding})
         !== dataKey({type: FINDING_TYPES.CRYPTO, data: finding.data})
     ) return false
-
-    return true
+    if (
+      finding.meta.type === FINDING_TYPES.OS_ID
+      && dataKey({type: FINDING_TYPES.OS_ID, data: rescoring.data.finding})
+        !== dataKey({type: FINDING_TYPES.OS_ID, data: finding.data})
+    ) return true
   })
 }
 

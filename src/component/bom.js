@@ -753,15 +753,18 @@ const Artefacts = ({
 
   const types = React.useMemo(() => {
     const retrieveOsIds = findingCfgs.find((findingCfg) => findingCfg.type === FINDING_TYPES.OS_IDS)
+    const retrieveOsId = findingCfgs.find((findingCfg) => findingCfg.type === FINDING_TYPES.OS_ID)
 
     return [
       artefactMetadataTypes.ARTEFACT_SCAN_INFO,
       ...retrieveOsIds ? [FINDING_TYPES.OS_IDS] : [],
+      ...retrieveOsId ? [FINDING_TYPES.OS_ID] : [],
     ]
   }, [
     findingCfgs,
     artefactMetadataTypes.ARTEFACT_SCAN_INFO,
     FINDING_TYPES.OS_IDS,
+    FINDING_TYPES.OS_ID,
   ])
 
   const params = React.useMemo(() => {
@@ -1873,6 +1876,49 @@ const osInfoReason = (resource) => {
 }
 
 
+const osInfoReasonE = (resource) => {
+  const formatEolMessage = (expiryDate) => {
+    if (!expiryDate) return 'EOL reached'
+    return `EOL reached on ${new Date(expiryDate).toLocaleDateString()}`
+  }
+
+  const newerVersionAvailableString = (version) => {
+    return `Newer Patch Version available:\n${resource.data.os_id.NAME} ${resourceSemVer.version} → ${version}`
+  }
+
+  if (!resource) return 'no resource os information found'
+
+  if (!resource.data) return 'no os branch information found'
+
+  const now = new Date()
+  const branchEol = new Date(resource.data.eol_date)
+  const resourceSemVer = parseRelaxedSemver(resource.data.os_id.VERSION_ID)
+  let branchSemVer = null
+  if (resource.data.greatest_version) {
+    branchSemVer = parseRelaxedSemver(resource.data.greatest_version)
+  }
+
+  if (!resourceSemVer && !branchSemVer) return 'no versions found'
+
+  if (!branchSemVer || SemVer.eq(branchSemVer, resourceSemVer)) {
+    // is greatest version
+    if (now > branchEol) return formatEolMessage(resource.data.eol_date) // eol reached
+    return 'Greatest Version'
+
+  } else if (SemVer.lt(resourceSemVer, branchSemVer)) {
+    if (now > branchEol) return formatEolMessage(resource.data.eol_date)
+    return newerVersionAvailableString(branchSemVer)
+  }
+
+  /**
+   * image has newer os version than we know
+   * occurred when EOL API removed debian latest release minor
+   * see: https://github.com/endoflife-date/endoflife.date/issues/1396
+   */
+  return 'Greatest Version'
+}
+
+
 const IssueChip = ({
   ocmNode,
   issueReplicatorCfg,
@@ -2217,10 +2263,12 @@ const ComplianceCell = ({
   }))
 
   const osData = complianceFiltered?.find((d) => d.meta.type === FINDING_TYPES.OS_IDS)
+  const osDataE = complianceFiltered?.find((d) => d.meta.type === FINDING_TYPES.OS_ID)
 
   const lastBdbaScan = findLastScan(complianceFiltered, datasources.BDBA)
   const lastCryptoScan = findLastScan(complianceFiltered, datasources.CRYPTO)
   const lastMalwareScan = findLastScan(complianceFiltered, datasources.CLAMAV)
+  const lastOsIdScan = findLastScan(complianceFiltered, datasources.OS_ID)
   const lastSastScan = findLastScan(complianceFiltered, datasources.SAST)
 
   const retrieveCryptoFindings = retrieveFindingsForType({
@@ -2240,6 +2288,11 @@ const ComplianceCell = ({
   })
   const retrieveOsIdFindings = retrieveFindingsForType({
     findingType: FINDING_TYPES.OS_IDS,
+    findingCfgs: findingCfgs,
+    ocmNode: ocmNode,
+  })
+  const retrieveOsIdEFindings = retrieveFindingsForType({
+    findingType: FINDING_TYPES.OS_ID,
     findingCfgs: findingCfgs,
     ocmNode: ocmNode,
   })
@@ -2306,6 +2359,20 @@ const ComplianceCell = ({
           osData={osData}
           categorisation={getCategorisation(FINDING_TYPES.OS_IDS)}
           isLoading={state.isLoading}
+        />
+      }
+      {
+        extensionsCfg?.os_id?.enabled && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveOsIdEFindings && <RescoringCell
+          ocmNodes={ocmNodes}
+          ocmRepo={ocmRepo}
+          datasource={datasources.OS_ID}
+          type={FINDING_TYPES.OS_ID}
+          categorisation={getCategorisation(FINDING_TYPES.OS_ID)}
+          lastScan={lastOsIdScan}
+          findingCfgs={findingCfgs}
+          fetchComplianceSummary={fetchComplianceSummary}
+          isLoading={state.isLoading}
+          osData={osDataE}
         />
       }
       {
@@ -2510,6 +2577,7 @@ const RescoringCell = ({
   findingCfgs,
   fetchComplianceSummary,
   isLoading,
+  osData,
 }) => {
   const [mountRescoring, setMountRescoring] = React.useState(false)
 
@@ -2518,6 +2586,16 @@ const RescoringCell = ({
   }
 
   const title = findingTypeToDisplayName(type)
+
+  const osInfo = osData?.data.os_id
+  const hasOsData = !!osInfo
+  const hasExplicitlyEmptyOs = hasOsData && Object.values(osInfo).every(e => e === null)
+
+  const osStatusMessage = hasOsData
+    ? hasExplicitlyEmptyOs
+      ? 'Unable to determine an OS, thus probably a scratch image.'
+      : osInfoReasonE(osData)
+    : 'No OS information found'
 
   return <Grid item onClick={(e) => e.stopPropagation()}>
     {
@@ -2548,6 +2626,20 @@ const RescoringCell = ({
               />
             }
           </List>
+          {datasource === datasources.OS_ID && (
+            <List>
+              <Typography
+                variant="inherit"
+                sx={{
+                  whiteSpace: 'pre-wrap',
+                  maxWidth: 'none',
+                }}
+              >
+                {osStatusMessage}
+              </Typography>
+              {!hasExplicitlyEmptyOs && <Divider />}
+            </List>
+          )}
           {
             isLoading ? <Skeleton/> : <Typography variant='inherit'>
               {
@@ -2592,4 +2684,5 @@ RescoringCell.propTypes = {
   findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
   isLoading: PropTypes.bool.isRequired,
+  osData: PropTypes.object, // only needed for os id
 }
