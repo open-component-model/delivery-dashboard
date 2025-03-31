@@ -756,11 +756,13 @@ const Artefacts = ({
 
     return [
       artefactMetadataTypes.ARTEFACT_SCAN_INFO,
+      artefactMetadataTypes.OS_ID,
       ...retrieveOsIds ? [FINDING_TYPES.OS_IDS] : [],
     ]
   }, [
     findingCfgs,
     artefactMetadataTypes.ARTEFACT_SCAN_INFO,
+    artefactMetadataTypes.OS_ID,
     FINDING_TYPES.OS_IDS,
   ])
 
@@ -2216,11 +2218,13 @@ const ComplianceCell = ({
     artefactExtraId: ocmNode.artefact.extraIdentity,
   }))
 
-  const osData = complianceFiltered?.find((d) => d.meta.type === FINDING_TYPES.OS_IDS)
+  const osData_legacy = complianceFiltered?.find((d) => d.meta.type === FINDING_TYPES.OS_IDS)
+  const osData = complianceFiltered?.find((d) => d.meta.type === artefactMetadataTypes.OS_ID)
 
   const lastBdbaScan = findLastScan(complianceFiltered, datasources.BDBA)
   const lastCryptoScan = findLastScan(complianceFiltered, datasources.CRYPTO)
   const lastMalwareScan = findLastScan(complianceFiltered, datasources.CLAMAV)
+  const lastOsIdScan = findLastScan(complianceFiltered, datasources.OS_ID)
   const lastSastScan = findLastScan(complianceFiltered, datasources.SAST)
 
   const retrieveCryptoFindings = retrieveFindingsForType({
@@ -2240,6 +2244,11 @@ const ComplianceCell = ({
   })
   const retrieveOsIdFindings = retrieveFindingsForType({
     findingType: FINDING_TYPES.OS_IDS,
+    findingCfgs: findingCfgs,
+    ocmNode: ocmNode,
+  })
+  const retrieveOsIdEFindings = retrieveFindingsForType({
+    findingType: FINDING_TYPES.OS_ID,
     findingCfgs: findingCfgs,
     ocmNode: ocmNode,
   })
@@ -2303,9 +2312,23 @@ const ComplianceCell = ({
       }
       {
         ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveOsIdFindings && <OsCell
-          osData={osData}
+          osData={osData_legacy}
           categorisation={getCategorisation(FINDING_TYPES.OS_IDS)}
           isLoading={state.isLoading}
+        />
+      }
+      {
+        extensionsCfg?.os_id?.enabled && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveOsIdEFindings && <RescoringCell
+          ocmNodes={ocmNodes}
+          ocmRepo={ocmRepo}
+          datasource={datasources.OS_ID}
+          type={FINDING_TYPES.OS_ID}
+          categorisation={getCategorisation(FINDING_TYPES.OS_ID)}
+          lastScan={lastOsIdScan}
+          findingCfgs={findingCfgs}
+          fetchComplianceSummary={fetchComplianceSummary}
+          isLoading={state.isLoading}
+          osData={osData}
         />
       }
       {
@@ -2510,6 +2533,7 @@ const RescoringCell = ({
   findingCfgs,
   fetchComplianceSummary,
   isLoading,
+  osData,
 }) => {
   const [mountRescoring, setMountRescoring] = React.useState(false)
 
@@ -2518,6 +2542,22 @@ const RescoringCell = ({
   }
 
   const title = findingTypeToDisplayName(type)
+
+  const chipLabel = () => {
+    if (
+      datasource === datasources.OS_ID
+      && osData?.data
+    ) {
+      return `${osData.data.NAME || 'Unknown'} ${osData.data.VERSION_ID || ''}`
+    }
+
+    if (categorisation.value === 0) {
+      return `No ${title} Findings`
+    }
+
+    return `${title} ${capitalise(categorisation.display_name)}`
+  }
+
 
   return <Grid item onClick={(e) => e.stopPropagation()}>
     {
@@ -2561,10 +2601,7 @@ const RescoringCell = ({
       {
         lastScan || isLoading ? <Chip
           color={categorisationValueToColor(categorisation.value)}
-          label={categorisation.value === 0
-            ? `No ${title} Findings`
-            : `${title} ${capitalise(categorisation.display_name)}`
-          }
+          label={chipLabel()}
           variant='outlined'
           size='small'
           icon={<UnfoldMoreIcon/>}
@@ -2592,4 +2629,5 @@ RescoringCell.propTypes = {
   findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
   fetchComplianceSummary: PropTypes.func.isRequired,
   isLoading: PropTypes.bool.isRequired,
+  osData: PropTypes.object, // only needed for os id
 }
