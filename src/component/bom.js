@@ -2218,7 +2218,7 @@ const ComplianceCell = ({
     artefactExtraId: ocmNode.artefact.extraIdentity,
   }))
 
-  const osData_legacy = complianceFiltered?.find((d) => d.meta.type === FINDING_TYPES.OS_IDS)
+  const osDataLegacy = complianceFiltered?.find((d) => d.meta.type === FINDING_TYPES.OS_IDS)
   const osData = complianceFiltered?.find((d) => d.meta.type === artefactMetadataTypes.OS_ID)
 
   const lastBdbaScan = findLastScan(complianceFiltered, datasources.BDBA)
@@ -2312,7 +2312,7 @@ const ComplianceCell = ({
       }
       {
         ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveOsIdFindings && <OsCell
-          osData={osData_legacy}
+          osData={osDataLegacy}
           categorisation={getCategorisation(FINDING_TYPES.OS_IDS)}
           isLoading={state.isLoading}
         />

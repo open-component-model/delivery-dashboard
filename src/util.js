@@ -221,7 +221,9 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
       finding.meta.type === FINDING_TYPES.OS_ID
       && dataKey({type: FINDING_TYPES.OS_ID, data: rescoring.data.finding})
         !== dataKey({type: FINDING_TYPES.OS_ID, data: finding.data})
-    ) return true
+    ) return false
+
+    return true
   })
 }
 
