@@ -86,7 +86,7 @@ const datasources = {
   BDBA: 'bdba',
   CLAMAV: 'clamav',
   SAST: 'sast',
-  OS_ID: 'os-id',
+  OS_ID: 'osid',
   CC_UTILS: 'cc-utils',
   CRYPTO: 'crypto',
 }
