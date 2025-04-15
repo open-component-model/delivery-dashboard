@@ -205,6 +205,10 @@ const displayNameForData = ({
     return `${displayName} ${cryptoAssetToDisplayName(data.asset)} (${data.standard})`
   } else if (type === artefactMetadataTypes.CRYPTO_ASSET) {
     return `${displayName} ${cryptoAssetToDisplayName(data)}`
+  } else if (type === FINDING_TYPES.OS_ID) {
+    return `${displayName} ${data.NAME} Finding`
+  } else if (type === artefactMetadataTypes.OS_ID) {
+    return `${displayName} ${data.NAME}`
   } else {
     return displayName
   }
