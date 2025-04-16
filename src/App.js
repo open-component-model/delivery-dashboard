@@ -69,6 +69,13 @@ const App = () => {
     setThemeMode(!themeMode)
   }
 
+  const OdgLogoColors = {
+    light: '#019aff',
+    middle: '#0c61f1',
+    dark: '#0e35c6',
+  }
+  Object.freeze(OdgLogoColors)
+
   const { palette } = createTheme()
   const theme = createTheme({
     palette: {
@@ -76,7 +83,7 @@ const App = () => {
         main: '#424242',
       },
       secondary: {
-        main: '#0b8062',
+        main: themeMode ? OdgLogoColors.light : OdgLogoColors.dark,
       },
       background: {
         main: themeMode ? '#20000000' : '#ffffff',
@@ -147,6 +154,11 @@ const App = () => {
     dependentComponentOverview: {
       color: themeMode ? '#99ff9980' : '#99ff9980'
     },
+    odg: {
+      light: OdgLogoColors.light,
+      middle: OdgLogoColors.middle,
+      dark: OdgLogoColors.dark,
+    }
   })
 
   const configValue = {
