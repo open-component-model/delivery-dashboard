@@ -1307,10 +1307,10 @@ const Subject = ({
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
-  } else if (rescoring.finding_type === FINDING_TYPES.OS_ID) {
+  } else if (rescoring.finding_type === FINDING_TYPES.OSID) {
     return <Stack>
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <Typography variant='inherit'>{finding.os_id.NAME}</Typography>
+        <Typography variant='inherit'>{finding.osid.NAME}</Typography>
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
@@ -1506,7 +1506,7 @@ const Finding = ({
         }
       </Typography>
     </Stack>
-  } else if (rescoring.finding_type === FINDING_TYPES.OS_ID) {
+  } else if (rescoring.finding_type === FINDING_TYPES.OSID) {
     return <Stack spacing={0.5}>
       <div style={{ display: 'flex' }}>
         <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
@@ -1516,7 +1516,7 @@ const Finding = ({
           }
         </Typography>
       </div>
-      <Typography variant='inherit' marginRight='0.4rem'>{finding.os_id.VERSION_ID} → {finding.greatest_version}</Typography>
+      <Typography variant='inherit' marginRight='0.4rem'>{finding.osid.VERSION_ID} → {finding.greatest_version}</Typography>
     </Stack>
   }
 }
@@ -2402,9 +2402,9 @@ const Rescore = ({
           standard: rescoring.finding.standard,
           asset: rescoring.finding.asset,
         }
-      } else if (type === FINDING_TYPES.OS_ID) {
+      } else if (type === FINDING_TYPES.OSID) {
         return {
-          os_id: rescoring.finding.os_id,
+          osid: rescoring.finding.osid,
         }
       }
     }

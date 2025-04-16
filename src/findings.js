@@ -23,7 +23,7 @@ export const FINDING_TYPES = {
   LICENSE: 'finding/license',
   MALWARE: 'finding/malware',
   OS_IDS: 'os_ids',
-  OS_ID: 'finding/os_id',
+  OSID: 'finding/osid',
   SAST: 'finding/sast',
   VULNERABILITY: 'finding/vulnerability',
 }

@@ -218,9 +218,9 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
         !== dataKey({type: FINDING_TYPES.CRYPTO, data: finding.data})
     ) return false
     if (
-      finding.meta.type === FINDING_TYPES.OS_ID
-      && dataKey({type: FINDING_TYPES.OS_ID, data: rescoring.data.finding})
-        !== dataKey({type: FINDING_TYPES.OS_ID, data: finding.data})
+      finding.meta.type === FINDING_TYPES.OSID
+      && dataKey({type: FINDING_TYPES.OSID, data: rescoring.data.finding})
+        !== dataKey({type: FINDING_TYPES.OSID, data: finding.data})
     ) return false
 
     return true
