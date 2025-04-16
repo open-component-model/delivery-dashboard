@@ -334,7 +334,13 @@ const SpecialComponents = () => {
       </Stack>
     </DragDropContext>
     <Fab
-      style={{backgroundColor: theme.dependentComponentOverview.color, color: theme.bomButton.color, position: 'fixed', bottom: '1.5rem', right: '1.5rem'}}
+      style={{
+        backgroundColor: theme.odg.light,
+        color: 'white',
+        position: 'fixed',
+        bottom: '1.5rem',
+        right: '1.5rem',
+      }}
       onClick={handleOpenNewSpecialComponent}
     >
       <AddIcon/>

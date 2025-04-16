@@ -1,4 +1,4 @@
-export const DASHBOARD_TITLE = 'Delivery Dashboard'
+export const DASHBOARD_TITLE = 'Open Delivery Gear'
 
 export const tabConfig = {
   BOM: {

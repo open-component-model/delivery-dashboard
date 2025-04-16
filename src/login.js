@@ -131,7 +131,7 @@ const LoginPanelTop = () => {
       src={ODGLogo}
       alt='odg-logo'
     />
-    <Typography marginTop='1rem' variant='h5' color={theme.palette.secondary.main}>
+    <Typography marginTop='1rem' variant='h5' color={theme.odg.light}>
       {
         DASHBOARD_TITLE
       }
