@@ -77,7 +77,7 @@ const artefactMetadataTypes = {
   STRUCTURE_INFO: 'structure_info',
   CRYPTO_ASSET: 'crypto_asset',
   RESCORINGS: 'rescorings',
-  OS_ID: 'os_id',
+  OSID: 'osid',
 }
 Object.freeze(artefactMetadataTypes)
 
@@ -86,7 +86,7 @@ const datasources = {
   BDBA: 'bdba',
   CLAMAV: 'clamav',
   SAST: 'sast',
-  OS_ID: 'os-id',
+  OSID: 'osid',
   CC_UTILS: 'cc-utils',
   CRYPTO: 'crypto',
 }
@@ -159,8 +159,8 @@ export const dataKey = ({type, data}) => {
     props: [data.standard, dataKey({type: artefactMetadataTypes.CRYPTO_ASSET, data: data.asset})],
   })
 
-  if (type === FINDING_TYPES.OS_ID) return asKey({
-    props: [data.os_id.ID],
+  if (type === FINDING_TYPES.OSID) return asKey({
+    props: [data.osid.ID],
   })
 }
 
@@ -622,13 +622,13 @@ const MetadataViewerPopover = ({
   // crypto assets might also be available in case crypto findings are enabled
   const includeCryptoAssets = findingCfgs.find((findingCfg) => findingCfg.type === FINDING_TYPES.CRYPTO)
 
-  const includeOsId = findingCfgs.find((findingCfg) => findingCfg.type === FINDING_TYPES.OS_ID)
+  const includeOsId = findingCfgs.find((findingCfg) => findingCfg.type === FINDING_TYPES.OSID)
 
   const types = React.useMemo(() => [
     ...findingCfgs.map((findingCfg) => findingCfg.type),
     ...(includeStructureInfo ? [artefactMetadataTypes.STRUCTURE_INFO] : []),
     ...(includeCryptoAssets ? [artefactMetadataTypes.CRYPTO_ASSET] : []),
-    ...(includeOsId ? [artefactMetadataTypes.OS_ID] : []),
+    ...(includeOsId ? [artefactMetadataTypes.OSID] : []),
   ], [artefactMetadataTypes])
 
   const [findings, findingsState] = useFetchQueryMetadata({
