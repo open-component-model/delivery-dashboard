@@ -43,6 +43,11 @@ import {
   Alert,
 } from '@mui/material'
 import { alpha } from '@mui/material/styles'
+import {
+  DatePicker,
+  LocalizationProvider,
+} from '@mui/x-date-pickers'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { useTheme } from '@emotion/react'
 import { enqueueSnackbar } from 'notistack'
 import CheckIcon from '@mui/icons-material/Check'
@@ -55,6 +60,8 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat'
 import UndoIcon from '@mui/icons-material/Undo'
+import dayjs from 'dayjs'
+import 'dayjs/locale/en-gb'
 
 import PropTypes from 'prop-types'
 
@@ -65,6 +72,7 @@ import {
 import { rescore } from './api'
 import {
   errorSnackbarProps,
+  META_ALLOWED_PROCESSING_TIME,
   META_RESCORING_RULES,
   META_SPRINT_NAMES,
   RESCORING_MODES,
@@ -128,6 +136,7 @@ const patchRescoringProposals = (rescoringProposals, ocmNode) => {
       ocmNode: ocmNode,
       originalSeverityProposal: rescoringProposal.severity,
       originalMatchingRules: rescoringProposal.matching_rules,
+      originalDueDate: rescoringProposal.due_date,
     }
   }))
 }
@@ -145,8 +154,10 @@ const rescoringIdentity = (rescoring) => {
 const rescoringNeedsComment = (rescoring) => {
   return (
     rescoring.matching_rules.includes(META_RESCORING_RULES.CUSTOM_RESCORING)
-    && rescoring.severity !== rescoring.originalSeverityProposal
-    && !rescoring.comment
+    && (
+      rescoring.severity !== rescoring.originalSeverityProposal
+      || rescoring.due_date !== rescoring.originalDueDate
+    ) && !rescoring.comment
   )
 }
 
@@ -915,6 +926,7 @@ AppliedRulesExtraInfo.propTypes = {
 const ApplicableRescoringsRow = ({
   findingCfg,
   applicableRescoring,
+  discoveryDate,
   priority,
   fetchDeleteApplicableRescoring,
 }) => {
@@ -937,6 +949,19 @@ const ApplicableRescoringsRow = ({
     id: applicableRescoring.data.severity,
     findingCfg: findingCfg,
   })
+
+  const dueDate = () => {
+    const _dueDate = applicableRescoring.data.due_date
+    const _allowedProcessingTime = applicableRescoring.data.allowed_processing_time
+
+    if (_dueDate) return (new Date(_dueDate)).toLocaleDateString()
+    if (!_allowedProcessingTime) return null
+
+    const _discoveryDate = new Date(discoveryDate)
+    // `allowed_processing_time` of a rescoring is always stored as seconds
+    _discoveryDate.setSeconds(_discoveryDate.getSeconds() + _allowedProcessingTime.replace('s', ''))
+    return _discoveryDate.toLocaleDateString()
+  }
 
   return <TableRow
     onMouseEnter={() => setRowHovered(true)}
@@ -986,6 +1011,9 @@ const ApplicableRescoringsRow = ({
       <Typography variant='inherit' sx={{ wordWrap: 'break-word' }}>{applicableRescoring.data.comment}</Typography>
     </TableCell>
     <TableCell>
+      <Typography align='center' variant='inherit'>{dueDate()}</Typography>
+    </TableCell>
+    <TableCell>
       {
         applicableRescoring.data.matching_rules.map((rule_name) => <Typography key={rule_name} variant='inherit'>
           {
@@ -1018,6 +1046,7 @@ ApplicableRescoringsRow.displayName = 'ApplicableRescoringsRow'
 ApplicableRescoringsRow.propTypes = {
   findingCfg: PropTypes.object.isRequired,
   applicableRescoring: PropTypes.object.isRequired,
+  discoveryDate: PropTypes.string.isRequired,
   priority: PropTypes.number.isRequired,
   fetchDeleteApplicableRescoring: PropTypes.func.isRequired,
 }
@@ -1125,10 +1154,9 @@ const ApplicableRescorings = ({
                 </TableCell>
                 <TableCell width='11%' align='center'>Categorisation</TableCell>
                 <TableCell width='11%' align='center'>User</TableCell>
-                <TableCell width='25%'>Comment</TableCell>
-                <TableCell width='19%'>
-                  <Typography variant='inherit'>Applied Rules</Typography>
-                </TableCell>
+                <TableCell width='15%'>Comment</TableCell>
+                <TableCell width='10%' align='center'>New Due Date</TableCell>
+                <TableCell width='19%'>Applied Rules</TableCell>
                 <TableCell width='5%' sx={{ border: 0 }}/>
               </TableRow>
             </TableHead>
@@ -1138,6 +1166,7 @@ const ApplicableRescorings = ({
                   key={idx}
                   findingCfg={findingCfg}
                   applicableRescoring={ap}
+                  discoveryDate={rescoring.discovery_date}
                   priority={idx + 1}
                   fetchDeleteApplicableRescoring={fetchDeleteApplicableRescoring}
                 />)
@@ -1543,9 +1572,12 @@ const RescoringContentTableRow = ({
     severity,
     matching_rules,
     applicable_rescorings,
+    discovery_date,
+    due_date,
     ocmNode,
     originalSeverityProposal,
     originalMatchingRules,
+    originalDueDate,
   } = rescoring
 
   const [expanded, setExpanded] = React.useState(false)
@@ -1565,15 +1597,21 @@ const RescoringContentTableRow = ({
 
   const sprintInfo = sprints.find((s) => s.name === sprintNameForRescoring({rescoring, findingCfg}))
 
-  const currentDays = currentCategorisation.allowed_processing_time / 24 / 60 / 60
-  const rescoredDays = rescoredCategorisation.allowed_processing_time / 24 / 60 / 60
+  const allowedProcessingDays = (dueDate) => {
+    return Math.max(0, Math.round((new Date(dueDate) - new Date(discovery_date)) / 1000 / 60 / 60 / 24)) // ms -> days
+  }
+
+  const currentDays = allowedProcessingDays(originalDueDate)
+  const rescoredDays = rescoredCategorisation.allowed_processing_time === META_ALLOWED_PROCESSING_TIME.INPUT
+    ? allowedProcessingDays(due_date)
+    : rescoredCategorisation.allowed_processing_time / 60 / 60 / 24 // sec -> days
 
   // don't show day-diff if one of both categorisations has no processing time set or there is no difference
   const diffDays = (
     currentCategorisation.allowed_processing_time !== null
     && rescoredCategorisation.allowed_processing_time !== null
     && currentDays !== rescoredDays
-  ) ? `${rescoredDays - currentDays >= 0 ? '+' : ''}${rescoredDays - currentDays} days`
+  ) ? `${rescoredDays - currentDays >= 0 ? '+' : ''}${rescoredDays - currentDays} day${Math.abs(rescoredDays - currentDays) === 1 ? '' : 's'}`
     : null
 
   const newProccesingDays = diffDays ? <Tooltip
@@ -1586,6 +1624,7 @@ const RescoringContentTableRow = ({
 
   const delayRescoringUpdate = ({
     comment,
+    due_date,
   }) => {
     if (updateDelayTimer) {
       clearTimeout(updateDelayTimer)
@@ -1596,6 +1635,7 @@ const RescoringContentTableRow = ({
         editRescoring({
           rescoring,
           comment,
+          due_date,
         })
         if (!selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))) {
           selectRescoring(rescoring)
@@ -1639,13 +1679,13 @@ const RescoringContentTableRow = ({
       </TableCell>
       <TableCell align='center'>
         {
-          sprintInfo ? <Tooltip
+          sprintInfo && <Tooltip
             title={<Typography
               variant='inherit'
               whiteSpace='pre-line'
             >
               {
-                `${sprintInfo.tooltip}\nFirst discovered on ${new Date(rescoring.discovery_date).toLocaleDateString()}`
+                `${sprintInfo.tooltip}\nFirst discovered on ${new Date(discovery_date).toLocaleDateString()}`
               }
             </Typography>}
           >
@@ -1655,7 +1695,7 @@ const RescoringContentTableRow = ({
               color={sprintInfo.color}
               size='small'
             />
-          </Tooltip> : <></>
+          </Tooltip>
         }
       </TableCell>
       <TableCell align='right' sx={{ paddingX: 0 }}>
@@ -1675,10 +1715,17 @@ const RescoringContentTableRow = ({
             <Select
               value={severity}
               onChange={(e) => {
+                const id = e.target.value
+                const categorisation = findCategorisationById({id, findingCfg})
+                const dueDate = categorisation.allowed_processing_time === META_ALLOWED_PROCESSING_TIME.INPUT
+                  ? originalDueDate
+                  : new Date(discovery_date) + categorisation.allowed_processing_time * 1000 // sec -> ms
+
                 editRescoring({
                   rescoring: rescoring,
-                  severity: e.target.value,
+                  severity: id,
                   matchingRules: [META_RESCORING_RULES.CUSTOM_RESCORING],
+                  due_date: dueDate,
                 })
                 if (!selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))) {
                   selectRescoring(rescoring)
@@ -1737,22 +1784,50 @@ const RescoringContentTableRow = ({
         </div>
       </TableCell>
       <TableCell>
-        <TextField
-          label='Comment'
-          defaultValue={rescoring.comment}
-          onChange={(e) => delayRescoringUpdate({comment: e.target.value})}
-          onClick={(e) => e.stopPropagation()}
-          error={rescoringNeedsComment(rescoring)}
-          size='small'
-          maxRows={4}
-          InputProps={{
-            sx: {
-              fontSize: 'inherit',
-            },
-          }}
-          fullWidth
-          multiline
-        />
+        <Stack spacing={2}>
+          <TextField
+            label='Comment'
+            defaultValue={rescoring.comment}
+            onChange={(e) => delayRescoringUpdate({comment: e.target.value})}
+            onClick={(e) => e.stopPropagation()}
+            error={rescoringNeedsComment(rescoring)}
+            size='small'
+            maxRows={4}
+            InputProps={{
+              sx: {
+                fontSize: 'inherit',
+              },
+            }}
+            fullWidth
+            multiline
+          />
+          {
+            rescoredCategorisation.allowed_processing_time === META_ALLOWED_PROCESSING_TIME.INPUT && <Box
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <LocalizationProvider
+                dateAdapter={AdapterDayjs}
+                adapterLocale='en-gb'
+              >
+                <DatePicker
+                  label='Due Date'
+                  defaultValue={dayjs(due_date ? new Date(due_date) : new Date())}
+                  minDate={dayjs(new Date())}
+                  onChange={(value) => delayRescoringUpdate({due_date: value.format('YYYY-MM-DD')})}
+                  slotProps={{
+                    textField: {
+                      size: 'small',
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+            </Box>
+          }
+        </Stack>
       </TableCell>
       <TableCell align='center'>
         {
@@ -2352,6 +2427,7 @@ const Rescore = ({
   handleClose,
   setShowProgress,
   scope,
+  findingCfg,
   fetchComplianceData,
   fetchComplianceSummary,
 }) => {
@@ -2412,12 +2488,24 @@ const Rescore = ({
       }
     }
 
+    const categorisation = findCategorisationById({
+      id: rescoring.severity,
+      findingCfg: findingCfg,
+    })
+
+    const _allowedProcessingTime = categorisation.allowed_processing_time
+    const allowedProcessingTime = !_allowedProcessingTime || _allowedProcessingTime === META_ALLOWED_PROCESSING_TIME.INPUT
+      ? _allowedProcessingTime
+      : `${_allowedProcessingTime}s` // `allowed_processing_time` of a rescoring is always stored as seconds
+
     const data = {
       finding: findingForType(rescoring.finding_type),
       referenced_type: rescoring.finding_type,
       severity: rescoring.severity,
       matching_rules: rescoring.matching_rules,
       comment: rescoring.comment,
+      allowed_processing_time: allowedProcessingTime,
+      due_date: allowedProcessingTime === META_ALLOWED_PROCESSING_TIME.INPUT ? rescoring.due_date : null,
     }
 
     return {artefact, meta, data}
@@ -2543,6 +2631,7 @@ Rescore.propTypes = {
   handleClose: PropTypes.func.isRequired,
   setShowProgress: PropTypes.func.isRequired,
   scope: PropTypes.string.isRequired,
+  findingCfg: PropTypes.object.isRequired,
   fetchComplianceData: PropTypes.func,
   fetchComplianceSummary: PropTypes.func,
 }
@@ -2596,6 +2685,7 @@ const RescoringModal = ({
     severity,
     matchingRules,
     comment,
+    due_date,
   }) => {
     setRescorings((prev) => {
       // don't mess up table sorting, therefore insert at index
@@ -2608,6 +2698,7 @@ const RescoringModal = ({
           matching_rules: severity === rescoring.originalSeverityProposal ? rescoring.originalMatchingRules : matchingRules,
         },
         ...comment !== undefined && {comment: comment},
+        ...due_date !== undefined && {due_date: due_date}
       }
 
       // reconstruct array to trigger state-update (thus re-render)
@@ -2650,9 +2741,14 @@ const RescoringModal = ({
   }, [setSprints, rescoringsForType])
 
   const allowedRescorings = filteredRescorings?.filter((rescoring) => {
+    // only rescorings are allowed iff their severity has changed OR they allow a custom due date
+    // input and the due date has changed
     return (
       selectedRescorings.find((r) => rescoringIdentity(r) === rescoringIdentity(rescoring))
-      && rescoring.severity !== categoriseRescoringProposal({rescoring, findingCfg}).id
+      && (
+        rescoring.severity !== categoriseRescoringProposal({rescoring, findingCfg}).id
+        || rescoring.due_date !== rescoring.originalDueDate
+      )
     )
   })
   const filteredOutRescoringsLength = filteredRescorings ? selectedRescorings.length - allowedRescorings.length : 0
@@ -2869,6 +2965,7 @@ const RescoringModal = ({
               handleClose={handleClose}
               setShowProgress={setShowProgress}
               scope={scope}
+              findingCfg={findingCfg}
               fetchComplianceData={fetchComplianceData}
               fetchComplianceSummary={fetchComplianceSummary}
             />
