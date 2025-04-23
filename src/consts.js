@@ -218,6 +218,12 @@ export const META_SPRINT_NAMES = {
 Object.freeze(META_SPRINT_NAMES)
 
 
+export const META_ALLOWED_PROCESSING_TIME = {
+  INPUT: 'input',
+}
+Object.freeze(META_ALLOWED_PROCESSING_TIME)
+
+
 export const USER_IDENTITIES = {
   EMAIL_ADDRESS: 'emailAddress',
   GITHUB_USER: 'githubUser',
