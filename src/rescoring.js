@@ -1738,6 +1738,7 @@ const RescoringContentTableRow = ({
       </TableCell>
       <TableCell>
         <TextField
+          label='Comment'
           defaultValue={rescoring.comment}
           onChange={(e) => delayRescoringUpdate({comment: e.target.value})}
           onClick={(e) => e.stopPropagation()}
