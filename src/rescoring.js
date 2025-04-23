@@ -1582,14 +1582,16 @@ const RescoringContentTableRow = ({
     <Typography variant='inherit'>{diffDays}</Typography>
   </Tooltip> : <Typography variant='inherit' visibility='hidden'>Dummy</Typography>
 
-  const [commentDelayTimer, setCommentDelayTimer] = React.useState(null)
+  const [updateDelayTimer, setUpdateDelayTimer] = React.useState(null)
 
-  const delayCommentUpdate = (comment) => {
-    if (commentDelayTimer) {
-      clearTimeout(commentDelayTimer)
-      setCommentDelayTimer(null)
+  const delayRescoringUpdate = ({
+    comment,
+  }) => {
+    if (updateDelayTimer) {
+      clearTimeout(updateDelayTimer)
+      setUpdateDelayTimer(null)
     }
-    setCommentDelayTimer(
+    setUpdateDelayTimer(
       setTimeout(() => {
         editRescoring({
           rescoring,
@@ -1737,7 +1739,7 @@ const RescoringContentTableRow = ({
       <TableCell>
         <TextField
           defaultValue={rescoring.comment}
-          onChange={(e) => delayCommentUpdate(e.target.value)}
+          onChange={(e) => delayRescoringUpdate({comment: e.target.value})}
           onClick={(e) => e.stopPropagation()}
           error={rescoringNeedsComment(rescoring)}
           size='small'
