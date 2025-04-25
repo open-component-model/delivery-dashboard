@@ -184,6 +184,7 @@ const ocmComponentResponsibles = async ({
 
   const result = await withAuth(url)
   if (result.status === 202) return API_RESPONSES.RETRY // caller is supposed to retry
+  if (result.status === 404) return {responsibles: []}
 
   return _toJson(result)
 }
