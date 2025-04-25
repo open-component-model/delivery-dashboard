@@ -52,7 +52,6 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 
 import PropTypes from 'prop-types'
-import SemVer from 'semver'
 
 import { FeatureRegistrationContext, SearchParamContext } from '../App'
 import { generateArtefactID } from '../ocm/util'
@@ -102,7 +101,6 @@ import { SprintInfo } from '../util/sprint'
 import ErrorBoundary from '../util/errorBoundary'
 import { VersionOverview, evaluateVersionMatch } from '../util/versionOverview'
 import TriggerComplianceToolButton from '../util/triggerComplianceToolButton'
-import { parseRelaxedSemver } from '../os'
 import {
   categorisationValueToColor,
   categorisationValueToIndicator,
@@ -752,18 +750,14 @@ const Artefacts = ({
   ])
 
   const types = React.useMemo(() => {
-    const retrieveOsIds = findingCfgs.find((findingCfg) => findingCfg.type === FINDING_TYPES.OS_IDS)
-
     return [
       artefactMetadataTypes.ARTEFACT_SCAN_INFO,
       artefactMetadataTypes.OSID,
-      ...retrieveOsIds ? [FINDING_TYPES.OS_IDS] : [],
     ]
   }, [
     findingCfgs,
     artefactMetadataTypes.ARTEFACT_SCAN_INFO,
     artefactMetadataTypes.OSID,
-    FINDING_TYPES.OS_IDS,
   ])
 
   const params = React.useMemo(() => {
@@ -1831,50 +1825,6 @@ ComponentChip.propTypes = {
 }
 
 
-const osInfoReason = (resource) => {
-  const eolString = (eolInfo) => {
-    if (typeof eolInfo == 'string') return `EOL reached on ${new Date(eolInfo).toLocaleDateString()}`
-
-    return 'EOL reached'
-  }
-
-  const newerVersionAvailableString = (version) => {
-    return `Newer Patch Version is available, ${version}`
-  }
-
-  if (!resource) return 'no resource os information found'
-
-  if (!resource.branchInfo) return 'no os branch information found'
-
-  const now = new Date()
-  const branchEol = new Date(resource.branchInfo.eol_date)
-  const resourceSemVer = parseRelaxedSemver(resource.data.os_info.VERSION_ID)
-  let branchSemVer = null
-  if (resource.branchInfo.greatest_version) {
-    branchSemVer = parseRelaxedSemver(resource.branchInfo.greatest_version)
-  }
-
-  if (!resourceSemVer && !branchSemVer) return 'no versions found'
-
-  if (!branchSemVer || SemVer.eq(branchSemVer, resourceSemVer)) {
-    // is greatest version
-    if (now > branchEol) return eolString(resource.branchInfo.eol_date) // eol reached
-    return 'Greatest Version'
-
-  } else if (SemVer.lt(resourceSemVer, branchSemVer)) {
-    if (now > branchEol) return eolString(resource.branchInfo.eol_date)
-    return newerVersionAvailableString(branchSemVer)
-  }
-
-  /**
-   * image has newer os version than we know
-   * occurred when EOL API removed debian latest release minor
-   * see: https://github.com/endoflife-date/endoflife.date/issues/1396
-   */
-  return 'Greatest Version'
-}
-
-
 const IssueChip = ({
   ocmNode,
   issueReplicatorCfg,
@@ -1932,100 +1882,6 @@ IssueChip.displayName = 'IssueChip'
 IssueChip.propTypes = {
   ocmNode: PropTypes.instanceOf(OcmNode).isRequired,
   issueReplicatorCfg: PropTypes.object.isRequired,
-}
-
-
-const OsCell = ({
-  osData,
-  categorisation,
-  isLoading,
-}) => {
-  const osInfo = osData?.data.os_info
-  const emptyOsId = Object.values(osInfo ?? {}).every(e => e === null)
-  const msg = osInfoReason(osData)
-
-  return <Tooltip
-    title={
-      <Stack>
-        {
-          osInfo && <>
-            <List>
-              {
-                emptyOsId ? <Typography
-                  variant='inherit'
-                  sx={{
-                    whiteSpace: 'pre-wrap',
-                    maxWidth: 'none',
-                  }}
-                >
-                  Unable to determine an OS, thus probably a scratch image.
-                </Typography> : <>
-                  <Typography variant='inherit'>
-                    {msg}
-                  </Typography>
-                  <Divider/>
-                  <Typography
-                    variant='inherit'
-                    sx={{
-                      whiteSpace: 'pre-wrap',
-                      maxWidth: 'none',
-                    }}
-                  >
-                    {JSON.stringify(osInfo, null, 2)}
-                  </Typography>
-                </>
-              }
-            </List>
-            <Divider/>
-          </>
-        }
-        {
-          isLoading ? <Skeleton sx={{ width: '10rem' }}/> : <Typography variant='inherit'>
-            {
-              lastScanTimestampStr(osData)
-            }
-          </Typography>
-        }
-      </Stack>
-    }
-  >
-    <Grid item>
-      {
-        osInfo ? (
-          emptyOsId ? <Chip
-            label='Scratch Image'
-            color='default'
-            variant='outlined'
-            size='small'
-          /> : <Chip
-            label={`${osInfo.ID} ${osInfo.VERSION_ID ?? ''}`}
-            color={categorisationValueToColor(categorisation.value)}
-            variant='outlined'
-            size='small'
-          />
-        ) : (
-          isLoading ? <Chip
-            label={`OS Info ${capitalise(categorisation.display_name)}`}
-            color={categorisationValueToColor(categorisation.value)}
-            variant='outlined'
-            size='small'
-          /> : <Chip
-            color='default'
-            label='No OS Info'
-            variant='outlined'
-            size='small'
-            clickable={false}
-          />
-        )
-      }
-    </Grid>
-  </Tooltip>
-}
-OsCell.displayName = 'OsCell'
-OsCell.propTypes = {
-  osData: PropTypes.object,
-  categorisation: PropTypes.object.isRequired,
-  isLoading: PropTypes.bool.isRequired,
 }
 
 
@@ -2218,7 +2074,6 @@ const ComplianceCell = ({
     artefactExtraId: ocmNode.artefact.extraIdentity,
   }))
 
-  const osDataLegacy = complianceFiltered?.find((d) => d.meta.type === FINDING_TYPES.OS_IDS)
   const osData = complianceFiltered?.find((d) => d.meta.type === artefactMetadataTypes.OSID)
 
   const lastBdbaScan = findLastScan(complianceFiltered, datasources.BDBA)
@@ -2239,11 +2094,6 @@ const ComplianceCell = ({
   })
   const retrieveMalwareFindings = retrieveFindingsForType({
     findingType: FINDING_TYPES.MALWARE,
-    findingCfgs: findingCfgs,
-    ocmNode: ocmNode,
-  })
-  const retrieveOsIdLegacyFindings = retrieveFindingsForType({
-    findingType: FINDING_TYPES.OS_IDS,
     findingCfgs: findingCfgs,
     ocmNode: ocmNode,
   })
@@ -2307,13 +2157,6 @@ const ComplianceCell = ({
           lastScan={lastCryptoScan}
           findingCfgs={findingCfgs}
           fetchComplianceSummary={fetchComplianceSummary}
-          isLoading={state.isLoading}
-        />
-      }
-      {
-        ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveOsIdLegacyFindings && <OsCell
-          osData={osDataLegacy}
-          categorisation={getCategorisation(FINDING_TYPES.OS_IDS)}
           isLoading={state.isLoading}
         />
       }
