@@ -2,7 +2,6 @@ import PropTypes from 'prop-types'
 
 import urljoin from 'url-join'
 
-import { addMetadata } from './fetch'
 import { appendPresentParams } from './util'
 import { TOKEN_KEY } from './consts'
 
@@ -301,7 +300,7 @@ const artefactsQueryMetadata = async ({
     })
   )
 
-  return await Promise.all(artefactMetadata.map(addMetadata))
+  return artefactMetadata
 }
 
 /**

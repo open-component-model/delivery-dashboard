@@ -22,9 +22,6 @@ import { FeatureRegistrationContext } from './App'
 import { registerCallbackHandler } from './feature'
 import { normaliseObject } from './util'
 import { useConnected } from './util/connectivity'
-import { osBranches } from './api'
-import { determineOsBranch } from './os'
-import { FINDING_TYPES } from './findings'
 
 
 const cache = new Map()
@@ -771,37 +768,3 @@ useFetchGreatestVersions.propTypes = {
   ocmRepoUrl: PropTypes.string,
   versionFilter: PropTypes.string,
 }
-
-
-
-const osInfoCache = {}
-
-
-const osInfo = async ({ osId }) => {
-  if (osId === null) return null
-  if (osInfoCache[osId]) return osInfoCache[osId]
-  osInfoCache[osId] = osBranches(osId)
-  return await osInfoCache[osId]
-}
-
-
-const addMetadata = async (complianceData) => {
-  if (complianceData.meta.type === FINDING_TYPES.OS_IDS) {
-    return await addOsInfo(complianceData)
-  } else {
-    return complianceData
-  }
-}
-
-
-const addOsInfo = async (complianceData) => {
-  const osData = await osInfo({ osId: complianceData.data.os_info.ID })
-  const branch = determineOsBranch(
-    complianceData.data.os_info.VERSION_ID,
-    osData
-  )
-  complianceData.branchInfo = branch
-  return complianceData
-}
-
-export { addMetadata }

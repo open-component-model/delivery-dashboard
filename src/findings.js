@@ -22,7 +22,6 @@ export const FINDING_TYPES = {
   DIKI: 'finding/diki',
   LICENSE: 'finding/license',
   MALWARE: 'finding/malware',
-  OS_IDS: 'os_ids',
   OSID: 'finding/osid',
   SAST: 'finding/sast',
   VULNERABILITY: 'finding/vulnerability',
