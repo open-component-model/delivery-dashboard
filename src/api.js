@@ -385,20 +385,6 @@ const rescore = {
 
     return true
   },
-  delete: async ({id}) => {
-    const url = new URL(routes.rescore)
-    appendPresentParams(url, {
-      id,
-    })
-
-    const resp = await withAuth(url, {
-      method: 'DELETE',
-    })
-
-    await raiseIfNotOk(resp)
-
-    return true
-  },
 }
 
 
