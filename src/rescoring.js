@@ -50,10 +50,8 @@ import {
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { useTheme } from '@emotion/react'
 import { enqueueSnackbar } from 'notistack'
-import CheckIcon from '@mui/icons-material/Check'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import DeleteIcon from '@mui/icons-material/Delete'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
@@ -86,7 +84,6 @@ import {
 import {
   formatAndSortSprints,
   normaliseExtraIdentity,
-  normaliseObject,
   pluralise,
   toYamlString,
   trimLongString,
@@ -928,11 +925,7 @@ const ApplicableRescoringsRow = ({
   applicableRescoring,
   discoveryDate,
   priority,
-  fetchDeleteApplicableRescoring,
 }) => {
-  const [rowHovered, setRowHovered] = React.useState(false)
-  const [isConfirmDeletion, setIsConfirmDeletion] = React.useState(false)
-
   const componentName = applicableRescoring.artefact.component_name
   const artefactName = applicableRescoring.artefact.artefact.artefact_name
   const artefactVersion = applicableRescoring.artefact.artefact.artefact_version
@@ -963,14 +956,7 @@ const ApplicableRescoringsRow = ({
     return _discoveryDate.toLocaleDateString()
   }
 
-  return <TableRow
-    onMouseEnter={() => setRowHovered(true)}
-    onMouseLeave={() => {
-      setRowHovered(false)
-      setIsConfirmDeletion(false)
-    }}
-    hover
-  >
+  return <TableRow hover>
     <TableCell align='center'>{priority}</TableCell>
     <TableCell>
       <Stack alignItems='center'>
@@ -1022,24 +1008,6 @@ const ApplicableRescoringsRow = ({
         </Typography>)
       }
     </TableCell>
-    {
-      !applicableRescoring.data.matching_rules.includes(META_RESCORING_RULES.BDBA_TRIAGE) ? <TableCell
-        align='center'
-        sx={{ border: 0 }}
-      >
-        {
-          rowHovered && (isConfirmDeletion ? <Tooltip title='Confirm'>
-            <IconButton onClick={() => fetchDeleteApplicableRescoring(applicableRescoring)}>
-              <CheckIcon/>
-            </IconButton>
-          </Tooltip> : <Tooltip title='Delete applied rescoring'>
-            <IconButton onClick={() => setIsConfirmDeletion(true)}>
-              <DeleteIcon/>
-            </IconButton>
-          </Tooltip>)
-        }
-      </TableCell> : <TableCell sx={{ border: 0 }}/>
-    }
   </TableRow>
 }
 ApplicableRescoringsRow.displayName = 'ApplicableRescoringsRow'
@@ -1048,67 +1016,17 @@ ApplicableRescoringsRow.propTypes = {
   applicableRescoring: PropTypes.object.isRequired,
   discoveryDate: PropTypes.string.isRequired,
   priority: PropTypes.number.isRequired,
-  fetchDeleteApplicableRescoring: PropTypes.func.isRequired,
 }
 
 
 const ApplicableRescorings = ({
   findingCfg,
   rescoring,
-  setRescorings,
-  fetchComplianceData,
-  fetchComplianceSummary,
   expanded,
 }) => {
   if (rescoring.applicable_rescorings.length === 0) {
     // if all applicable rescorings were deleted, don't show collapse anymore
     return null
-  }
-
-  const fetchDeleteApplicableRescoring = async (applicableRescoring) => {
-    try {
-      await rescore.delete({
-        id: applicableRescoring.id,
-      })
-      if (fetchComplianceSummary) {
-        // function is not defined when invoked from compliance tab
-        fetchComplianceSummary(false)
-      } else {
-        fetchComplianceData(false)
-      }
-    } catch (error) {
-      enqueueSnackbar(
-        'Rescoring could not be deleted',
-        {
-          ...errorSnackbarProps,
-          details: error.toString(),
-          onRetry: () => fetchDeleteApplicableRescoring(applicableRescoring),
-        },
-      )
-      return
-    }
-
-    enqueueSnackbar(
-      'Successfully deleted rescoring',
-      {
-        variant: 'success',
-        anchorOrigin: {
-          vertical: 'bottom',
-          horizontal: 'right',
-        },
-        autoHideDuration: 6000,
-      },
-    )
-
-    const normalisedRescoring = JSON.stringify(normaliseObject(applicableRescoring))
-    setRescorings((prev) => prev.map((r) => {
-      return {
-        ...r,
-        applicable_rescorings: r.applicable_rescorings.filter((ar) => {
-          return JSON.stringify(normaliseObject(ar)) !== normalisedRescoring
-        }),
-      }
-    }))
   }
 
   return <TableRow>
@@ -1154,10 +1072,9 @@ const ApplicableRescorings = ({
                 </TableCell>
                 <TableCell width='11%' align='center'>Categorisation</TableCell>
                 <TableCell width='11%' align='center'>User</TableCell>
-                <TableCell width='15%'>Comment</TableCell>
+                <TableCell width='20%'>Comment</TableCell>
                 <TableCell width='10%' align='center'>New Due Date</TableCell>
                 <TableCell width='19%'>Applied Rules</TableCell>
-                <TableCell width='5%' sx={{ border: 0 }}/>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -1168,7 +1085,6 @@ const ApplicableRescorings = ({
                   applicableRescoring={ap}
                   discoveryDate={rescoring.discovery_date}
                   priority={idx + 1}
-                  fetchDeleteApplicableRescoring={fetchDeleteApplicableRescoring}
                 />)
               }
             </TableBody>
@@ -1182,9 +1098,6 @@ ApplicableRescorings.displayName = 'ApplicableRescorings'
 ApplicableRescorings.propTypes = {
   findingCfg: PropTypes.object.isRequired,
   rescoring: PropTypes.object.isRequired,
-  setRescorings: PropTypes.func.isRequired,
-  fetchComplianceData: PropTypes.func,
-  fetchComplianceSummary: PropTypes.func,
   expanded: PropTypes.bool.isRequired,
 }
 
@@ -1564,9 +1477,6 @@ const RescoringContentTableRow = ({
   selectRescoring,
   sprints,
   findingCfg,
-  setRescorings,
-  fetchComplianceData,
-  fetchComplianceSummary,
 }) => {
   const {
     severity,
@@ -1851,9 +1761,6 @@ const RescoringContentTableRow = ({
     <ApplicableRescorings
       findingCfg={findingCfg}
       rescoring={rescoring}
-      setRescorings={setRescorings}
-      fetchComplianceData={fetchComplianceData}
-      fetchComplianceSummary={fetchComplianceSummary}
       expanded={expanded}
     />
   </>
@@ -1867,24 +1774,18 @@ RescoringContentTableRow.propTypes = {
   selectRescoring: PropTypes.func.isRequired,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
   findingCfg: PropTypes.object.isRequired,
-  setRescorings: PropTypes.func.isRequired,
-  fetchComplianceData: PropTypes.func,
-  fetchComplianceSummary: PropTypes.func,
 }
 
 
 const RescoringContent = ({
   ocmRepo,
   rescorings,
-  setRescorings,
   editRescoring,
   selectedRescorings,
   setSelectedRescorings,
   sprints,
   findingCfg,
   findingType,
-  fetchComplianceData,
-  fetchComplianceSummary,
   rescoringsLoading,
   sprintsLoading,
 }) => {
@@ -2082,9 +1983,6 @@ const RescoringContent = ({
                 selectRescoring={selectRescoring}
                 sprints={sprints}
                 findingCfg={findingCfg}
-                setRescorings={setRescorings}
-                fetchComplianceData={fetchComplianceData}
-                fetchComplianceSummary={fetchComplianceSummary}
               />)
           }
         </TableBody>
@@ -2105,15 +2003,12 @@ RescoringContent.displayName = 'RescoringContent'
 RescoringContent.propTypes = {
   ocmRepo: PropTypes.string,
   rescorings: PropTypes.arrayOf(PropTypes.object),
-  setRescorings: PropTypes.func.isRequired,
   editRescoring: PropTypes.func.isRequired,
   selectedRescorings: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedRescorings: PropTypes.func.isRequired,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
   findingCfg: PropTypes.object.isRequired,
   findingType: PropTypes.string.isRequired,
-  fetchComplianceData: PropTypes.func,
-  fetchComplianceSummary: PropTypes.func,
   rescoringsLoading: PropTypes.bool.isRequired,
   sprintsLoading: PropTypes.bool.isRequired,
 }
@@ -2274,8 +2169,6 @@ const Rescoring = ({
   editRescoring,
   setProgress,
   setShowProgress,
-  fetchComplianceData,
-  fetchComplianceSummary,
   sprints,
   sprintsLoading,
   findingCfg,
@@ -2386,15 +2279,12 @@ const Rescoring = ({
 
   return <RescoringContent
     rescorings={rescorings}
-    setRescorings={setRescorings}
     editRescoring={editRescoring}
     selectedRescorings={selectedRescorings}
     setSelectedRescorings={setSelectedRescorings}
     sprints={sprints}
     findingCfg={findingCfg}
     findingType={findingType}
-    fetchComplianceData={fetchComplianceData}
-    fetchComplianceSummary={fetchComplianceSummary}
     rescoringsLoading={rescoringsLoading}
     sprintsLoading={sprintsLoading}
   />
@@ -2410,8 +2300,6 @@ Rescoring.propTypes = {
   editRescoring: PropTypes.func.isRequired,
   setProgress: PropTypes.func.isRequired,
   setShowProgress: PropTypes.func.isRequired,
-  fetchComplianceData: PropTypes.func,
-  fetchComplianceSummary: PropTypes.func,
   sprints: PropTypes.arrayOf(PropTypes.object).isRequired,
   sprintsLoading: PropTypes.bool.isRequired,
   findingCfg: PropTypes.object.isRequired,
@@ -2883,8 +2771,6 @@ const RescoringModal = ({
           editRescoring={editRescoring}
           setProgress={setProgress}
           setShowProgress={setShowProgress}
-          fetchComplianceData={fetchComplianceData}
-          fetchComplianceSummary={fetchComplianceSummary}
           sprints={sprints}
           sprintsLoading={sprintsLoading}
           findingCfg={findingCfg}
