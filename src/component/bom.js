@@ -510,7 +510,7 @@ const ResponsiblesHeading = ({
         <Stack direction='column' spacing={1}>
           <Typography variant='inherit'>
             Responsibles have been determined via{' '}
-            {responsiblesSource.originType} from{' '}
+            {responsiblesSource.origin_type} from{' '}
             <a
               href={responsiblesSource.source}
               rel='noreferrer'
