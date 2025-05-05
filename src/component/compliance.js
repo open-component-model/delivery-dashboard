@@ -745,7 +745,7 @@ const FetchResponsibles = ({
 
         if (identifier.type === USER_IDENTITIES.PERSONAL_NAME) return {
           ...identity,
-          personalName: `${identifier.firstName} ${identifier.lastName}`,
+          personalName: `${identifier.first_name} ${identifier.last_name}`,
         }
 
         return identity

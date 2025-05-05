@@ -284,7 +284,7 @@ const Responsible = ({ responsible }) => {
     >
       <TableCell align='left'>
         {personalName
-          ? `${personalName.firstName} ${personalName.lastName}`
+          ? `${personalName.first_name} ${personalName.last_name}`
           : null}
       </TableCell>
       <TableCell align='left'>
