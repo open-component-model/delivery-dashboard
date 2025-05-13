@@ -1726,7 +1726,6 @@ const RescoringContentTableRow = ({
                 <DatePicker
                   label='Due Date'
                   defaultValue={dayjs(due_date ? new Date(due_date) : new Date())}
-                  minDate={dayjs(new Date())}
                   onChange={(value) => delayRescoringUpdate({due_date: value.format('YYYY-MM-DD')})}
                   slotProps={{
                     textField: {
