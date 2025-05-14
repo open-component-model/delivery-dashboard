@@ -52,6 +52,10 @@ delivery-dashboard:
               attribute: image.repository
             - ref: ocm-resource:delivery-dashboard.tag
               attribute: image.tag
+            - ref: ocm-resource:busybox.repository
+              attribute: busybox.image.repository
+            - ref: ocm-resource:busybox.tag
+              attribute: busybox.image.tag
         release:
           nextversion: bump_minor
           release_notes_policy: disabled

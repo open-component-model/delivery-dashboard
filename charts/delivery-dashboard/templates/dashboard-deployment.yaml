@@ -28,7 +28,7 @@ spec:
     spec:
       initContainers:
         - name: init-config-volume
-          image: busybox
+          image: {{ include "image" .Values.busybox.image }}
           command: # write all env-vars starting with REACT into config.js
             - sh
             - -c
