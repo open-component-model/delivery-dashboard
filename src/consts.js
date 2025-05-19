@@ -163,9 +163,10 @@ export const COMPLIANCE_TOOLS = {
   BDBA: 'bdba',
   CLAMAV: 'clamav',
   CRYPTO: 'crypto',
-  SAST: 'sast',
   ISSUE_REPLICATOR: 'issueReplicator',
   OSID: 'osid',
+  RESPONSIBLES: 'responsibles',
+  SAST: 'sast',
 }
 
 export const PRIORITIES = {
