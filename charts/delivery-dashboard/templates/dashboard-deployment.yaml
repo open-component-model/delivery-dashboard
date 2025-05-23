@@ -40,6 +40,8 @@ spec:
                 echo "window.$key = '$value'" >> /delivery-dashboard/dynamic/config.js;
               done
               cat /delivery-dashboard/config.js;
+          securityContext:
+            allowPrivilegeEscalation: false
           {{- if default dict .Values.envVars }}
           env:
           {{- range $key, $value := .Values.envVars }}
@@ -54,6 +56,8 @@ spec:
         - name: delivery-dashboard
           image: {{ include "image" .Values.image }}
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
           ports:
             - containerPort: {{ default 8080 .Values.containerPort }}
               name: default
