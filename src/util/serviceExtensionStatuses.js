@@ -17,7 +17,7 @@ import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 
 import PropTypes from 'prop-types'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 
 import {
   useFetchContainerStatuses,

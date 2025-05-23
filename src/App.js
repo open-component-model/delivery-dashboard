@@ -10,7 +10,7 @@ import {
   Routes,
   useNavigate,
   useSearchParams,
-} from 'react-router-dom'
+} from 'react-router'
 import { enqueueSnackbar, SnackbarProvider } from 'notistack'
 import Snowfall from 'react-snowfall'
 

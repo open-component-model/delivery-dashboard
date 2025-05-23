@@ -11,7 +11,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import RefreshIcon from '@mui/icons-material/Refresh'
 
 import PropTypes from 'prop-types'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 
 import { FeatureRegistrationContext, SearchParamContext } from '../App'
 import { features, MONITORING_PATH, SERVICES_PATH, OCM_REPO_AUTO_OPTION, VERSION_FILTER, tabConfig, PATH_KEY, PATH_POS_KEY } from '../consts'
