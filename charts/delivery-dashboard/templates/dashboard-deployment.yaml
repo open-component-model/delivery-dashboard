@@ -1,13 +1,15 @@
+{{- $podName := "delivery-dashboard" }}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: delivery-dashboard
+  name: {{ $podName }}
   namespace: {{ .Values.target_namespace | default .Release.Namespace }}
 spec:
   replicas: {{ default 1 .Values.replicas }}
   selector:
     matchLabels:
-      app: delivery-dashboard
+      app: {{ $podName }}
   strategy:
     type: RollingUpdate
   template:
@@ -19,7 +21,7 @@ spec:
       {{- end }}
       {{- end }}
       labels:
-        app: delivery-dashboard
+        app: {{ $podName }}
       {{- if default dict (.Values.pod).labels }}
       {{- range $annotation, $value := .Values.pod.labels }}
         {{ $annotation }}: {{ $value }}
@@ -53,7 +55,7 @@ spec:
             - name: delivery-dashboard-config
               mountPath: /delivery-dashboard/dynamic
       containers:
-        - name: delivery-dashboard
+        - name: {{ $podName }}
           image: {{ include "image" .Values.image }}
           imagePullPolicy: IfNotPresent
           securityContext:
@@ -74,3 +76,19 @@ spec:
       volumes:
       - name: delivery-dashboard-config
         emptyDir: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-delivery-dashboard
+  namespace: {{ .Values.target_namespace | default .Release.Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ $podName }}
+  policyTypes:
+    - Ingress
+  ingress:
+  - ports:
+    - protocol: TCP
+      port: 8080
