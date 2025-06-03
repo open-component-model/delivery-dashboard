@@ -67,7 +67,7 @@ import {
   ConfigContext,
   SearchParamContext,
 } from './App'
-import { rescore } from './api'
+import { rescore, routes } from './api'
 import {
   errorSnackbarProps,
   META_ALLOWED_PROCESSING_TIME,
@@ -88,12 +88,17 @@ import {
   toYamlString,
   trimLongString,
   capitalise,
+  validateUserAccess,
 } from './util'
 import CopyOnClickChip from './util/copyOnClickChip'
 import ErrorBoundary from './util/errorBoundary'
 import ExtraWideTooltip from './util/extraWideTooltip'
+import MissingPermissionsButton from './util/missingPermissionsButton'
 import MultilineTextViewer from './util/multilineTextViewer'
-import { useFetchComponentDescriptor } from './fetch'
+import {
+  useFetchAuthUser,
+  useFetchComponentDescriptor,
+} from './fetch'
 import {
   categorisationValueToColor,
   categoriseRescoringProposal,
@@ -2320,6 +2325,15 @@ const Rescore = ({
 }) => {
   const [isLoading, setIsLoading] = React.useState(false)
 
+  const [user] = useFetchAuthUser()
+  const route = new URL(routes.rescore).pathname
+  const method = 'POST'
+  const isAuthorised = validateUserAccess({
+    permissions: user?.permissions,
+    route: route,
+    method: method,
+  })
+
   const serialiseRescoring = React.useCallback((rescoring) => {
     const artefact = {
       component_name: [scopeOptions.COMPONENT, scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? rescoring.ocmNode.component.name : null,
@@ -2397,6 +2411,12 @@ const Rescore = ({
 
     return {artefact, meta, data}
   }, [scope])
+
+  if (!isAuthorised) return <MissingPermissionsButton
+    route={route}
+    method={method}
+    buttonText={`Apply Rescoring${rescorings?.length > 0 ? ` (${rescorings.length})` : ''}`}
+  />
 
   if (!rescorings?.length > 0) return <Button
     variant='contained'
