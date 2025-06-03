@@ -5,6 +5,7 @@ import { useSnackbar } from 'notistack'
 
 import {
   API_RESPONSES,
+  auth,
   components,
   deliverySprintInfosCurrent,
   specialComponentCurrentDependencies,
@@ -247,6 +248,26 @@ const _useFetch = ({
     state,
     () => setRefresh(prev => prev + 1)
   ]
+}
+
+
+const useFetchAuthRbac = () => {
+  return _useFetch({
+    fetchFunction: auth.rbac,
+    cacheKey: JSON.stringify({
+      route: routes.auth.rbac(),
+    }),
+  })
+}
+
+
+const useFetchAuthUser = () => {
+  return _useFetch({
+    fetchFunction: auth.user,
+    cacheKey: JSON.stringify({
+      route: routes.auth.user(),
+    }),
+  })
 }
 
 
@@ -706,6 +727,8 @@ const useFetchDoraMetrics = ({
 
 
 export {
+  useFetchAuthRbac,
+  useFetchAuthUser,
   useFetchUpgradePRs,
   useFetchCompDiff,
   useFetchCurrentSprintInfos,

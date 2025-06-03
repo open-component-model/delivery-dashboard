@@ -695,3 +695,44 @@ export const normaliseExtraIdentity = (extraIdentity) => {
     ]
   }, []).join('_')
 }
+
+
+/**
+ * Checks if at least one of the provided `permissions` is privileged enough to access the `route`
+ * with the given `method`.
+ */
+export const hasUserAccess = ({
+  permissions,
+  route,
+  method,
+}) => {
+  return permissions?.some((permission) => {
+    const validRoute = permission.routes.some((routeRegex) => new RegExp(routeRegex).test(route))
+    const validMethod = permission.methods.some((methodRegex) => new RegExp(methodRegex).test(method))
+
+    return validRoute && validMethod
+  })
+}
+
+
+/**
+ * Returns all of the provided `roles` which contain the required privileges to access the `route`
+ * with the given `method`.
+ */
+export const privilegedRoles = ({
+  roles,
+  permissions,
+  route,
+  method,
+}) => {
+  return roles.filter((role) => {
+    const permissionsForRole = permissions.filter((permission) => role.permissions.includes(permission.name))
+
+    return permissionsForRole.filter((permission) => {
+      const validRoute = permission.routes.some((routeRegex) => new RegExp(routeRegex).test(route))
+      const validMethod = permission.methods.some((methodRegex) => new RegExp(methodRegex).test(method))
+
+      return validRoute && validMethod
+    }).length > 0
+  })
+}
