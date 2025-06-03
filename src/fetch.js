@@ -128,6 +128,9 @@ const _useFetch = ({
             }
 
           } catch (error) {
+            // delete erroneous elements from cache
+            cache.delete(cacheKey)
+
             setState({
               isLoading: false,
               error: error.toString(),
