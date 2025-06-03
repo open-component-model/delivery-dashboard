@@ -12,8 +12,15 @@ import PropTypes from 'prop-types'
 import { useSnackbar } from 'notistack'
 
 import { errorSnackbarProps } from '../consts'
-import { serviceExtensions } from '../api'
-import { camelCaseToDisplayText } from '../util'
+import {
+  routes,
+  serviceExtensions,
+} from '../api'
+import { useFetchAuthUser } from '../fetch'
+import {
+  camelCaseToDisplayText,
+  hasUserAccess,
+} from '../util'
 
 
 export const triggerComplianceTool = ({
@@ -98,6 +105,16 @@ const TriggerComplianceToolButton = ({
   service,
 }) => {
   const { enqueueSnackbar } = useSnackbar()
+
+  const [user] = useFetchAuthUser()
+  const route = new URL(routes.serviceExtensions.backlogItems()).pathname
+  const isAuthorised = hasUserAccess({
+    permissions: user?.permissions,
+    route: route,
+    method: 'POST',
+  })
+
+  if (!isAuthorised) return null
 
   return <ListItemButton
     onClick={(e) => {

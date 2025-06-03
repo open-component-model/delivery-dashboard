@@ -36,7 +36,9 @@ import SearchIcon from '@mui/icons-material/Search'
 import PropTypes from 'prop-types'
 import { useTheme } from '@emotion/react'
 
+import { routes } from '../api'
 import {
+  useFetchAuthUser,
   useFetchBom,
   useFetchServiceExtensions,
 } from '../fetch'
@@ -45,6 +47,7 @@ import {
   matchObjectWithSearchQuery,
   pluralise,
   trimLongString,
+  hasUserAccess,
 } from '../util'
 import {
   ARTEFACT_KIND,
@@ -55,6 +58,7 @@ import {
 import { triggerComplianceTool } from './triggerComplianceToolButton'
 import { OcmNode, OcmNodeDetails } from '../ocm/iter'
 import CopyOnClickChip from './copyOnClickChip'
+import MissingPermissionsButton from './missingPermissionsButton'
 
 
 const ServiceConfiguration = ({
@@ -403,6 +407,15 @@ const TriggerComplianceTool = ({
 
   const { enqueueSnackbar } = useSnackbar()
 
+  const [user] = useFetchAuthUser()
+  const route = new URL(routes.serviceExtensions.backlogItems()).pathname
+  const method = 'POST'
+  const isAuthorised = hasUserAccess({
+    permissions: user?.permissions,
+    route: route,
+    method: method,
+  })
+
   const filteredOcmNodes = selectedOcmNodes.filter((ocmNode) => {
     if (service === 'bdba' && ocmNode.artefactKind !== ARTEFACT_KIND.RESOURCE) return false
     return true
@@ -411,6 +424,12 @@ const TriggerComplianceTool = ({
   const ocmNodesLength = filteredOcmNodes.length
 
   const scheduleButtonText = `schedule ${ocmNodesLength} ${pluralise('artefact', ocmNodesLength)} for ${camelCaseToDisplayText(service)}`
+
+  if (!isAuthorised) return <MissingPermissionsButton
+    route={route}
+    method={method}
+    buttonText={scheduleButtonText}
+  />
 
   if (ocmNodesLength === 0) return <Button
     variant='contained'

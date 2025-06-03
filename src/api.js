@@ -67,6 +67,8 @@ export const routes = {
     base: api('auth'),
     configs: () => `${routes.auth.base}/configs`,
     logout: () => `${routes.auth.base}/logout`,
+    rbac: () => `${routes.auth.base}/rbac`,
+    user: () => `${routes.auth.base}/user`,
   },
   features: api('features'),
   profiles: api('profiles'),
@@ -423,6 +425,8 @@ const auth = {
 
     await raiseIfNotOk(resp)
   },
+  rbac: async () => await _toJson(withAuth(routes.auth.rbac())),
+  user: async () => await _toJson(withAuth(routes.auth.user())),
 }
 
 const serviceExtensions = {

@@ -39,6 +39,7 @@ import PropTypes from 'prop-types'
 import { useSnackbar } from 'notistack'
 
 import {
+  useFetchAuthUser,
   useFetchBacklogItems,
   useFetchContainerStatuses,
   useFetchLogCollections,
@@ -59,10 +60,12 @@ import {
   pluralise,
   trimLongString,
   useInterval,
+  hasUserAccess,
 } from '../util'
-import { serviceExtensions } from '../api'
+import { routes, serviceExtensions } from '../api'
 import { ServiceStatus } from './service'
 import { ConfigContext, SearchParamContext } from '../App'
+import MissingPermissionsButton from '../util/missingPermissionsButton'
 
 
 export const MonitoringPage = () => {
@@ -317,6 +320,15 @@ const BacklogHeader = ({
 
   const [deletionIsLoading, setDeletionIsLoading] = React.useState(false)
 
+  const [user] = useFetchAuthUser()
+  const route = new URL(routes.serviceExtensions.backlogItems()).pathname
+  const method = 'DELETE'
+  const isAuthorised = hasUserAccess({
+    permissions: user?.permissions,
+    route: route,
+    method: method,
+  })
+
   const {priority, setPriority} = priorityState
 
   const fetchDeleteBacklogItem = async () => {
@@ -379,16 +391,22 @@ const BacklogHeader = ({
       <ServiceStatus serviceStatus={aggregatedContainerStatus}/>
     </Stack>
     <span>
-      <Button
-        color='secondary'
-        endIcon={<DeleteIcon/>}
-        onClick={fetchDeleteBacklogItem}
-        startIcon={deletionIsLoading && <CircularProgress size='1em'/>}
-        disabled={deletionIsLoading || backlogItemsFetchDetails.isLoading || selectedBacklogItems.length === 0}
-        fullWidth
-      >
-        {`Delete Selected Backlog Items (${selectedBacklogItems.length})`}
-      </Button>
+      {
+        isAuthorised ? <Button
+          color='secondary'
+          endIcon={<DeleteIcon/>}
+          onClick={fetchDeleteBacklogItem}
+          startIcon={deletionIsLoading && <CircularProgress size='1em'/>}
+          disabled={deletionIsLoading || backlogItemsFetchDetails.isLoading || selectedBacklogItems.length === 0}
+          fullWidth
+        >
+          {`Delete Selected Backlog Items (${selectedBacklogItems.length})`}
+        </Button> : <MissingPermissionsButton
+          route={route}
+          method={method}
+          buttonText={`Delete Selected Backlog Items (${selectedBacklogItems.length})`}
+        />
+      }
     </span>
   </Stack>
 }
@@ -619,6 +637,15 @@ const BacklogItemRow = ({
   const theme = useTheme()
   const { enqueueSnackbar } = useSnackbar()
 
+  const [user] = useFetchAuthUser()
+  const isAuthorised = hasUserAccess({
+    permissions: user?.permissions,
+    route: new URL(routes.serviceExtensions.backlogItems()).pathname,
+    method: 'PUT',
+  })
+
+  const priority = Object.values(PRIORITIES).find((p) => backlogItem.spec.priority === p.value)
+
   const updateBacklogItemPriority = async (backlogItem, priority) => {
     try {
       await serviceExtensions.backlogItems.update({
@@ -694,21 +721,27 @@ const BacklogItemRow = ({
       }
     </TableCell>
     <TableCell sx={{width: '10vw', textAlign: 'center'}}>
-      <FormControl variant='standard'>
-        <Select
-          value={Object.values(PRIORITIES).find((p) => backlogItem.spec.priority === p.value)}
-          onChange={(e) => updateBacklogItemPriority(backlogItem, e.target.value)}
-          onClick={(e) => e.stopPropagation()}
-        >
+      {
+        isAuthorised ? <FormControl variant='standard'>
+          <Select
+            value={Object.values(PRIORITIES).find((p) => backlogItem.spec.priority === p.value)}
+            onChange={(e) => updateBacklogItemPriority(backlogItem, e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {
+              Object.values(PRIORITIES).map((p) => <MenuItem key={p.name} value={p}>
+                <Typography color={`${p.color}.main`} variant='body2'>
+                  {p.name}
+                </Typography>
+              </MenuItem>)
+            }
+          </Select>
+        </FormControl> : <Typography color={`${priority.color}.main`} variant='body2'>
           {
-            Object.values(PRIORITIES).map((p) => <MenuItem key={p.name} value={p}>
-              <Typography color={`${p.color}.main`} variant='body2'>
-                {p.name}
-              </Typography>
-            </MenuItem>)
+            priority.name
           }
-        </Select>
-      </FormControl>
+        </Typography>
+      }
     </TableCell>
     <TableCell sx={{width: '10vw', textAlign: 'center'}}>
       {
