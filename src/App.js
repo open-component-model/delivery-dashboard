@@ -380,7 +380,6 @@ const AuthProvider = () => {
   }, [token])
 
   React.useEffect(() => {
-    let mounted = true
     if (!code || !clientId) return
 
     const oAuthLogin = async () => {
@@ -391,29 +390,20 @@ const AuthProvider = () => {
 
       window.history.pushState('', '', url)
       try {
-        if (mounted) {
-          const dashboard_jwt = await auth.auth({code, clientId})
-          localStorage.setItem(TOKEN_KEY, JSON.stringify(dashboard_jwt))
-          dispatchEvent(new Event('token'))
-        }
+        const dashboard_jwt = await auth.auth({code, clientId})
+        localStorage.setItem(TOKEN_KEY, JSON.stringify(dashboard_jwt))
+        dispatchEvent(new Event('token'))
       } catch (e) {
-        if (mounted) {
-          enqueueSnackbar(
-            'oAuth login failed',
-            {
-              ...errorSnackbarProps,
-              details: e.toString(),
-              onRetry: () => oAuthLogin(),
-            }
-          )
-        }
+        enqueueSnackbar(
+          'oAuth login failed',
+          {
+            ...errorSnackbarProps,
+            details: e.toString(),
+          }
+        )
       }
     }
     oAuthLogin()
-
-    return () => {
-      mounted = false
-    }
   }, [code, clientId])
 }
 
