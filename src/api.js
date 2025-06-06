@@ -48,8 +48,13 @@ const raiseIfNotOk = async (resp) => {
 }
 
 
-const _toJson = async (responsePromise) => {
+const _toJson = async (
+  responsePromise,
+  absentOk=false,
+) => {
   const resp = await responsePromise
+
+  if (resp.status === 404 && absentOk) return null
 
   await raiseIfNotOk(resp)
 
@@ -130,6 +135,7 @@ const ocmComponent = async ({
   version,
   versionFilter,
   raw=false,
+  absentOk=false,
 }) => {
   const url = new URL(routes.ocm.component.base)
   appendPresentParams(url, {
@@ -140,7 +146,7 @@ const ocmComponent = async ({
     raw: raw,
   })
 
-  return await _toJson(withAuth(url))
+  return await _toJson(withAuth(url), absentOk)
 }
 
 

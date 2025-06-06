@@ -458,6 +458,7 @@ const ComponentView = ({
     componentVersion: componentMeta.version,
     ocmRepo: ocmRepo,
     versionFilter: componentMeta.versionFilter,
+    absentOk: true,
   })
 
   React.useEffect(() => {
@@ -552,7 +553,7 @@ const ComponentView = ({
       />
     }
     {
-      state.error ? <ComponentDescriptorError
+      (!state.isLoading && !componentDescriptor) ? <ComponentDescriptorError
         component={componentMeta}
         errorMsg={state.error}
       /> : <ComponentTabs
