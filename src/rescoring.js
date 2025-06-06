@@ -2326,7 +2326,7 @@ const Rescore = ({
 
     const componentArtefactId = {
       component_name: [scopeOptions.COMPONENT, scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? component.name : null,
-      component_version: scopeOptions.SINGLE === scope ? component.version : null,
+      component_version: scopeOptions.SINGLE === scope && component.version !== 'greatest' ? component.version : null,
       artefact_kind: artefactKind,
       artefact: {
         artefact_name: [scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? artefact.name : null,

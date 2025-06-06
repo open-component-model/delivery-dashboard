@@ -374,7 +374,7 @@ export const ComponentPage = () => {
   }
 
   if (!view || !version) {
-    searchParamContext.set(
+    searchParamContext.update(
       {
         name: componentName,
         version: version || searchParamContext.getDefault('version'),
