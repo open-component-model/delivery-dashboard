@@ -188,40 +188,30 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
       && normaliseExtraIdentity(rescoring.artefact.artefact.artefact_extra_id)
         !== normaliseExtraIdentity(finding.artefact.artefact.artefact_extra_id)
     ) return false
-    if (
-      finding.meta.type === FINDING_TYPES.VULNERABILITY
-      && (
+
+    if (finding.meta.type === FINDING_TYPES.VULNERABILITY) {
+      if (
         rescoring.data.finding.cve !== finding.data.cve
         || rescoring.data.finding.package_name !== finding.data.package_name
-      )
-    ) return false
-    if (
-      finding.meta.type === FINDING_TYPES.LICENSE
-      && (
+      ) return false
+    } else if (finding.meta.type === FINDING_TYPES.LICENSE) {
+      if (
         rescoring.data.finding.license.name !== finding.data.license.name
         || rescoring.data.finding.package_name !== finding.data.package_name
-      )
-    ) return false
-    if (
-      finding.meta.type === FINDING_TYPES.MALWARE
-      && dataKey({type: FINDING_TYPES.MALWARE, data: rescoring.data})
-        !== dataKey({type: FINDING_TYPES.MALWARE, data: finding.data})
-    ) return false
-    if (
-      finding.meta.type === FINDING_TYPES.SAST
-      && dataKey({type: FINDING_TYPES.SAST, data: rescoring.data.finding})
-        !== dataKey({type: FINDING_TYPES.SAST, data: finding.data})
-    ) return false
-    if (
-      finding.meta.type === FINDING_TYPES.CRYPTO
-      && dataKey({type: FINDING_TYPES.CRYPTO, data: rescoring.data.finding})
-        !== dataKey({type: FINDING_TYPES.CRYPTO, data: finding.data})
-    ) return false
-    if (
-      finding.meta.type === FINDING_TYPES.OSID
-      && dataKey({type: FINDING_TYPES.OSID, data: rescoring.data.finding})
-        !== dataKey({type: FINDING_TYPES.OSID, data: finding.data})
-    ) return false
+      ) return false
+    } else if (finding.meta.type === FINDING_TYPES.MALWARE) {
+      // `malware` has a little special handling here because its findings contain a
+      // sub-property `finding` whereas its rescoring does not contain this sub-property anymore
+      if (
+        dataKey({type: finding.meta.type, data: rescoring.data})
+        !== dataKey({type: finding.meta.type, data: finding.data})
+      ) return false
+    } else {
+      if (
+        dataKey({type: finding.meta.type, data: rescoring.data.finding})
+        !== dataKey({type: finding.meta.type, data: finding.data})
+      ) return false
+    }
 
     return true
   })
