@@ -11,7 +11,7 @@
 <defs>
 <filter id="filter0_d_228_48" x="-18.8872" y="-20.6152" width="197.008" height="166.102" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
 <feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" result="hardAlpha"/>
 <feOffset dx="30" dy="4"/>
 <feGaussianBlur stdDeviation="30"/>
 <feComposite in2="hardAlpha" operator="out"/>
@@ -21,7 +21,7 @@
 </filter>
 <filter id="filter1_d_228_48" x="-3.55518" y="17.0117" width="111.51" height="87.9453" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
 <feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" result="hardAlpha"/>
 <feOffset dx="4" dy="-5"/>
 <feGaussianBlur stdDeviation="15"/>
 <feComposite in2="hardAlpha" operator="out"/>
