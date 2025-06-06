@@ -199,9 +199,9 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
         rescoring.data.finding.license.name !== finding.data.license.name
         || rescoring.data.finding.package_name !== finding.data.package_name
       ) return false
-    } else if (finding.meta.type === FINDING_TYPES.MALWARE) {
-      // `malware` has a little special handling here because its findings contain a
-      // sub-property `finding` whereas its rescoring does not contain this sub-property anymore
+    } else if ([FINDING_TYPES.MALWARE, FINDING_TYPES.FALCO].includes(finding.meta.type)) {
+      // `malware` and `falco` have a little special handling here because their findings contain a
+      // sub-property `finding` whereas their rescoring does not contain this sub-property anymore
       if (
         dataKey({type: finding.meta.type, data: rescoring.data})
         !== dataKey({type: finding.meta.type, data: finding.data})

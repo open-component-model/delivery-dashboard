@@ -166,6 +166,10 @@ export const dataKey = ({type, data}) => {
   if (type === FINDING_TYPES.DIKI) return asKey({
     props: [data.provider_id, data.ruleset_id, data.rule_id]
   })
+
+  if (type === FINDING_TYPES.FALCO) return asKey({
+    props: [data.finding.group_hash],
+  })
 }
 
 
