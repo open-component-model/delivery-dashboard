@@ -407,7 +407,7 @@ const useFetchComponentDescriptor = ({
   return _useFetch({
     fetchFunction: components.ocmComponent,
     fetchParams: params,
-    errorMessage: `Component "${componentName}" could not be fetched`,
+    showSnackbar: false,
   })
 }
 
