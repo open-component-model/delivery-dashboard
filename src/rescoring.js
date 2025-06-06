@@ -2381,7 +2381,7 @@ const Rescore = ({
     })
 
     const _allowedProcessingTime = categorisation.allowed_processing_time
-    const allowedProcessingTime = !_allowedProcessingTime || _allowedProcessingTime === META_ALLOWED_PROCESSING_TIME.INPUT
+    const allowedProcessingTime = _allowedProcessingTime === null || _allowedProcessingTime === undefined || _allowedProcessingTime === META_ALLOWED_PROCESSING_TIME.INPUT
       ? _allowedProcessingTime
       : `${_allowedProcessingTime}s` // `allowed_processing_time` of a rescoring is always stored as seconds
 
