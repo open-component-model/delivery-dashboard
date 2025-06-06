@@ -2320,15 +2320,19 @@ const Rescore = ({
   const [isLoading, setIsLoading] = React.useState(false)
 
   const serialiseRescoring = React.useCallback((rescoring) => {
-    const artefact = {
-      component_name: [scopeOptions.COMPONENT, scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? rescoring.ocmNode.component.name : null,
-      component_version: scopeOptions.SINGLE === scope ? rescoring.ocmNode.component.version : null,
-      artefact_kind: rescoring.ocmNode.artefactKind,
+    const component = rescoring.ocmNode.component
+    const artefact = rescoring.ocmNode.artefact
+    const artefactKind = rescoring.ocmNode.artefactKind
+
+    const componentArtefactId = {
+      component_name: [scopeOptions.COMPONENT, scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? component.name : null,
+      component_version: scopeOptions.SINGLE === scope ? component.version : null,
+      artefact_kind: artefactKind,
       artefact: {
-        artefact_name: [scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? rescoring.ocmNode.artefact.name : null,
-        artefact_version: scopeOptions.SINGLE === scope ? rescoring.ocmNode.artefact.version : null,
-        artefact_type: rescoring.ocmNode.artefact.type,
-        artefact_extra_id: scopeOptions.SINGLE === scope ? rescoring.ocmNode.artefact.extraIdentity : {},
+        artefact_name: [scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? artefact.name : null,
+        artefact_version: scopeOptions.SINGLE === scope ? artefact.version : null,
+        artefact_type: artefact.type,
+        artefact_extra_id: scopeOptions.SINGLE === scope ? artefact.extraIdentity : {},
       },
     }
 
@@ -2394,7 +2398,11 @@ const Rescore = ({
       due_date: allowedProcessingTime === META_ALLOWED_PROCESSING_TIME.INPUT ? rescoring.due_date : null,
     }
 
-    return {artefact, meta, data}
+    return {
+      artefact: componentArtefactId,
+      meta: meta,
+      data: data,
+    }
   }, [scope])
 
   if (!rescorings?.length > 0) return <Button
