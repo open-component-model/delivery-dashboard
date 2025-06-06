@@ -306,58 +306,6 @@ const Component = React.memo(({
     complianceSummaryState.error,
   ])
 
-  const [mountRescoring, setMountRescoring] = React.useState(Boolean(searchParamContext.get('rescoreArtefacts')))
-
-  const artefactNodes = React.useMemo(() => {
-    if (!isParentComponent) return [] // only allow rescore linking for root component
-    const artefactIds = searchParamContext.getAll('rescoreArtefacts')
-    if (artefactIds.length === 0) return []
-
-    const normalisedArtefactIds = artefactIds.map((artefactId) => {
-      /*
-        Artefacts specified via `rescoreArtefacts` URL parameter are expected to have the following
-        form: `<artefact-name>|<artefact-version>|<artefact-type>|<artefact-kind>`
-        Also, they may contain the optional suffix `|<artefact-extra-id>`
-      */
-      const idParts = artefactId.split('|')
-
-      if (idParts.length === 4) return artefactId // no artefact extra id included -> id can be left unchanged
-
-      const extraIdentity = idParts.pop()
-      const normalisedExtraIdentity = normaliseExtraIdentity(JSON.parse(extraIdentity))
-
-      return `${idParts.join('|')}|${normalisedExtraIdentity}`
-    })
-
-    const artefactId = (artefact, artefactKind) => {
-      const baseId = `${artefact.name}|${artefact.version}|${artefact.type}|${artefactKind}`
-
-      if (!artefact.extraIdentity || Object.keys(artefact.extraIdentity).length === 0) {
-        return baseId
-      }
-
-      return `${baseId}|${normaliseExtraIdentity(artefact.extraIdentity)}`
-    }
-
-    const resourceNodes = component.resources.filter((resource) => {
-      return normalisedArtefactIds.includes(artefactId(resource, ARTEFACT_KIND.RESOURCE)) // resource selected via URL params
-    }).map((resource) => new OcmNode([component], resource, ARTEFACT_KIND.RESOURCE))
-
-    const sourceNodes = component.sources.filter((source) => {
-      return normalisedArtefactIds.includes(artefactId(source, ARTEFACT_KIND.SOURCE)) // source selected via URL params
-    }).map((source) => new OcmNode([component], source, ARTEFACT_KIND.SOURCE))
-
-    return resourceNodes.concat(sourceNodes)
-  }, [
-    component.resources,
-    component.sources,
-  ])
-
-  const handleRescoringClose = React.useCallback(() => {
-    setMountRescoring(false)
-    searchParamContext.delete('rescoreArtefacts')
-  }, [setMountRescoring])
-
   return <Box
     sx={{
       paddingBottom: '0.3em',
@@ -366,19 +314,6 @@ const Component = React.memo(({
       },
     }}
   >
-    {
-      (
-        mountRescoring
-        && (artefactNodes.length > 0)
-      ) && <RescoringModal
-        ocmNodes={artefactNodes}
-        ocmRepo={ocmRepo}
-        handleClose={handleRescoringClose}
-        fetchComplianceSummary={refreshComplianceSummary}
-        initialFindingType={searchParamContext.get('findingType')}
-        findingCfgs={findingCfgs}
-      />
-    }
     <Accordion
       TransitionProps={{ unmountOnExit: true }}
       // manual expansion control required to prevent trigger on MetadataViewerPopover events
