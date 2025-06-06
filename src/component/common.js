@@ -510,7 +510,20 @@ const ComponentView = ({
       return normalisedArtefactIds.includes(artefactId(source, ARTEFACT_KIND.SOURCE)) // source selected via URL params
     }).map((source) => new OcmNode([component], source, ARTEFACT_KIND.SOURCE)) : []
 
-    return resourceNodes.concat(sourceNodes)
+    const runtimeNodes = artefactIds.filter((artefactId) => {
+      return artefactId.split('|')[3] === ARTEFACT_KIND.RUNTIME
+    }).map((artefactId) => {
+      const idParts = artefactId.split('|')
+
+      return new OcmNode([component ?? componentMeta], {
+        name: idParts[0],
+        version: idParts[1],
+        type: idParts[2],
+        extraIdentity: idParts.length > 4 ? idParts[4] : {},
+      }, ARTEFACT_KIND.RUNTIME)
+    })
+
+    return resourceNodes.concat(sourceNodes).concat(runtimeNodes)
   }, [componentDescriptor])
 
   const handleRescoringClose = React.useCallback(() => {
