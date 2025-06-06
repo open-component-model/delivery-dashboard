@@ -1233,6 +1233,38 @@ DikiExtraInfo.propTypes = {
 }
 
 
+const FalcoExtraInfo = ({
+  finding,
+}) => {
+  return <ExtraWideTooltip
+    title={
+      <div style={{ overflowY: 'auto', maxHeight: '30rem' }}>
+        <Typography
+          variant='inherit'
+          sx={{
+            fontWeight: 'bold',
+          }}
+          marginBottom='0.5rem'
+        >
+          Properties
+        </Typography>
+        <Typography variant='inherit' whiteSpace='pre-wrap'>
+          {
+            JSON.stringify(finding, null, 2)
+          }
+        </Typography>
+      </div>
+    }
+  >
+    <InfoOutlinedIcon sx={{ height: '1rem' }}/>
+  </ExtraWideTooltip>
+}
+FalcoExtraInfo.displayName = 'FalcoExtraInfo'
+FalcoExtraInfo.propTypes = {
+  finding: PropTypes.object.isRequired,
+}
+
+
 const Subject = ({
   rescoring,
   ocmNode,
@@ -1307,6 +1339,31 @@ const Subject = ({
               `Version: ${finding.ruleset_version}`
             }
           </Typography>
+        </div>
+      </div>
+    </Stack>
+  } else if (rescoring.finding_type === FINDING_TYPES.FALCO) {
+    return <Stack>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div>
+          <Typography variant='inherit'>
+            {
+              finding.finding.landscape
+            }
+          </Typography>
+          <Typography variant='inherit' marginRight='0.4rem'>
+            {
+              `Project: ${finding.finding.project}`
+            }
+          </Typography>
+          <Typography variant='inherit'>Clusters:</Typography>
+          {
+            finding.finding.clusters.map((cluster, idx) => <Typography key={idx} variant='inherit'>
+              {
+                `- ${cluster.name}`
+              }
+            </Typography>)
+          }
         </div>
       </div>
     </Stack>
@@ -1581,6 +1638,15 @@ const Finding = ({
         </Typography>
       </div>
     </Stack>
+  } else if (rescoring.finding_type === FINDING_TYPES.FALCO) {
+    return <div style={{ display: 'flex' }}>
+      <Typography variant='inherit' marginRight='0.4rem'>
+        {
+          `Rule: ${finding.finding.rule}`
+        }
+      </Typography>
+      <FalcoExtraInfo finding={finding.finding}/>
+    </div>
   }
 }
 Finding.displayName = 'Finding'
@@ -2054,6 +2120,17 @@ const RescoringContent = ({
       }).value,
     }
 
+    const falcoAccess = {
+      [orderAttributes.SUBJECT]: rescoring.finding.finding?.landscape,
+      [orderAttributes.FINDING]: rescoring.finding.finding?.rule,
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
+      [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
+      [orderAttributes.RESCORED]: findCategorisationById({
+        id: rescoring.severity,
+        findingCfg: findingCfg,
+      }).value,
+    }
+
     if (
       rescoringType === FINDING_TYPES.VULNERABILITY
       || rescoringType === FINDING_TYPES.LICENSE
@@ -2067,6 +2144,8 @@ const RescoringContent = ({
       return cryptoAccess[desired]
     } else if (rescoringType === FINDING_TYPES.DIKI) {
       return dikiAccess[desired]
+    } else if (rescoringType === FINDING_TYPES.FALCO) {
+      return falcoAccess[desired]
     }
 
   }
@@ -2523,6 +2602,10 @@ const Rescore = ({
           provider_id: rescoring.finding.provider_id,
           ruleset_id: rescoring.finding.ruleset_id,
           rule_id: rescoring.finding.rule_id,
+        }
+      } else if (type === FINDING_TYPES.FALCO) {
+        return {
+          group_hash: rescoring.finding.finding.group_hash,
         }
       }
     }
