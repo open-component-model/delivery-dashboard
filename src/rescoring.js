@@ -2315,7 +2315,6 @@ const Rescore = ({
   setShowProgress,
   scope,
   findingCfg,
-  fetchComplianceData,
   fetchComplianceSummary,
 }) => {
   const [isLoading, setIsLoading] = React.useState(false)
@@ -2495,10 +2494,8 @@ const Rescore = ({
 
         if (lenSerialisedRescorings > 0) {
           if (fetchComplianceSummary) {
-            // function is not defined when invoked from compliance tab
+            // function is not defined when invoked for runtime artefacts
             fetchComplianceSummary(false)
-          } else {
-            fetchComplianceData(false)
           }
           handleClose()
         }
@@ -2519,7 +2516,6 @@ Rescore.propTypes = {
   setShowProgress: PropTypes.func.isRequired,
   scope: PropTypes.string.isRequired,
   findingCfg: PropTypes.object.isRequired,
-  fetchComplianceData: PropTypes.func,
   fetchComplianceSummary: PropTypes.func,
 }
 
@@ -2528,7 +2524,6 @@ const RescoringModal = ({
   ocmNodes,
   ocmRepo,
   handleClose,
-  fetchComplianceData,
   fetchComplianceSummary,
   initialFindingType,
   findingCfgs,
@@ -2851,7 +2846,6 @@ const RescoringModal = ({
               setShowProgress={setShowProgress}
               scope={scope}
               findingCfg={findingCfg}
-              fetchComplianceData={fetchComplianceData}
               fetchComplianceSummary={fetchComplianceSummary}
             />
           </Box>
@@ -2889,7 +2883,6 @@ RescoringModal.propTypes = {
   ocmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   ocmRepo: PropTypes.string,
   handleClose: PropTypes.func.isRequired,
-  fetchComplianceData: PropTypes.func,
   fetchComplianceSummary: PropTypes.func,
   initialFindingType: PropTypes.string.isRequired,
   findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
