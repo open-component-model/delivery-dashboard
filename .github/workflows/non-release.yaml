@@ -1,0 +1,15 @@
+name: CI (non-release)
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yaml
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    secrets: inherit
+    with:
+      mode: snapshot
