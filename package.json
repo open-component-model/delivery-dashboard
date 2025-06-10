@@ -24,7 +24,7 @@
     "react-router": "^7.6.0",
     "react-scripts": "5.0.1",
     "react-snowfall": "^2.2.0",
-    "semver": "^7.7.1",
+    "semver": "^7.7.2",
     "url-join": "^5.0.0"
   },
   "scripts": {
