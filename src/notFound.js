@@ -56,17 +56,19 @@ const NotFoundPage = ({ reason }) => {
         <img style={image.style} src={image.src} alt={image.alt} />
       </div>
     </Grid>
-    <Grid item xs={12}>
-      <div
-        style={{
-          display: 'flex',
-          paddingTop: '4em',
-          justifyContent: 'center',
-        }}
-      >
-        <Alert severity='info'>{reason}</Alert>
-      </div>
-    </Grid>
+    {
+      reason && <Grid item xs={12}>
+        <div
+          style={{
+            display: 'flex',
+            paddingTop: '4em',
+            justifyContent: 'center',
+          }}
+        >
+          <Alert severity='info'>{reason}</Alert>
+        </div>
+      </Grid>
+    }
     <Grid item xs={12}>
       <div style={{ bottom: '0', right: '0', position: 'fixed' }}>
         {image.link}
