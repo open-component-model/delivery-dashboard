@@ -389,12 +389,14 @@ const useFetchComponentDescriptor = ({
   ocmRepo,
   versionFilter,
   raw,
+  absentOk = false,
 }) => {
   const params = React.useMemo(() => ({
     componentName: componentName,
     version: componentVersion,
     ocmRepoUrl: ocmRepo,
     raw: raw,
+    absentOk: absentOk,
     ...(versionFilter !== null && { versionFilter: versionFilter }), // keep cache key stable
   }), [
     componentName,
@@ -402,6 +404,7 @@ const useFetchComponentDescriptor = ({
     ocmRepo,
     versionFilter,
     raw,
+    absentOk,
   ])
 
   return _useFetch({

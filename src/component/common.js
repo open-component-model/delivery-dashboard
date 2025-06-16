@@ -14,13 +14,34 @@ import PropTypes from 'prop-types'
 import { useNavigate } from 'react-router'
 
 import { FeatureRegistrationContext, SearchParamContext } from '../App'
-import { features, MONITORING_PATH, SERVICES_PATH, OCM_REPO_AUTO_OPTION, VERSION_FILTER, tabConfig, PATH_KEY, PATH_POS_KEY } from '../consts'
+import {
+  ARTEFACT_KIND,
+  features,
+  MONITORING_PATH,
+  OCM_REPO_AUTO_OPTION,
+  PATH_KEY,
+  PATH_POS_KEY,
+  SERVICES_PATH,
+  tabConfig,
+  VERSION_FILTER,
+} from '../consts'
 import { registerCallbackHandler } from '../feature'
-import { camelCaseToDisplayText, componentPathQuery, getMergedSpecialComponents, urlsFromRepoCtxFeature, useDebounce, addPresentKeyValuePairs, shortenComponentName } from '../util'
+import {
+  addPresentKeyValuePairs,
+  camelCaseToDisplayText,
+  componentPathQuery,
+  getMergedSpecialComponents,
+  normaliseExtraIdentity,
+  shortenComponentName,
+  urlsFromRepoCtxFeature,
+  useDebounce,
+} from '../util'
 import { useFetchServiceExtensions, useFetchComponentDescriptor, useFetchGreatestVersions } from '../fetch'
 import NotFoundPage from '../notFound'
 import { ComponentTabs } from './tabs'
 import { PersistentDrawerLeft } from '../layout'
+import { OcmNode } from '../ocm/iter'
+import { RescoringModal } from '../rescoring'
 
 import ODGLogo from '../resources/odg-logo.svg'
 import SAPLogo from '../resources/sap-logo.svg'
@@ -353,7 +374,7 @@ export const ComponentPage = () => {
   }
 
   if (!view || !version) {
-    searchParamContext.set(
+    searchParamContext.update(
       {
         name: componentName,
         version: version || searchParamContext.getDefault('version'),
@@ -427,12 +448,90 @@ const ComponentView = ({
   componentMeta,
   ocmRepo,
 }) => {
+  const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
+  const searchParamContext = React.useContext(SearchParamContext)
+  const [findingCfgsFeature, setFindingCfgsFeature] = React.useState()
+  const [mountRescoring, setMountRescoring] = React.useState(Boolean(searchParamContext.get('rescoreArtefacts')))
+
   const [componentDescriptor, state] = useFetchComponentDescriptor({
     componentName: componentMeta.name,
     componentVersion: componentMeta.version,
     ocmRepo: ocmRepo,
     versionFilter: componentMeta.versionFilter,
+    absentOk: true,
   })
+
+  React.useEffect(() => {
+    return registerCallbackHandler({
+      featureRegistrationContext: featureRegistrationContext,
+      featureName: features.FINDING_CONFIGURATIONS,
+      callback: ({feature}) => setFindingCfgsFeature(feature),
+    })
+  }, [featureRegistrationContext])
+
+  const findingCfgs = findingCfgsFeature?.isAvailable ? findingCfgsFeature.finding_cfgs : []
+
+  const artefactNodes = React.useMemo(() => {
+    const artefactIds = searchParamContext.getAll('rescoreArtefacts')
+    if (artefactIds.length === 0) return []
+
+    const normalisedArtefactIds = artefactIds.map((artefactId) => {
+      /*
+        Artefacts specified via `rescoreArtefacts` URL parameter are expected to have the following
+        form: `<artefact-name>|<artefact-version>|<artefact-type>|<artefact-kind>`
+        Also, they may contain the optional suffix `|<artefact-extra-id>`
+      */
+      const idParts = artefactId.split('|')
+
+      if (idParts.length === 4) return artefactId // no artefact extra id included -> id can be left unchanged
+
+      const extraIdentity = idParts.pop()
+      const normalisedExtraIdentity = normaliseExtraIdentity(JSON.parse(extraIdentity))
+
+      return `${idParts.join('|')}|${normalisedExtraIdentity}`
+    })
+
+    const artefactId = (artefact, artefactKind) => {
+      const baseId = `${artefact.name}|${artefact.version}|${artefact.type}|${artefactKind}`
+
+      if (!artefact.extraIdentity || Object.keys(artefact.extraIdentity).length === 0) {
+        return baseId
+      }
+
+      return `${baseId}|${normaliseExtraIdentity(artefact.extraIdentity)}`
+    }
+
+    const component = componentDescriptor?.component
+
+    const resourceNodes = component ? component.resources.filter((resource) => {
+      return normalisedArtefactIds.includes(artefactId(resource, ARTEFACT_KIND.RESOURCE)) // resource selected via URL params
+    }).map((resource) => new OcmNode([component], resource, ARTEFACT_KIND.RESOURCE)) : []
+
+    const sourceNodes = component ? component.sources.filter((source) => {
+      return normalisedArtefactIds.includes(artefactId(source, ARTEFACT_KIND.SOURCE)) // source selected via URL params
+    }).map((source) => new OcmNode([component], source, ARTEFACT_KIND.SOURCE)) : []
+
+    const runtimeNodes = artefactIds.filter((artefactId) => {
+      return artefactId.split('|')[3] === ARTEFACT_KIND.RUNTIME
+    }).map((artefactId) => {
+      const idParts = artefactId.split('|')
+
+      return new OcmNode([component ?? componentMeta], {
+        name: idParts[0],
+        version: idParts[1],
+        type: idParts[2],
+        extraIdentity: idParts.length > 4 ? idParts[4] : {},
+      }, ARTEFACT_KIND.RUNTIME)
+    })
+
+    return resourceNodes.concat(sourceNodes).concat(runtimeNodes)
+  }, [componentDescriptor])
+
+  const handleRescoringClose = React.useCallback(() => {
+    setMountRescoring(false)
+    searchParamContext.delete('rescoreArtefacts')
+    searchParamContext.delete('findingType')
+  }, [setMountRescoring])
 
   return <Box>
     <NavigationHeader
@@ -441,7 +540,20 @@ const ComponentView = ({
     />
     <div style={{ padding: '1em' }} />
     {
-      state.error ? <ComponentDescriptorError
+      (
+        mountRescoring
+        && artefactNodes.length > 0
+        && findingCfgs.length > 0
+      ) && <RescoringModal
+        ocmNodes={artefactNodes}
+        ocmRepo={ocmRepo}
+        handleClose={handleRescoringClose}
+        initialFindingType={searchParamContext.get('findingType')}
+        findingCfgs={findingCfgs}
+      />
+    }
+    {
+      (!state.isLoading && !componentDescriptor) ? <ComponentDescriptorError
         component={componentMeta}
         errorMsg={state.error}
       /> : <ComponentTabs
