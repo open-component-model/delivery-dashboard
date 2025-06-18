@@ -18,7 +18,6 @@ import { ComponentPage } from './component/common'
 import NotFoundPage from './notFound'
 import {
   COMPONENT_PATH,
-  copyNotificationCfg,
   LOGIN_PATH,
   MONITORING_PATH,
   SERVICES_PATH,
@@ -34,7 +33,7 @@ import { MonitoringPage } from './extensions/monitoring'
 import { ServicesPage } from './extensions/service'
 import { FeatureProvider } from './feature'
 import { auth } from './api'
-import { isTokenExpired, isWinterComing } from './util'
+import { isWinterComing } from './util'
 import SnackbarWithDetails from './util/snackbarWithDetails'
 
 
@@ -366,21 +365,7 @@ const AuthProvider = () => {
   const code = searchParams.get('code')
   const clientId = searchParams.get('client_id')
 
-  const token = JSON.parse(localStorage.getItem(TOKEN_KEY))
-
   React.useEffect(() => {
-    if (token) {
-      if (isTokenExpired(token)) {
-        enqueueSnackbar('Session expired, please login again', {
-          ...copyNotificationCfg,
-        })
-        localStorage.removeItem(TOKEN_KEY)
-      }
-    }
-  }, [token])
-
-  React.useEffect(() => {
-    let mounted = true
     if (!code || !clientId) return
 
     const oAuthLogin = async () => {
@@ -391,29 +376,20 @@ const AuthProvider = () => {
 
       window.history.pushState('', '', url)
       try {
-        if (mounted) {
-          const dashboard_jwt = await auth.auth({code, clientId})
-          localStorage.setItem(TOKEN_KEY, JSON.stringify(dashboard_jwt))
-          dispatchEvent(new Event('token'))
-        }
+        const dashboard_jwt = await auth.auth({code, clientId})
+        localStorage.setItem(TOKEN_KEY, JSON.stringify(dashboard_jwt))
+        dispatchEvent(new Event('token'))
       } catch (e) {
-        if (mounted) {
-          enqueueSnackbar(
-            'oAuth login failed',
-            {
-              ...errorSnackbarProps,
-              details: e.toString(),
-              onRetry: () => oAuthLogin(),
-            }
-          )
-        }
+        enqueueSnackbar(
+          'oAuth login failed',
+          {
+            ...errorSnackbarProps,
+            details: e.toString(),
+          }
+        )
       }
     }
     oAuthLogin()
-
-    return () => {
-      mounted = false
-    }
   }, [code, clientId])
 }
 
