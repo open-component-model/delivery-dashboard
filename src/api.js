@@ -1,9 +1,16 @@
 import PropTypes from 'prop-types'
 
 import urljoin from 'url-join'
+import { enqueueSnackbar } from 'notistack'
 
-import { appendPresentParams } from './util'
-import { TOKEN_KEY } from './consts'
+import {
+  appendPresentParams,
+  isTokenExpired,
+} from './util'
+import {
+  copyNotificationCfg,
+  TOKEN_KEY,
+} from './consts'
 
 
 export const API_RESPONSES = {
@@ -20,6 +27,43 @@ const api = (path) => {
   return urljoin(API_PREFIX, path)
 }
 
+
+const refreshToken = async () => {
+  await navigator.locks.request('token-refresh-request', async () => {
+    const token = JSON.parse(localStorage.getItem(TOKEN_KEY))
+
+    if (!token) {
+      // this is the case if another request has also triggered a token refresh but the request token
+      // has expired and thus the token was removed and the user was logged-out -> nothing to do here
+      return
+    }
+
+    if (!isTokenExpired(token)) {
+      // this is the case if another request has also triggered a token refresh and the token has
+      // already been updated -> nothing to do here
+      return
+    }
+
+    const resp = await fetch(routes.auth.refresh(), {
+      method: 'POST',
+      credentials: 'include',
+    })
+
+    // if the token refresh fails with 401, it means the refresh token is not valid anymore and the
+    // user has to re-authenticate
+    if (resp.status === 401) {
+      enqueueSnackbar('Session expired, please login again', copyNotificationCfg)
+      localStorage.removeItem(TOKEN_KEY)
+      dispatchEvent(new Event('token'))
+      return
+    }
+
+    const session_jwt = await _toJson(resp)
+    localStorage.setItem(TOKEN_KEY, JSON.stringify(session_jwt))
+  })
+}
+
+
 const withAuth = async (url, config) => {
   const cfg = {
     ...config,
@@ -28,10 +72,10 @@ const withAuth = async (url, config) => {
   const resp = await fetch(url, cfg)
 
   // if the user is logged in but the server responds 401, it means the credentials are not valid
-  // anymore -> re-authenticate
+  // anymore -> try to refresh
   if (resp.status === 401) {
-    localStorage.removeItem(TOKEN_KEY)
-    dispatchEvent(new Event('token'))
+    await refreshToken()
+    return await fetch(url, cfg)
   }
 
   return resp
@@ -55,6 +99,7 @@ const _toJson = async (
   const resp = await responsePromise
 
   if (resp.status === 404 && absentOk) return null
+  if (resp.status === 401) return null // if a 401 is returned, login is re-opened anyways
 
   await raiseIfNotOk(resp)
 
@@ -66,6 +111,7 @@ export const routes = {
   auth: {
     base: api('auth'),
     configs: () => `${routes.auth.base}/configs`,
+    refresh: () => `${routes.auth.base}/refresh`,
     logout: () => `${routes.auth.base}/logout`,
     rbac: () => `${routes.auth.base}/rbac`,
     user: () => `${routes.auth.base}/user`,
