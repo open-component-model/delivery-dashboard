@@ -1,12 +1,10 @@
 import React from 'react'
 
-import { Logout, Login, Settings, AcUnit } from '@mui/icons-material'
+import { Logout, Settings, AcUnit } from '@mui/icons-material'
 import MenuBookIcon from '@mui/icons-material/MenuBook'
 import {
-  alpha,
   Avatar,
   Box,
-  Button,
   IconButton,
   List,
   ListItem,
@@ -20,13 +18,13 @@ import {
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 
 import PropTypes from 'prop-types'
-import { useTheme } from '@emotion/react'
 import { useSnackbar } from 'notistack'
 
 import { features, PROFILE_KEY, TOKEN_KEY, errorSnackbarProps } from '../consts.js'
 import { auth } from '../api.js'
 import DarkModeSwitch from './darkModeSwitch.js'
 import FeatureDependent from './featureDependent.js'
+import { useFetchAuthUser } from '../fetch.js'
 import ProfileSelector from './profileSelector.js'
 import { ConfigContext, FeatureRegistrationContext } from '../App.js'
 import { registerCallbackHandler } from '../feature.js'
@@ -34,16 +32,12 @@ import { isWinterComing } from '../util.js'
 
 
 export const SettingsMenu = () => {
-  const theme = useTheme()
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const context = React.useContext(ConfigContext)
 
   const [profilesFeature, setProfilesFeature] = React.useState()
   const [dashboardCreateIssueUrlFeature, setDashboardCreateIssueUrlFeature] = React.useState()
   const [anchorElement, setAnchorElement] = React.useState(null)
-  const [token, setToken] = React.useState(JSON.parse(localStorage.getItem(TOKEN_KEY)))
-
-  addEventListener('token', () => setToken(JSON.parse(localStorage.getItem(TOKEN_KEY))))
 
   React.useEffect(() => {
     return registerCallbackHandler({
@@ -73,25 +67,9 @@ export const SettingsMenu = () => {
   }
 
   return <>
-    <> { /* wrapper required as stable popover anchor element */ }
-      {
-        token ? <IconButton onClick={handleClick}>
-          <Settings sx={{color: 'white'}}/>
-        </IconButton> : <Button
-          onClick={handleClick}
-          endIcon={<Login/>}
-          sx={{
-            paddingX: '1rem',
-            paddingY: '0.2rem',
-            color: 'white',
-            bgcolor: 'secondary.main',
-            '&:hover': { bgcolor: alpha(theme.palette.secondary.main, 0.7) },
-          }}
-        >
-          Login
-        </Button>
-      }
-    </>
+    <IconButton onClick={handleClick}>
+      <Settings sx={{color: 'white'}}/>
+    </IconButton>
     <Popover
       anchorOrigin={{
         vertical: 'bottom',
@@ -140,7 +118,6 @@ export const SettingsMenu = () => {
             <DarkModeSwitch />
           </ListItem>
           <LoginPanel
-            token={token}
             profiles={profilesFeature?.profiles.map((profile) => profile.name) ?? []}
           />
           <ListItemButton
@@ -173,11 +150,12 @@ export const SettingsMenu = () => {
 
 
 const LoginPanel = ({
-  token,
   profiles,
 }) => {
   const [selectedProfile, setSelectedProfile] = React.useState(localStorage.getItem(PROFILE_KEY))
   const { enqueueSnackbar } = useSnackbar()
+  const [user] = useFetchAuthUser()
+  const username = user?.identifiers[0].identifier.username
 
   const logout = async () => {
     localStorage.removeItem(TOKEN_KEY)
@@ -204,9 +182,11 @@ const LoginPanel = ({
 
   return <FeatureDependent requiredFeatures={[features.AUTHENTICATION]}>
     <ListItem sx={{ display: 'flex', justifyContent: 'center' }}>
-      <Tooltip title={`logged in as ${token?.sub}`}>
-        <Avatar/>
-      </Tooltip>
+      {
+        username ? <Tooltip title={`logged in as ${username}`}>
+          <Avatar/>
+        </Tooltip> : <Avatar/>
+      }
     </ListItem>
     {
       profiles.length > 0 && <ListItem>
@@ -233,6 +213,5 @@ const LoginPanel = ({
 }
 LoginPanel.displayName = 'LoginPanel'
 LoginPanel.propTypes = {
-  token: PropTypes.object,
   profiles: PropTypes.arrayOf(PropTypes.string).isRequired,
 }

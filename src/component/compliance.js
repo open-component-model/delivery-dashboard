@@ -39,6 +39,7 @@ import PropTypes from 'prop-types'
 import { useTheme } from '@emotion/react'
 
 import {
+  useFetchAuthUser,
   useFetchComplianceSummary,
   useFetchComponentResponsibles,
 } from '../fetch'
@@ -51,7 +52,6 @@ import {
 import CopyOnClickChip from '../util/copyOnClickChip'
 import {
   PROFILE_KEY,
-  TOKEN_KEY,
   USER_IDENTITIES,
 } from '../consts'
 import { OcmNode, OcmNodeDetails } from '../ocm/iter'
@@ -591,8 +591,9 @@ const Header = ({
   findingType,
   setFindingType,
   findingCfgs,
+  user,
 }) => {
-  const token = JSON.parse(localStorage.getItem(TOKEN_KEY))
+  const githubUserIdentifier = user?.identifiers.find((userIdentifier) => userIdentifier.type === 'github')?.identifier
 
   return <Box>
     <Grid container spacing={2}>
@@ -611,7 +612,7 @@ const Header = ({
         >
           <FormGroup>
             <Tooltip
-              title={`Filter artefacts for your responsibility (${token?.sub}, ${token?.github_oAuth.email_address}).`}
+              title={`Filter artefacts for your responsibility (${githubUserIdentifier?.username}, ${githubUserIdentifier?.email_address}).`}
             >
               <FormControlLabel
                 control={
@@ -704,6 +705,7 @@ Header.propTypes = {
   findingType: PropTypes.string.isRequired,
   setFindingType: PropTypes.func.isRequired,
   findingCfgs: PropTypes.arrayOf(PropTypes.object).isRequired,
+  user: PropTypes.object,
 }
 
 
@@ -785,6 +787,7 @@ const Artefacts = ({
   mountRescoring,
   setMountRescoring,
   refreshComplianceSummary,
+  user,
 }) => {
   return <Box>
     {
@@ -807,6 +810,7 @@ const Artefacts = ({
       findingType={findingType}
       setFindingType={setFindingType}
       findingCfgs={findingCfgs}
+      user={user}
     />
     <div style={{ padding: '1em' }} />
     {
@@ -854,6 +858,7 @@ Artefacts.propTypes = {
   mountRescoring: PropTypes.bool.isRequired,
   setMountRescoring: PropTypes.func.isRequired,
   refreshComplianceSummary: PropTypes.func.isRequired,
+  user: PropTypes.object,
 }
 
 
@@ -862,9 +867,11 @@ const ComplianceTab = ({
   ocmRepo,
   findingCfgs,
 }) => {
-  const token = JSON.parse(localStorage.getItem(TOKEN_KEY))
   const [profile, setProfile] = React.useState(localStorage.getItem(PROFILE_KEY))
   addEventListener('profile', () => setProfile(localStorage.getItem(PROFILE_KEY)))
+
+  const [user] = useFetchAuthUser()
+  const githubUserIdentifier = user?.identifiers.find((userIdentifier) => userIdentifier.type === 'github')?.identifier
 
   const [complianceSummary, complianceSummaryState, refreshComplianceSummary] = useFetchComplianceSummary({
     componentName: component.name,
@@ -880,17 +887,17 @@ const ComplianceTab = ({
     {
       id: 'filter-responsibility',
       filter: (aggregatedOcmNode) => {
-        // If responsibles are still loading (i.e. undefined), evaluate to true to pessimistically
+        // If user or responsibles are still loading (i.e. undefined), evaluate to true to pessimistically
         // determine responsibility. If responsibles have been loaded, those falsy declared artefacts
         // will be filtered out.
-        if (aggregatedOcmNode.responsibles === undefined) return true
+        if (aggregatedOcmNode.responsibles === undefined || githubUserIdentifier === undefined) return true
 
         return aggregatedOcmNode.responsibles.some((responsible) => {
           return responsible.githubUsers.some((githubUser) => (
-            githubUser.username.toLowerCase() === token.sub.toLowerCase()
-            && githubUser.host === token.github_oAuth.host
+            githubUser.username.toLowerCase() === githubUserIdentifier.username.toLowerCase()
+            && githubUser.host === githubUserIdentifier.hostname
           )) || responsible.emails.some((email) => (
-            email.toLowerCase() == token.github_oAuth.email_address.toLowerCase()
+            email.toLowerCase() == githubUserIdentifier.email_address.toLowerCase()
           ))
         })
       }
@@ -996,6 +1003,7 @@ const ComplianceTab = ({
       findingType={findingType}
       setFindingType={setFindingType}
       findingCfgs={findingCfgs}
+      user={user}
     />
     <div style={{ padding: '1em' }} />
     <ArtefactList
@@ -1022,6 +1030,7 @@ const ComplianceTab = ({
     mountRescoring={mountRescoring}
     setMountRescoring={setMountRescoring}
     refreshComplianceSummary={refreshComplianceSummary}
+    user={user}
   />
 }
 ComplianceTab.displayName = 'ComplianceTab'
