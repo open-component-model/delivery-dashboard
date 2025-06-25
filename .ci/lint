@@ -9,6 +9,7 @@ echo "Using linter cfg from ${eslint_cfg_filename}"
 echo 'Installing dependencies required by linter suite...'
 npm --prefix $src_dir install --include=dev --omit=peer --no-audit
 
+export PATH="${src_dir}/node_modules/.bin:$PATH"
 echo 'Running eslint for all javascript modules..'
 echo ''
 
