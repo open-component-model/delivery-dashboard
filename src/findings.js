@@ -20,6 +20,7 @@ import { artefactMetadataFilter } from './ocm/util'
 export const FINDING_TYPES = {
   CRYPTO: 'finding/crypto',
   DIKI: 'finding/diki',
+  FALCO: 'finding/falco',
   LICENSE: 'finding/license',
   MALWARE: 'finding/malware',
   OSID: 'finding/osid',
