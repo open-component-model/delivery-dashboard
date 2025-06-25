@@ -594,6 +594,8 @@ const Header = ({
   user,
 }) => {
   const githubUserIdentifier = user?.identifiers.find((userIdentifier) => userIdentifier.type === 'github')?.identifier
+  const username = githubUserIdentifier?.username ?? 'no username found'
+  const email_address = githubUserIdentifier?.email_address ?? 'no email found'
 
   return <Box>
     <Grid container spacing={2}>
@@ -612,7 +614,7 @@ const Header = ({
         >
           <FormGroup>
             <Tooltip
-              title={`Filter artefacts for your responsibility (${githubUserIdentifier?.username}, ${githubUserIdentifier?.email_address}).`}
+              title={`Filter artefacts for your responsibility (${username}, ${email_address}).`}
             >
               <FormControlLabel
                 control={
@@ -897,7 +899,7 @@ const ComplianceTab = ({
             githubUser.username.toLowerCase() === githubUserIdentifier.username.toLowerCase()
             && githubUser.host === githubUserIdentifier.hostname
           )) || responsible.emails.some((email) => (
-            email.toLowerCase() == githubUserIdentifier.email_address.toLowerCase()
+            email.toLowerCase() == githubUserIdentifier.email_address?.toLowerCase()
           ))
         })
       }
