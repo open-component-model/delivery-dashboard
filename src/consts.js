@@ -1,5 +1,8 @@
 export const DASHBOARD_TITLE = 'Open Delivery Gear'
 
+export const ACCEPTED_JWT_VERSIONS = ['v2']
+Object.freeze(ACCEPTED_JWT_VERSIONS)
+
 export const tabConfig = {
   BOM: {
     id: 'bom',
