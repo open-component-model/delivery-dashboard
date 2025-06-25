@@ -8,6 +8,7 @@ import {
   isTokenExpired,
 } from './util'
 import {
+  ACCEPTED_JWT_VERSIONS,
   copyNotificationCfg,
   TOKEN_KEY,
 } from './consts'
@@ -38,7 +39,7 @@ const refreshToken = async () => {
       return
     }
 
-    if (!isTokenExpired(token)) {
+    if (ACCEPTED_JWT_VERSIONS.includes(token.version) && !isTokenExpired(token)) {
       // this is the case if another request has also triggered a token refresh and the token has
       // already been updated -> nothing to do here
       return
