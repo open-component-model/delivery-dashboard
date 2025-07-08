@@ -1,0 +1,42 @@
+name: delivery-dashboard
+installation:
+  ocm_references:
+    - helm_chart_name: delivery-dashboard
+      name: ocm.software/ocm-gear/delivery-dashboard
+      version: 0.399.0-dev
+      artefact:
+        name: delivery-dashboard
+        version: 0.399.0-dev
+      mappings:
+        - name: delivery-dashboard
+          version: 0.399.0-dev
+          artefact_type: helmchart-imagemap
+  value_templates:
+    - helm_chart_name: delivery-dashboard
+      helm_attribute: target_namespace
+      value: ${target_namespace}
+      value_type: python-string-template
+    - helm_chart_name: delivery-dashboard
+      helm_attribute: ingress.hosts
+      value:
+        - delivery-dashboard.${base_url}
+      value_type: python-string-template
+    - helm_chart_name: delivery-dashboard
+      helm_attribute: envVars.REACT_APP_DELIVERY_SERVICE_API_URL
+      value: dependencies.delivery-service.outputs.delivery-service-url
+      value_type: jsonpath
+    - helm_chart_name: delivery-dashboard
+      helm_attribute: ingress.annotations."cert.gardener.cloud/purpose"
+      value: managed
+      value_type: literal
+    - helm_chart_name: delivery-dashboard
+      helm_attribute: ingress.annotations."dns.gardener.cloud/class"
+      value: garden
+      value_type: literal
+    - helm_chart_name: delivery-dashboard
+      helm_attribute: ingress.annotations."dns.gardener.cloud/dnsnames"
+      value: '"*"'
+      value_type: literal
+outputs: []
+dependencies:
+  - delivery-service
