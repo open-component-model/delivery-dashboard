@@ -12,13 +12,9 @@ npm --prefix $src_dir install --include=dev --omit=peer --no-audit
 echo 'Running eslint for all javascript modules..'
 echo ''
 
-if eslint . \
-    --max-warnings 0 \
-    -c "${src_dir}/${eslint_cfg_filename}" \
-    "${src_dir}"; then
-    echo 'eslint succeeded'
-    exit 0
-else
-    echo 'eslint found errors (see above)'
-    exit 1
-fi
+npx --no-install eslint . \
+  --max-warnings 0 \
+  -c "${src_dir}/${eslint_cfg_filename}" \
+  "${src_dir}"
+
+echo 'eslint succeeded'
