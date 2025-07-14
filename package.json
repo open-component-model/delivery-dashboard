@@ -9,7 +9,7 @@
     "@mui/icons-material": "^5.16.7",
     "@mui/material": "^5.16.11",
     "@mui/x-charts": "^7.28.0",
-    "@mui/x-data-grid": "^7.23.6",
+    "@mui/x-data-grid": "^8.8.0",
     "@mui/x-date-pickers": "^7.29.0",
     "@uiw/codemirror-extensions-langs": "^4.23.9",
     "@uiw/codemirror-theme-bbedit": "^4.23.7",
