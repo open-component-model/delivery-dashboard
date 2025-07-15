@@ -162,6 +162,10 @@ export const dataKey = ({type, data}) => {
   if (type === FINDING_TYPES.OSID) return asKey({
     props: [data.osid.ID],
   })
+
+  if (type === FINDING_TYPES.FALCO) return asKey({
+    props: [data.finding.group_hash],
+  })
 }
 
 
