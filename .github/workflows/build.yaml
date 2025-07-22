@@ -127,7 +127,7 @@ jobs:
           integrity_requirement: high
           availability_requirement: high
       prebuild-hook: |
-        sed -i "s/REACT_APP_BUILD_VERSION=.*/REACT_APP_BUILD_VERSION='${{ needs.prepare.outputs.version }}'/" Dockerfile
+        sed -i "s/REACT_APP_BUILD_VERSION=.*/REACT_APP_BUILD_VERSION='${{ needs.prepare.outputs.version }}'/" .env.production
 
   helmchart:
     name: Build Helmchart
