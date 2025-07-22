@@ -126,6 +126,8 @@ jobs:
           confidentiality_requirement: none
           integrity_requirement: high
           availability_requirement: high
+      prebuild-hook: |
+        sed -i "s/REACT_APP_BUILD_VERSION=.*/REACT_APP_BUILD_VERSION='${{ needs.prepare.outputs.version }}'/" Dockerfile
 
   helmchart:
     name: Build Helmchart

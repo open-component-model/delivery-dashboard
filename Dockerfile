@@ -6,7 +6,6 @@ RUN --mount=type=bind,source=.,target=/src,rw \
   apk add --no-cache --update \
     python3 \
     npm \
-  && .ci/template_env.py \
   && npm i /src \
   && npm run build \
   && mv /src/build /build
