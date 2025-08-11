@@ -73,8 +73,11 @@ const withAuth = async (url, config) => {
   const resp = await fetch(url, cfg)
 
   // if the user is logged in but the server responds 401, it means the credentials are not valid
-  // anymore -> try to refresh
+  // anymore -> try to refresh except in login-case
   if (resp.status === 401) {
+    if (url.pathname === '/auth') {
+      await raiseIfNotOk(resp)
+    }
     await refreshToken()
     return await fetch(url, cfg)
   }

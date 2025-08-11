@@ -381,10 +381,9 @@ const AuthProvider = () => {
         dispatchEvent(new Event('token'))
       } catch (e) {
         enqueueSnackbar(
-          'oAuth login failed',
+          e.toString(),
           {
             ...errorSnackbarProps,
-            details: e.toString(),
           }
         )
       }
