@@ -26,6 +26,10 @@ installation:
       value: dependencies.delivery-service.outputs.delivery-service-url
       value_type: jsonpath
     - helm_chart_name: delivery-dashboard
+      helm_attribute: ingress.class
+      value: nginx-${target_namespace}
+      value_type: python-string-template
+    - helm_chart_name: delivery-dashboard
       helm_attribute: ingress.annotations."cert.gardener.cloud/purpose"
       value: managed
       value_type: literal
