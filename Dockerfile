@@ -6,7 +6,7 @@ RUN --mount=type=bind,source=.,target=/src,rw \
   apk add --no-cache --update \
     python3 \
     npm \
-  && npm i /src \
+  && npm i --ignore-scripts /src \
   && npm run build \
   && mv /src/build /build
 
