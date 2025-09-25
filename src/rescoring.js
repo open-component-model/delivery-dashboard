@@ -1201,6 +1201,38 @@ CryptoExtraInfo.propTypes = {
 }
 
 
+const DikiExtraInfo = ({
+  finding,
+}) => {
+  return <ExtraWideTooltip
+    title={
+      <div style={{ overflowY: 'auto', maxHeight: '30rem' }}>
+        <Typography
+          variant='inherit'
+          sx={{
+            fontWeight: 'bold',
+          }}
+          marginBottom='0.5rem'
+        >
+          Checks
+        </Typography>
+        <Typography variant='inherit' whiteSpace='pre-wrap'>
+          {
+            JSON.stringify(finding.checks, null, 2)
+          }
+        </Typography>
+      </div>
+    }
+  >
+    <InfoOutlinedIcon sx={{ height: '1rem' }}/>
+  </ExtraWideTooltip>
+}
+DikiExtraInfo.displayName = 'DikiExtraInfo'
+DikiExtraInfo.propTypes = {
+  finding: PropTypes.object.isRequired,
+}
+
+
 const Subject = ({
   rescoring,
   ocmNode,
@@ -1261,7 +1293,23 @@ const Subject = ({
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
-
+  } else if (rescoring.finding_type === FINDING_TYPES.DIKI) {
+    return <Stack>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div>
+          <Typography variant='inherit'>
+            {
+              finding.ruleset_name
+            }
+          </Typography>
+          <Typography variant='inherit'>
+            {
+              `Version: ${finding.ruleset_version}`
+            }
+          </Typography>
+        </div>
+      </div>
+    </Stack>
   }
 }
 Subject.displayName = 'Subject'
@@ -1296,6 +1344,34 @@ TruncatedTextWithTooltip.propTypes = {
   text: PropTypes.string.isRequired,
   maxLength: PropTypes.number.isRequired,
   typographyProps: PropTypes.object.isRequired,
+}
+
+
+const diki_rule_url = (finding) => {
+  if (finding.ruleset_id === 'disa-kubernetes-stig') {
+    return `https://stigviewer.com/stigs/kubernetes/2024-08-22/finding/V-${finding.rule_id}`
+
+  } else if (finding.ruleset_id === 'security-hardened-shoot-cluster') {
+    const diki_version_for_ruleset_version = (ruleset_version) => {
+      if (ruleset_version === 'v0.1.0') return 'v0.14.0'
+      else if (ruleset_version === 'v0.2.0') return 'v0.15.0'
+      else if (ruleset_version === 'v0.2.1') return 'v0.15.1'
+      else return 'main'
+    }
+    const diki_version = diki_version_for_ruleset_version(finding.ruleset_version)
+    return `https://github.com/gardener/diki/blob/${diki_version}/docs/rulesets/security-hardened-shoot-cluster/ruleset.md#${finding.rule_id}`
+
+  } else if (finding.ruleset_id === 'security-hardened-k8s') {
+    const diki_version_for_ruleset_version = (ruleset_version) => {
+      if (ruleset_version === 'v0.1.0') return 'v0.15.0'
+      else return 'main'
+    }
+    const diki_version = diki_version_for_ruleset_version(finding.ruleset_version)
+    return `https://github.com/gardener/diki/blob/${diki_version}/docs/rulesets/security-hardened-k8s/ruleset.md#${finding.rule_id}`
+
+  } else {
+    return null
+  }
 }
 
 
@@ -1464,6 +1540,46 @@ const Finding = ({
         </Typography>
       </div>
       <Typography variant='inherit' marginRight='0.4rem'>{finding.osid.VERSION_ID} → {finding.greatest_version}</Typography>
+    </Stack>
+  } else if (rescoring.finding_type === FINDING_TYPES.DIKI) {
+    const rule_url = diki_rule_url(finding)
+
+    return <Stack spacing={0.5}>
+      <div style={{ marginBottom: '0.4rem'}}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {
+            rule_url ? <Link
+              href={rule_url}
+              target='_blank'
+              rel='noopener'
+              color='secondary'
+              variant='inherit'
+            >
+              {
+                `Rule ${finding.rule_id}`
+              }
+            </Link> : <Typography variant='inherit'>
+              {
+                `Rule ${finding.rule_id}`
+              }
+            </Typography>
+          }
+          <DikiExtraInfo finding={finding}/>
+        </div>
+        <Typography variant='inherit' marginRight='0.4rem'>
+          {
+            finding.rule_name
+          }
+        </Typography>
+      </div>
+      <div style={{ display: 'flex' }}>
+        <Typography variant='inherit' marginRight='0.4rem'>Original:</Typography>
+        <Typography variant='inherit' color={`${categorisationValueToColor(categorisation.value)}.main`}>
+          {
+            categorisation.display_name
+          }
+        </Typography>
+      </div>
     </Stack>
   }
 }
@@ -1927,6 +2043,17 @@ const RescoringContent = ({
       }).value,
     }
 
+    const dikiAccess = {
+      [orderAttributes.SUBJECT]: rescoring.finding.ruleset_id,
+      [orderAttributes.FINDING]: rescoring.finding.rule_id,
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
+      [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
+      [orderAttributes.RESCORED]: findCategorisationById({
+        id: rescoring.severity,
+        findingCfg: findingCfg,
+      }).value,
+    }
+
     if (
       rescoringType === FINDING_TYPES.VULNERABILITY
       || rescoringType === FINDING_TYPES.LICENSE
@@ -1938,6 +2065,8 @@ const RescoringContent = ({
       return sastAccesses[desired]
     } else if (rescoringType === FINDING_TYPES.CRYPTO) {
       return cryptoAccess[desired]
+    } else if (rescoringType === FINDING_TYPES.DIKI) {
+      return dikiAccess[desired]
     }
 
   }
@@ -2388,6 +2517,12 @@ const Rescore = ({
       } else if (type === FINDING_TYPES.OSID) {
         return {
           osid: rescoring.finding.osid,
+        }
+      } else if (type === FINDING_TYPES.DIKI) {
+        return {
+          provider_id: rescoring.finding.provider_id,
+          ruleset_id: rescoring.finding.ruleset_id,
+          rule_id: rescoring.finding.rule_id,
         }
       }
     }
