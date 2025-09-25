@@ -162,6 +162,10 @@ export const dataKey = ({type, data}) => {
   if (type === FINDING_TYPES.OSID) return asKey({
     props: [data.osid.ID],
   })
+
+  if (type === FINDING_TYPES.DIKI) return asKey({
+    props: [data.provider_id, data.ruleset_id, data.rule_id]
+  })
 }
 
 
