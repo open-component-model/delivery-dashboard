@@ -164,6 +164,7 @@ export const VERSION_FILTER = {
 // these services work with backlog items
 export const COMPLIANCE_TOOLS = {
   BDBA: 'bdba',
+  BLACKDUCK: 'blackduck',
   CLAMAV: 'clamav',
   CRYPTO: 'crypto',
   ISSUE_REPLICATOR: 'issueReplicator',
