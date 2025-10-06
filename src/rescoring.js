@@ -1356,13 +1356,17 @@ const Subject = ({
               `Project: ${finding.finding.project}`
             }
           </Typography>
-          <Typography variant='inherit'>Clusters:</Typography>
           {
-            finding.finding.clusters.map((cluster, idx) => <Typography key={idx} variant='inherit'>
+            finding.finding.clusters && <>
+              <Typography variant='inherit'>Clusters:</Typography>
               {
-                `- ${cluster.name}`
+                finding.finding.clusters.map((cluster, idx) => <Typography key={idx} variant='inherit'>
+                  {
+                    `- ${cluster.name}`
+                  }
+                </Typography>)
               }
-            </Typography>)
+            </>
           }
         </div>
       </div>
