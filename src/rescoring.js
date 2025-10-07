@@ -1646,7 +1646,7 @@ const Finding = ({
     return <div style={{ display: 'flex' }}>
       <Typography variant='inherit' marginRight='0.4rem'>
         {
-          `Rule: ${finding.finding.rule}`
+          `Rule: ${finding.finding.rule ?? 'Interactive Event'}`
         }
       </Typography>
       <FalcoExtraInfo finding={finding.finding}/>
@@ -2126,7 +2126,7 @@ const RescoringContent = ({
 
     const falcoAccess = {
       [orderAttributes.SUBJECT]: rescoring.finding.finding?.landscape,
-      [orderAttributes.FINDING]: rescoring.finding.finding?.rule,
+      [orderAttributes.FINDING]: rescoring.finding.finding?.rule ?? 'Interactive Event',
       [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
       [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
       [orderAttributes.RESCORED]: findCategorisationById({
