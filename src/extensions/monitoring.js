@@ -233,8 +233,8 @@ const BacklogTab = ({
       if (a.spec.priority > b.spec.priority) return -1
       if (b.spec.priority > a.spec.priority) return 1
 
-      // alphabetically
-      return a.metadata.name.localeCompare(b.metadata.name)
+      // oldest creation date first
+      return a.spec.timestamp.localeCompare(b.spec.timestamp)
     }).map((backlogItem, idx) => {
       // indicating backlog position even if some backlog items are filtered out
       return {
