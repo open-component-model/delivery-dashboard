@@ -5,6 +5,7 @@ import {
   Box,
   Button,
   Checkbox,
+  Divider,
   FormControl,
   FormControlLabel,
   FormGroup,
@@ -45,8 +46,10 @@ import {
 } from '../fetch'
 import { CategorisationIndicator } from '../ocm/model'
 import {
+  ExtraIdentityHover,
   matchObjectWithSearchQuery,
   NoMaxWidthTooltip,
+  toYamlString,
   trimLongString,
 } from '../util'
 import CopyOnClickChip from '../util/copyOnClickChip'
@@ -65,6 +68,8 @@ import {
   findMinimumCategorisation,
   rescorableFindingTypes,
 } from '../findings'
+import MultilineTextViewer from '../util/multilineTextViewer'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 
 
 const filterModes = {
@@ -285,6 +290,43 @@ Filters.propTypes = {
 }
 
 
+const ComponentOrArtefactItem = ({
+  name,
+  extraId,
+  iconProps,
+}) => {
+  return <Box
+    sx={{
+      display: 'flex',
+      flexDirection: 'row',
+    }}
+    alignItems='center'
+  >
+    <Typography>{name}</Typography>
+    <div style={{width: '1rem'}}/>
+    {
+      extraId && <NoMaxWidthTooltip
+        title={
+          <MultilineTextViewer
+            text={toYamlString(extraId)}
+          />
+        }
+      >
+        <div style={{ display: 'flex', margin: '0.4rem' }}>
+          <InfoOutlinedIcon fontSize='small' {...iconProps}/>
+        </div>
+      </NoMaxWidthTooltip>
+    }
+  </Box>
+}
+ComponentOrArtefactItem.displayName = 'ComponentOrArtefactItem'
+ComponentOrArtefactItem.propTypes = {
+  name: PropTypes.string.isRequired,
+  extraId: PropTypes.object,
+  iconProps: PropTypes.object,
+}
+
+
 const ArtefactRow = ({
   aggregatedOcmNode,
   selectedAggregatedOcmNodes,
@@ -329,34 +371,37 @@ const ArtefactRow = ({
     </TableCell>
     <TableCell>
       {
-        aggregatedOcmNode ? <Stack direction='row' spacing={1}>
-          <Box
-            display='flex'
-            justifyContent='center'
-            alignItems='center'
-          >
-            <Typography variant='inherit'>{aggregatedOcmNode.ocmNode.artefact.name}</Typography>
-          </Box>
-          <Box
-            display='flex'
-            justifyContent='center'
-            alignItems='center'
-          >
-            <OcmNodeDetails
-              ocmNode={aggregatedOcmNode.ocmNode}
-              ocmRepo={ocmRepo}
-            />
-          </Box>
-        </Stack> : <Skeleton/>
+        aggregatedOcmNode ? <ComponentOrArtefactItem
+          name={aggregatedOcmNode.ocmNode.artefact.name}
+          extraId={aggregatedOcmNode.ocmNode.artefact.extraId}
+        /> : <Skeleton/>
       }
     </TableCell>
     <TableCell>
       {
         aggregatedOcmNode ? <CopyOnClickChip
           value={aggregatedOcmNode.ocmNode.artefact.version}
-          label={trimLongString(aggregatedOcmNode.ocmNode.artefact.version, 12)}
+          label={trimLongString(aggregatedOcmNode.ocmNode.artefact.version, 30)}
           chipProps={{
-            variant: 'outlined',
+            variant: 'outlined'
+          }}
+        /> : <Skeleton/>
+      }
+    </TableCell>
+    <TableCell>
+      {
+        aggregatedOcmNode ? <ComponentOrArtefactItem
+          name={aggregatedOcmNode.ocmNode.component.name}
+        /> : <Skeleton/>
+      }
+    </TableCell>
+    <TableCell>
+      {
+        aggregatedOcmNode ? <CopyOnClickChip
+          value={aggregatedOcmNode.ocmNode.component.version}
+          label={trimLongString(aggregatedOcmNode.ocmNode.component.version, 30)}
+          chipProps={{
+            variant: 'outlined'
           }}
         /> : <Skeleton/>
       }
@@ -409,6 +454,7 @@ const ArtefactList = ({
   const orderAttributes = {
     ARTEFACT: 'artefact',
     CATEGORISATION: 'categorisation',
+    COMPONENT: 'component',
   }
 
   const initialRowsPerPage = 10
@@ -431,9 +477,17 @@ const ArtefactList = ({
 
   const getAccessMethod = (orderBy) => {
     if (orderBy === orderAttributes.ARTEFACT) {
-      return (aggregatedOcmNode) => `${aggregatedOcmNode.ocmNode.artefact.name}:${aggregatedOcmNode.ocmNode.artefact.version}`
+      return (aggregatedOcmNode) => [
+        aggregatedOcmNode.ocmNode.artefact.name,
+        aggregatedOcmNode.ocmNode.artefact.version,
+      ].join(':')
     } else if (orderBy === orderAttributes.CATEGORISATION) {
       return (aggregatedOcmNode) => aggregatedOcmNode.categorisationValue
+    } else if (orderBy === orderAttributes.COMPONENT) {
+      return (aggregatedOcmNode) => [
+        aggregatedOcmNode.ocmNode.component.name,
+        aggregatedOcmNode.ocmNode.component.version,
+      ].join(':')
     }
   }
 
@@ -512,7 +566,17 @@ const ArtefactList = ({
                 Artefact
               </TableSortLabel>
             </TableCell>
-            <TableCell>Version</TableCell>
+            <TableCell/> { /* artefact version, no column title required */ }
+            <TableCell>
+              <TableSortLabel
+                onClick={() => handleSort(orderAttributes.COMPONENT)}
+                active={orderBy === orderAttributes.COMPONENT}
+                direction={order}
+              >
+                Component
+              </TableSortLabel>
+            </TableCell>
+            <TableCell/> { /* component version, no column title required */ }
             <TableCell>
               <TableSortLabel
                 onClick={() => handleSort(orderAttributes.CATEGORISATION)}
