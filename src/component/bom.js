@@ -324,25 +324,29 @@ const Component = React.memo(({
         <Grid container alignItems='center'>
           <Grid item {...isParentComponent ? {sx: {flexGrow: '0.05'}} : {xs: 7}} >
             <Typography variant='body1' sx={{fontWeight: isParentComponent ? 'bold' : 1}}>
-              <Link
-                color={'inherit'}
-                // use href rather than router to enable "open in new tab"
-                href={`#${componentPathQuery({
-                  name: component.name,
-                  version: component.version,
-                  view: 'bom',
-                  ocmRepo: ocmRepo,
-                })}`}
-                // don't expand accordion
-                onClick={(event) => {
-                  event.stopPropagation()
-                  if (component.comp_ref) {
-                    updatePathFromComponentRef(component.comp_ref)
-                  }
-                }}
+              <Tooltip
+                title={component.name}
               >
-                {name}
-              </Link>
+                <Link
+                  color={'inherit'}
+                  // use href rather than router to enable "open in new tab"
+                  href={`#${componentPathQuery({
+                    name: component.name,
+                    version: component.version,
+                    view: 'bom',
+                    ocmRepo: ocmRepo,
+                  })}`}
+                  // don't expand accordion
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    if (component.comp_ref) {
+                      updatePathFromComponentRef(component.comp_ref)
+                    }
+                  }}
+                >
+                  {name}
+                </Link>
+              </Tooltip>
             </Typography>
           </Grid>
           <Grid item {...isParentComponent ? {sx: {flexGrow: '1'}} : {xs: 2}}>
