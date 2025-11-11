@@ -392,11 +392,12 @@ const RescoringHeader = ({
     <Tooltip
       title={<Stack>
         {
-          ocmNodes.map((ocmNode, idx) => <Typography key={idx}>
-            {
-              ocmNode.name()
-            }
-          </Typography>)
+          ocmNodes.map((ocmNode) => <Box key={ocmNode.identity()}>
+            <Typography variant='inherit'>{ocmNode.name()}</Typography>
+            <Typography variant='inherit'>{ocmNode.component.name}:{ocmNode.component.version}</Typography>
+            <Divider/>
+          </Box>
+          )
         }
       </Stack>}
     >

@@ -32,6 +32,7 @@ import {
   Typography
 } from '@mui/material'
 import { alpha } from '@mui/material/styles'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import SearchIcon from '@mui/icons-material/Search'
 import SendIcon from '@mui/icons-material/Send'
 
@@ -47,6 +48,7 @@ import { CategorisationIndicator } from '../ocm/model'
 import {
   matchObjectWithSearchQuery,
   NoMaxWidthTooltip,
+  toYamlString,
   trimLongString,
 } from '../util'
 import CopyOnClickChip from '../util/copyOnClickChip'
@@ -54,7 +56,7 @@ import {
   PROFILE_KEY,
   USER_IDENTITIES,
 } from '../consts'
-import { OcmNode, OcmNodeDetails } from '../ocm/iter'
+import { OcmNode } from '../ocm/iter'
 import { RescoringModal } from '../rescoring'
 import {
   categorisationValueToColor,
@@ -65,6 +67,7 @@ import {
   findMinimumCategorisation,
   rescorableFindingTypes,
 } from '../findings'
+import MultilineTextViewer from '../util/multilineTextViewer'
 
 
 const filterModes = {
@@ -285,11 +288,47 @@ Filters.propTypes = {
 }
 
 
+const ComponentOrArtefactItem = ({
+  name,
+  extraId,
+  iconProps,
+}) => {
+  return <Box
+    sx={{
+      display: 'flex',
+      flexDirection: 'row',
+    }}
+    alignItems='center'
+  >
+    <Typography>{name}</Typography>
+    <div style={{width: '1rem'}}/>
+    {
+      extraId && <NoMaxWidthTooltip
+        title={
+          <MultilineTextViewer
+            text={toYamlString(extraId)}
+          />
+        }
+      >
+        <div style={{ display: 'flex', margin: '0.4rem' }}>
+          <InfoOutlinedIcon fontSize='small' {...iconProps}/>
+        </div>
+      </NoMaxWidthTooltip>
+    }
+  </Box>
+}
+ComponentOrArtefactItem.displayName = 'ComponentOrArtefactItem'
+ComponentOrArtefactItem.propTypes = {
+  name: PropTypes.string.isRequired,
+  extraId: PropTypes.object,
+  iconProps: PropTypes.object,
+}
+
+
 const ArtefactRow = ({
   aggregatedOcmNode,
   selectedAggregatedOcmNodes,
   setSelectedAggregatedOcmNodes,
-  ocmRepo,
   findingCfg,
 }) => {
   const theme = useTheme()
@@ -329,34 +368,37 @@ const ArtefactRow = ({
     </TableCell>
     <TableCell>
       {
-        aggregatedOcmNode ? <Stack direction='row' spacing={1}>
-          <Box
-            display='flex'
-            justifyContent='center'
-            alignItems='center'
-          >
-            <Typography variant='inherit'>{aggregatedOcmNode.ocmNode.artefact.name}</Typography>
-          </Box>
-          <Box
-            display='flex'
-            justifyContent='center'
-            alignItems='center'
-          >
-            <OcmNodeDetails
-              ocmNode={aggregatedOcmNode.ocmNode}
-              ocmRepo={ocmRepo}
-            />
-          </Box>
-        </Stack> : <Skeleton/>
+        aggregatedOcmNode ? <ComponentOrArtefactItem
+          name={aggregatedOcmNode.ocmNode.artefact.name}
+          extraId={aggregatedOcmNode.ocmNode.artefact.extraIdentity}
+        /> : <Skeleton/>
       }
     </TableCell>
     <TableCell>
       {
         aggregatedOcmNode ? <CopyOnClickChip
           value={aggregatedOcmNode.ocmNode.artefact.version}
-          label={trimLongString(aggregatedOcmNode.ocmNode.artefact.version, 12)}
+          label={trimLongString(aggregatedOcmNode.ocmNode.artefact.version, 30)}
           chipProps={{
-            variant: 'outlined',
+            variant: 'outlined'
+          }}
+        /> : <Skeleton/>
+      }
+    </TableCell>
+    <TableCell>
+      {
+        aggregatedOcmNode ? <ComponentOrArtefactItem
+          name={aggregatedOcmNode.ocmNode.component.name}
+        /> : <Skeleton/>
+      }
+    </TableCell>
+    <TableCell>
+      {
+        aggregatedOcmNode ? <CopyOnClickChip
+          value={aggregatedOcmNode.ocmNode.component.version}
+          label={trimLongString(aggregatedOcmNode.ocmNode.component.version, 30)}
+          chipProps={{
+            variant: 'outlined'
           }}
         /> : <Skeleton/>
       }
@@ -391,7 +433,6 @@ ArtefactRow.propTypes = {
   aggregatedOcmNode: PropTypes.object,
   selectedAggregatedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedAggregatedOcmNodes: PropTypes.func.isRequired,
-  ocmRepo: PropTypes.string,
   findingCfg: PropTypes.object.isRequired,
 }
 
@@ -400,7 +441,6 @@ const ArtefactList = ({
   aggregatedOcmNodes,
   selectedAggregatedOcmNodes,
   setSelectedAggregatedOcmNodes,
-  ocmRepo,
   findingCfg,
 }) => {
   const [order, setOrder] = React.useState('asc')
@@ -409,6 +449,7 @@ const ArtefactList = ({
   const orderAttributes = {
     ARTEFACT: 'artefact',
     CATEGORISATION: 'categorisation',
+    COMPONENT: 'component',
   }
 
   const initialRowsPerPage = 10
@@ -431,9 +472,17 @@ const ArtefactList = ({
 
   const getAccessMethod = (orderBy) => {
     if (orderBy === orderAttributes.ARTEFACT) {
-      return (aggregatedOcmNode) => `${aggregatedOcmNode.ocmNode.artefact.name}:${aggregatedOcmNode.ocmNode.artefact.version}`
+      return (aggregatedOcmNode) => [
+        aggregatedOcmNode.ocmNode.artefact.name,
+        aggregatedOcmNode.ocmNode.artefact.version,
+      ].join(':')
     } else if (orderBy === orderAttributes.CATEGORISATION) {
       return (aggregatedOcmNode) => aggregatedOcmNode.categorisationValue
+    } else if (orderBy === orderAttributes.COMPONENT) {
+      return (aggregatedOcmNode) => [
+        aggregatedOcmNode.ocmNode.component.name,
+        aggregatedOcmNode.ocmNode.component.version,
+      ].join(':')
     }
   }
 
@@ -485,7 +534,7 @@ const ArtefactList = ({
         <TableHead>
           <TableRow>
             <TableCell
-              width='70em'
+              width={'4%'}
               onClick={() => {
                 if (!aggregatedOcmNodes) return // still loading
 
@@ -503,7 +552,9 @@ const ArtefactList = ({
             >
               <Checkbox checked={aggregatedOcmNodes && allSelected(aggregatedOcmNodes, selectedAggregatedOcmNodes)}/>
             </TableCell>
-            <TableCell>
+            <TableCell
+              width={'24%'}
+            >
               <TableSortLabel
                 onClick={() => handleSort(orderAttributes.ARTEFACT)}
                 active={orderBy === orderAttributes.ARTEFACT}
@@ -512,8 +563,26 @@ const ArtefactList = ({
                 Artefact
               </TableSortLabel>
             </TableCell>
-            <TableCell>Version</TableCell>
-            <TableCell>
+            <TableCell
+              width={'8%'}
+            /> { /* artefact version, no column title required */ }
+            <TableCell
+              width={'24%'}
+            >
+              <TableSortLabel
+                onClick={() => handleSort(orderAttributes.COMPONENT)}
+                active={orderBy === orderAttributes.COMPONENT}
+                direction={order}
+              >
+                Component
+              </TableSortLabel>
+            </TableCell>
+            <TableCell
+              width={'8%'}
+            /> { /* component version, no column title required */ }
+            <TableCell
+              width={'8%'}
+            >
               <TableSortLabel
                 onClick={() => handleSort(orderAttributes.CATEGORISATION)}
                 active={orderBy === orderAttributes.CATEGORISATION}
@@ -522,7 +591,9 @@ const ArtefactList = ({
                 Categorisation
               </TableSortLabel>
             </TableCell>
-            <TableCell>
+            <TableCell
+              width={'24%'}
+            >
               Responsibility
             </TableCell>
           </TableRow>
@@ -537,13 +608,11 @@ const ArtefactList = ({
               aggregatedOcmNode={aggregatedOcmNode}
               selectedAggregatedOcmNodes={selectedAggregatedOcmNodes}
               setSelectedAggregatedOcmNodes={setSelectedAggregatedOcmNodes}
-              ocmRepo={ocmRepo}
               findingCfg={findingCfg}
             />) : Array.from(Array(initialRowsPerPage).keys()).map((key) => <ArtefactRow
               key={key}
               selectedAggregatedOcmNodes={selectedAggregatedOcmNodes}
               setSelectedAggregatedOcmNodes={setSelectedAggregatedOcmNodes}
-              ocmRepo={ocmRepo}
               findingCfg={findingCfg}
             />)
           }
@@ -576,7 +645,6 @@ ArtefactList.propTypes = {
   aggregatedOcmNodes: PropTypes.arrayOf(PropTypes.object),
   selectedAggregatedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedAggregatedOcmNodes: PropTypes.func.isRequired,
-  ocmRepo: PropTypes.string,
   findingCfg: PropTypes.object.isRequired,
 }
 
@@ -820,7 +888,6 @@ const Artefacts = ({
         aggregatedOcmNodes={aggregatedOcmNodes}
         selectedAggregatedOcmNodes={selectedAggregatedOcmNodes}
         setSelectedAggregatedOcmNodes={setSelectedAggregatedOcmNodes}
-        ocmRepo={ocmRepo}
         findingCfg={findingCfgForType({findingType, findingCfgs})}
       /> : <Box
         display='flex'
@@ -1011,7 +1078,6 @@ const ComplianceTab = ({
     <ArtefactList
       selectedAggregatedOcmNodes={selected}
       setSelectedAggregatedOcmNodes={setSelected}
-      ocmRepo={ocmRepo}
       findingCfg={findingCfgForType({findingType, findingCfgs})}
     />
   </Box>
