@@ -331,7 +331,6 @@ const ArtefactRow = ({
   aggregatedOcmNode,
   selectedAggregatedOcmNodes,
   setSelectedAggregatedOcmNodes,
-  ocmRepo,
   findingCfg,
 }) => {
   const theme = useTheme()
@@ -436,7 +435,6 @@ ArtefactRow.propTypes = {
   aggregatedOcmNode: PropTypes.object,
   selectedAggregatedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedAggregatedOcmNodes: PropTypes.func.isRequired,
-  ocmRepo: PropTypes.string,
   findingCfg: PropTypes.object.isRequired,
 }
 
@@ -445,7 +443,6 @@ const ArtefactList = ({
   aggregatedOcmNodes,
   selectedAggregatedOcmNodes,
   setSelectedAggregatedOcmNodes,
-  ocmRepo,
   findingCfg,
 }) => {
   const [order, setOrder] = React.useState('asc')
@@ -601,13 +598,11 @@ const ArtefactList = ({
               aggregatedOcmNode={aggregatedOcmNode}
               selectedAggregatedOcmNodes={selectedAggregatedOcmNodes}
               setSelectedAggregatedOcmNodes={setSelectedAggregatedOcmNodes}
-              ocmRepo={ocmRepo}
               findingCfg={findingCfg}
             />) : Array.from(Array(initialRowsPerPage).keys()).map((key) => <ArtefactRow
               key={key}
               selectedAggregatedOcmNodes={selectedAggregatedOcmNodes}
               setSelectedAggregatedOcmNodes={setSelectedAggregatedOcmNodes}
-              ocmRepo={ocmRepo}
               findingCfg={findingCfg}
             />)
           }
@@ -640,7 +635,6 @@ ArtefactList.propTypes = {
   aggregatedOcmNodes: PropTypes.arrayOf(PropTypes.object),
   selectedAggregatedOcmNodes: PropTypes.arrayOf(PropTypes.object).isRequired,
   setSelectedAggregatedOcmNodes: PropTypes.func.isRequired,
-  ocmRepo: PropTypes.string,
   findingCfg: PropTypes.object.isRequired,
 }
 
@@ -884,7 +878,6 @@ const Artefacts = ({
         aggregatedOcmNodes={aggregatedOcmNodes}
         selectedAggregatedOcmNodes={selectedAggregatedOcmNodes}
         setSelectedAggregatedOcmNodes={setSelectedAggregatedOcmNodes}
-        ocmRepo={ocmRepo}
         findingCfg={findingCfgForType({findingType, findingCfgs})}
       /> : <Box
         display='flex'
@@ -1075,7 +1068,6 @@ const ComplianceTab = ({
     <ArtefactList
       selectedAggregatedOcmNodes={selected}
       setSelectedAggregatedOcmNodes={setSelected}
-      ocmRepo={ocmRepo}
       findingCfg={findingCfgForType({findingType, findingCfgs})}
     />
   </Box>
