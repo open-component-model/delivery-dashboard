@@ -5,7 +5,6 @@ import {
   Box,
   Button,
   Checkbox,
-  Divider,
   FormControl,
   FormControlLabel,
   FormGroup,
@@ -33,6 +32,7 @@ import {
   Typography
 } from '@mui/material'
 import { alpha } from '@mui/material/styles'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import SearchIcon from '@mui/icons-material/Search'
 import SendIcon from '@mui/icons-material/Send'
 
@@ -46,7 +46,6 @@ import {
 } from '../fetch'
 import { CategorisationIndicator } from '../ocm/model'
 import {
-  ExtraIdentityHover,
   matchObjectWithSearchQuery,
   NoMaxWidthTooltip,
   toYamlString,
@@ -57,7 +56,7 @@ import {
   PROFILE_KEY,
   USER_IDENTITIES,
 } from '../consts'
-import { OcmNode, OcmNodeDetails } from '../ocm/iter'
+import { OcmNode } from '../ocm/iter'
 import { RescoringModal } from '../rescoring'
 import {
   categorisationValueToColor,
@@ -69,7 +68,6 @@ import {
   rescorableFindingTypes,
 } from '../findings'
 import MultilineTextViewer from '../util/multilineTextViewer'
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 
 
 const filterModes = {
@@ -372,7 +370,7 @@ const ArtefactRow = ({
       {
         aggregatedOcmNode ? <ComponentOrArtefactItem
           name={aggregatedOcmNode.ocmNode.artefact.name}
-          extraId={aggregatedOcmNode.ocmNode.artefact.extraId}
+          extraId={aggregatedOcmNode.ocmNode.artefact.extraIdentity}
         /> : <Skeleton/>
       }
     </TableCell>
