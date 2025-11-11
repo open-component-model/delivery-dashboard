@@ -536,7 +536,7 @@ const ArtefactList = ({
         <TableHead>
           <TableRow>
             <TableCell
-              width='70em'
+              width={'4%'}
               onClick={() => {
                 if (!aggregatedOcmNodes) return // still loading
 
@@ -554,7 +554,9 @@ const ArtefactList = ({
             >
               <Checkbox checked={aggregatedOcmNodes && allSelected(aggregatedOcmNodes, selectedAggregatedOcmNodes)}/>
             </TableCell>
-            <TableCell>
+            <TableCell
+              width={'24%'}
+            >
               <TableSortLabel
                 onClick={() => handleSort(orderAttributes.ARTEFACT)}
                 active={orderBy === orderAttributes.ARTEFACT}
@@ -563,8 +565,12 @@ const ArtefactList = ({
                 Artefact
               </TableSortLabel>
             </TableCell>
-            <TableCell/> { /* artefact version, no column title required */ }
-            <TableCell>
+            <TableCell
+              width={'8%'}
+            /> { /* artefact version, no column title required */ }
+            <TableCell
+              width={'24%'}
+            >
               <TableSortLabel
                 onClick={() => handleSort(orderAttributes.COMPONENT)}
                 active={orderBy === orderAttributes.COMPONENT}
@@ -573,8 +579,12 @@ const ArtefactList = ({
                 Component
               </TableSortLabel>
             </TableCell>
-            <TableCell/> { /* component version, no column title required */ }
-            <TableCell>
+            <TableCell
+              width={'8%'}
+            /> { /* component version, no column title required */ }
+            <TableCell
+              width={'8%'}
+            >
               <TableSortLabel
                 onClick={() => handleSort(orderAttributes.CATEGORISATION)}
                 active={orderBy === orderAttributes.CATEGORISATION}
@@ -583,7 +593,9 @@ const ArtefactList = ({
                 Categorisation
               </TableSortLabel>
             </TableCell>
-            <TableCell>
+            <TableCell
+              width={'24%'}
+            >
               Responsibility
             </TableCell>
           </TableRow>
