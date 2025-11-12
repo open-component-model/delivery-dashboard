@@ -96,7 +96,7 @@ export const features = {
   CLUSTER_ACCESS: 'cluster-access',
   PROFILES: 'profiles',
   TESTS: 'tests',
-  REPO_CONTEXTS: 'repo-contexts',
+  OCM_REPOSITORY_CFGS: 'ocm-repository-cfgs',
   SPECIAL_COMPONENTS: 'special-components',
   SPRINTS: 'sprints',
   UPGRADE_PRS: 'upgrade-prs',
@@ -127,6 +127,11 @@ export const SHOW_SNOWFLAKES = 'show_snowflakes'
 export const PROFILE_KEY = 'profile'
 
 export const OCM_REPO_AUTO_OPTION = '<auto>'
+export const OCM_REPOSITORY_CFG_TYPES = {
+  OCI: 'oci',
+  VIRTUAL: 'virtual',
+}
+Object.freeze(OCM_REPOSITORY_CFG_TYPES)
 
 export const healthStatuses = {
   HEALTHY: {

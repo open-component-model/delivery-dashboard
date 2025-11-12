@@ -17,7 +17,7 @@ import {
   COMPONENT_PATH,
   FEATURES_CFG_KEY,
   META_SPRINT_NAMES,
-  OCM_REPO_AUTO_OPTION,
+  OCM_REPOSITORY_CFG_TYPES,
   PATH_KEY,
   healthStatuses,
   tabConfig,
@@ -295,12 +295,20 @@ export const isFeatureState = (
 }
 
 
-export const urlsFromRepoCtxFeature = (repoCtxFeature) => {
-  if (!repoCtxFeature || !repoCtxFeature.isAvailable) {
+export const urlsFromOcmRepositoryCfgsFeature = (ocmRepositoryCfgsFeature) => {
+  if (!ocmRepositoryCfgsFeature || !ocmRepositoryCfgsFeature.isAvailable) {
     return []
   }
 
-  return [OCM_REPO_AUTO_OPTION, ...repoCtxFeature.cfg.repoContexts.map(rc => rc.baseUrl)]
+  return [...ocmRepositoryCfgsFeature.ocm_repository_cfgs.reduce((repositories, ocmRepositoryCfg) => {
+    if (ocmRepositoryCfg.type === OCM_REPOSITORY_CFG_TYPES.OCI) {
+      repositories.add(ocmRepositoryCfg.repository)
+    } else if (ocmRepositoryCfg.type === OCM_REPOSITORY_CFG_TYPES.VIRTUAL) {
+      repositories.add(ocmRepositoryCfg.name)
+    }
+
+    return repositories
+  }, new Set())]
 }
 
 
