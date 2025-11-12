@@ -33,7 +33,7 @@ import {
   getMergedSpecialComponents,
   normaliseExtraIdentity,
   shortenComponentName,
-  urlsFromRepoCtxFeature,
+  urlsFromOcmRepositoryCfgsFeature,
   useDebounce,
 } from '../util'
 import { useFetchServiceExtensions, useFetchComponentDescriptor, useFetchGreatestVersions } from '../fetch'
@@ -302,7 +302,7 @@ ServiceList.propTypes = {}
 
 export const ComponentPage = () => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
-  const [repoCtxFeature, setRepoCtxFeature] = React.useState()
+  const [ocmRepositoryCfgsFeature, setOcmRepositoryCfgsFeature] = React.useState()
 
   const searchParamContext = React.useContext(SearchParamContext)
 
@@ -321,8 +321,8 @@ export const ComponentPage = () => {
   React.useEffect(() => {
     return registerCallbackHandler({
       featureRegistrationContext: featureRegistrationContext,
-      featureName: features.REPO_CONTEXTS,
-      callback: ({feature}) => setRepoCtxFeature(feature),
+      featureName: features.OCM_REPOSITORY_CFGS,
+      callback: ({feature}) => setOcmRepositoryCfgsFeature(feature),
     })
   }, [featureRegistrationContext])
 
@@ -337,7 +337,7 @@ export const ComponentPage = () => {
     localStorage.removeItem(PATH_POS_KEY)
   }
 
-  if (!repoCtxFeature || !repoCtxFeature.isAvailable) {
+  if (!ocmRepositoryCfgsFeature || !ocmRepositoryCfgsFeature.isAvailable) {
     return <PersistentDrawerLeft
       open={true}
       specialComponentId={specialComponentId}
@@ -581,20 +581,20 @@ const ComponentOcmRepoSelector = ({
   focused,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
-  const [repoCtxFeature, setRepoCtxFeature] = React.useState()
+  const [ocmRepositoryCfgsFeature, setOcmRepositoryCfgsFeature] = React.useState()
 
   React.useEffect(() => {
     return registerCallbackHandler({
       featureRegistrationContext: featureRegistrationContext,
-      featureName: features.REPO_CONTEXTS,
-      callback: ({feature}) => setRepoCtxFeature(feature),
+      featureName: features.OCM_REPOSITORY_CFGS,
+      callback: ({feature}) => setOcmRepositoryCfgsFeature(feature),
     })
   }, [featureRegistrationContext])
 
   return <Autocomplete
     freeSolo
     value={ocmRepo}
-    options={urlsFromRepoCtxFeature(repoCtxFeature)}
+    options={urlsFromOcmRepositoryCfgsFeature(ocmRepositoryCfgsFeature)}
     fullWidth
     disableClearable
     onChange={(event, value) => setOcmRepo(value)}
@@ -878,7 +878,7 @@ const ComponentHeader = ({
             disabled
           /> : <ComponentVersionSelector
             name={debouncedCName}
-            ocmRepo={debouncedOcmRepo === OCM_REPO_AUTO_OPTION ? null : debouncedOcmRepo}
+            ocmRepo={debouncedOcmRepo}
             componentVersion={componentVersion}
             setComponentVersion={setComponentVersion}
             versionFilter={versionFilter}
@@ -932,7 +932,7 @@ const ComponentHeader = ({
               name: componentName,
               version: componentVersion,
               view: searchParamContext.get('view'),
-              ocmRepo: ocmRepo === OCM_REPO_AUTO_OPTION ? null : ocmRepo,
+              ocmRepo: ocmRepo,
             }))
           }
         }}

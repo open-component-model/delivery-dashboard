@@ -58,7 +58,7 @@ import {
   componentPathQuery,
   getMergedSpecialComponents,
   shortenComponentName,
-  urlsFromRepoCtxFeature,
+  urlsFromOcmRepositoryCfgsFeature,
 } from './util'
 import { ComponentChip } from './component/bom'
 import { PersistentDrawerLeft } from './layout'
@@ -231,15 +231,15 @@ const SpecialComponents = () => {
   const theme = useTheme()
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [specialComponentsFeature, setSpecialComponentsFeature] = React.useState()
-  const [repoCtxFeature, setRepoCtxFeature] = React.useState()
+  const [ocmRepositoryCfgsFeature, setOcmRepositoryCfgsFeature] = React.useState()
   const [findingCfgsFeature, setFindingCfgsFeature] = React.useState()
   const [dialogOpen, setDialogOpen] = React.useState(false)
 
   React.useEffect(() => {
     return registerCallbackHandler({
       featureRegistrationContext: featureRegistrationContext,
-      featureName: features.REPO_CONTEXTS,
-      callback: ({feature}) => setRepoCtxFeature(feature),
+      featureName: features.OCM_REPOSITORY_CFGS,
+      callback: ({feature}) => setOcmRepositoryCfgsFeature(feature),
     })
   }, [featureRegistrationContext])
 
@@ -259,7 +259,7 @@ const SpecialComponents = () => {
     })
   }, [featureRegistrationContext])
 
-  if (!specialComponentsFeature?.isAvailable || !repoCtxFeature?.isAvailable) return null
+  if (!specialComponentsFeature?.isAvailable || !ocmRepositoryCfgsFeature?.isAvailable) return null
 
   const findingCfgs = findingCfgsFeature?.isAvailable ? findingCfgsFeature.finding_cfgs : []
 
@@ -349,7 +349,7 @@ const SpecialComponents = () => {
       dialogOpen && <SpecialComponentDialog
         handleClose={handleCloseNewSpecialComponent}
         specialComponentsFeature={specialComponentsFeature}
-        repoCtxFeature={repoCtxFeature}
+        ocmRepositoryCfgsFeature={ocmRepositoryCfgsFeature}
         specialComponentTypes={specialComponentTypes}
       />
     }
@@ -360,7 +360,7 @@ SpecialComponents.displayName = 'SpecialComponents'
 const SpecialComponentDialog = ({
   handleClose,
   specialComponentsFeature,
-  repoCtxFeature,
+  ocmRepositoryCfgsFeature,
   specialComponentTypes,
 }) => {
   const theme = useTheme()
@@ -397,7 +397,7 @@ const SpecialComponentDialog = ({
       displayName: displayName,
       type: type,
       version: 'greatest',
-      ...ocmRepo && ocmRepo !== OCM_REPO_AUTO_OPTION && {ocmRepo: ocmRepo},
+      ocmRepo: ocmRepo,
       ...icon !== '' && {icon: icon},
       browserLocalOnly: true,
     }
@@ -474,7 +474,7 @@ const SpecialComponentDialog = ({
           value={ocmRepo}
           freeSolo
           disableClearable
-          options={urlsFromRepoCtxFeature(repoCtxFeature)}
+          options={urlsFromOcmRepositoryCfgsFeature(ocmRepositoryCfgsFeature)}
           onInputChange={(e, newValue) => {
             setOcmRepo(newValue)
           }}
@@ -520,7 +520,7 @@ SpecialComponentDialog.displayName = 'SpecialComponentDialog'
 SpecialComponentDialog.propTypes = {
   handleClose: PropTypes.func.isRequired,
   specialComponentsFeature: PropTypes.object.isRequired,
-  repoCtxFeature: PropTypes.object.isRequired,
+  ocmRepositoryCfgsFeature: PropTypes.object.isRequired,
   specialComponentTypes: PropTypes.array.isRequired,
 }
 
