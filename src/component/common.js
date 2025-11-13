@@ -801,7 +801,6 @@ const ComponentHeader = ({
   const [componentVersion, setComponentVersion] = React.useState(version)
   const [versionFilter, setVersionFilter] = React.useState(VERSION_FILTER.RELEASES_ONLY)
   const [ocmRepo, setOcmRepo] = React.useState(ocmRepository)
-  const [searchError, setSearchError] = React.useState()
 
   React.useEffect(() => {
     return registerCallbackHandler({
@@ -848,11 +847,6 @@ const ComponentHeader = ({
   }, [ocmRepository])
 
   return <Grid container display='flex' alignItems='center' spacing={2}>
-    {searchError && (
-      <Grid item xs={12}>
-        <Alert severity='error'>{searchError}</Alert>
-      </Grid>
-    )}
     <Grid item xs={9} md={12} lg={8} xl={4}>
       <TextField
         value={componentName}
@@ -927,7 +921,6 @@ const ComponentHeader = ({
             if (!componentVersion) setErroneousElementName(selectionElementNames.VERSION)
             if (!componentName) setErroneousElementName(selectionElementNames.NAME)
           } else {
-            setSearchError('')
             navigate(componentPathQuery({
               name: componentName,
               version: componentVersion,
