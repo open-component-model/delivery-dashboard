@@ -185,7 +185,6 @@ const ocmComponent = async ({
   componentName,
   ocmRepoUrl,
   version,
-  versionFilter,
   raw=false,
   absentOk=false,
 }) => {
@@ -194,7 +193,6 @@ const ocmComponent = async ({
     component_name: componentName,
     ocm_repo_url: ocmRepoUrl,
     version: version,
-    version_filter: versionFilter,
     raw: raw,
   })
 

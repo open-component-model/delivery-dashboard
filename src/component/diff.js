@@ -59,7 +59,6 @@ import { components } from '../api'
 import {
   pullRequestsStates,
   errorSnackbarProps,
-  VERSION_FILTER,
   fetchBomPopulate,
 } from '../consts'
 import { enqueueSnackbar } from 'notistack'
@@ -401,7 +400,6 @@ const ComponentVersionSelect = ({
           componentName: componentName,
           ocmRepoUrl: ocmRepo,
           max: 15,
-          versionFilter: VERSION_FILTER.ALL,
         })
         setVersions(lastVersions)
         setIsLoading(false)
