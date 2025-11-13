@@ -540,7 +540,6 @@ const ComponentBody = ({
   const componentUrl = `#${componentPathQuery({
     name: component.name,
     version: component.version,
-    versionFilter: component.versionFilter,
     view: 'bom',
     ocmRepo: component.ocmRepo,
     specialComponentId: component.id,
@@ -552,7 +551,6 @@ const ComponentBody = ({
     componentName: component.name,
     componentVersion: component.version,
     ocmRepo: component.ocmRepo,
-    versionFilter: component.versionFilter,
   })
   const { componentDependencies, isComponentDependenciesLoading, isComponentDependenciesError } = componentDependenciesFetchDetails
 
@@ -1128,7 +1126,6 @@ const PullRequestsOverview = ({
         href={`#${componentPathQuery({
           name: component.name,
           version: component.version,
-          versionFilter: component.versionFilter,
           view: tabConfig.COMPONENT_DIFF.id,
           ocmRepo: component.ocmRepo,
           specialComponentId: component.id,
