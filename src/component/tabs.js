@@ -51,7 +51,6 @@ export const ComponentTabs = ({
   componentDescriptor,
   isLoading,
   ocmRepo,
-  versionFilter,
   specialComponentId,
   browserLocalOnly,
 }) => {
@@ -167,7 +166,6 @@ export const ComponentTabs = ({
         componentDescriptor={componentDescriptor}
         isLoading={isLoading}
         ocmRepo={ocmRepo}
-        versionFilter={versionFilter}
       />
     </TabPanel>
     <FeatureDependent requiredFeatures={[features.UPGRADE_PRS]}>
@@ -219,7 +217,6 @@ ComponentTabs.propTypes = {
   componentDescriptor: PropTypes.object,
   isLoading: PropTypes.bool.isRequired,
   ocmRepo: PropTypes.string,
-  versionFilter: PropTypes.string,
   specialComponentId: PropTypes.string,
   browserLocalOnly: PropTypes.bool,
 }

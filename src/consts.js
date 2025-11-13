@@ -100,7 +100,6 @@ export const features = {
   SPECIAL_COMPONENTS: 'special-components',
   SPRINTS: 'sprints',
   UPGRADE_PRS: 'upgrade-prs',
-  VERSION_FILTER: 'version-filter',
   JOKES_API: 'jokes-api',
   DASHBOARD_CREATE_ISSUE_URL: 'dashboard-create-issue-url',
   EXTENSIONS_CONFIGURATION: 'extensions-configuration',
@@ -162,8 +161,22 @@ export const healthStatuses = {
 }
 
 export const VERSION_FILTER = {
-  ALL: 'all',
-  RELEASES_ONLY: 'releases_only',
+  ANY: {
+    id: 'any',
+    name: 'Any',
+  },
+  SEMVER_ANY: {
+    id: 'semver_any',
+    name: 'SemVer',
+  },
+  SEMVER_NON_RELEASES: {
+    id: 'semver_non_releases',
+    name: 'Build/PreReleases',
+  },
+  SEMVER_RELEASES: {
+    id: 'semver_releases',
+    name: 'Releases',
+  },
 }
 
 // these services work with backlog items
