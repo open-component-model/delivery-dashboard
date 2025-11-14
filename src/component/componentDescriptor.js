@@ -21,7 +21,6 @@ const FetchAndView = ({
   componentName,
   componentVersion,
   ocmRepo,
-  versionFilter,
   setRaw,
   raw,
 }) => {
@@ -29,7 +28,6 @@ const FetchAndView = ({
     componentName: componentName,
     componentVersion: componentVersion,
     ocmRepo: ocmRepo,
-    versionFilter: versionFilter,
     raw: true,
   })
 
@@ -48,7 +46,6 @@ FetchAndView.propTypes = {
   componentName: PropTypes.string.isRequired,
   componentVersion: PropTypes.string.isRequired,
   ocmRepo: PropTypes.string,
-  versionFilter: PropTypes.string,
   setRaw: PropTypes.func.isRequired,
   raw: PropTypes.string,
 }
@@ -93,14 +90,12 @@ const ComponentDescriptor = ({
   componentDescriptor,
   setRaw,
   ocmRepo,
-  versionFilter,
 }) => {
   return (showRaw && !raw) // prevent re-fetching if raw cd is present already
     ? <FetchAndView
       componentName={componentDescriptor.component.name}
       componentVersion={componentDescriptor.component.version}
       ocmRepo={ocmRepo}
-      versionFilter={versionFilter}
       setRaw={setRaw}
       raw={raw}
     />
@@ -119,7 +114,6 @@ ComponentDescriptor.propTypes = {
   setRaw: PropTypes.func.isRequired,
   componentDescriptor: PropTypes.object,
   ocmRepo: PropTypes.string,
-  versionFilter: PropTypes.string,
 }
 
 
@@ -127,7 +121,6 @@ export const CdTab = ({
   componentDescriptor,
   isLoading,
   ocmRepo,
-  versionFilter,
 }) => {
   const searchParamContext = React.useContext(SearchParamContext)
 
@@ -156,7 +149,6 @@ export const CdTab = ({
           setRaw={setRaw}
           componentDescriptor={componentDescriptor}
           ocmRepo={ocmRepo}
-          versionFilter={versionFilter}
         />
     }
   </Box>
@@ -166,5 +158,4 @@ CdTab.propTypes = {
   componentDescriptor: PropTypes.object,
   isLoading: PropTypes.bool,
   ocmRepo: PropTypes.string,
-  versionFilter: PropTypes.string,
 }

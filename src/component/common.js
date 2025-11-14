@@ -1,7 +1,26 @@
 import React from 'react'
 
 import { useTheme } from '@mui/material/styles'
-import { Box, capitalize, Tooltip, Typography, Collapse, Divider, Grid, Link, List, ListItemButton, ListItemText, Alert, CircularProgress, Accordion, AccordionDetails, AccordionSummary, Autocomplete, Checkbox, TextField } from '@mui/material'
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Alert,
+  Autocomplete,
+  Box,
+  capitalize,
+  CircularProgress,
+  Collapse,
+  Divider,
+  Grid,
+  Link,
+  List,
+  ListItemButton,
+  ListItemText,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material'
 import IconButton from '@mui/material/IconButton'
 import ExpandLess from '@mui/icons-material/ExpandLess'
 import ExpandMore from '@mui/icons-material/ExpandMore'
@@ -9,6 +28,7 @@ import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import HelpOutlineIcon from '@mui/icons-material/InfoOutlined'
 
 import PropTypes from 'prop-types'
 import { useNavigate } from 'react-router'
@@ -33,7 +53,7 @@ import {
   getMergedSpecialComponents,
   normaliseExtraIdentity,
   shortenComponentName,
-  urlsFromRepoCtxFeature,
+  urlsFromOcmRepositoryCfgsFeature,
   useDebounce,
 } from '../util'
 import { useFetchServiceExtensions, useFetchComponentDescriptor, useFetchGreatestVersions } from '../fetch'
@@ -42,6 +62,7 @@ import { ComponentTabs } from './tabs'
 import { PersistentDrawerLeft } from '../layout'
 import { OcmNode } from '../ocm/iter'
 import { RescoringModal } from '../rescoring'
+import ExtraWideTooltip from '../util/extraWideTooltip'
 
 import ODGLogo from '../resources/odg-logo.svg'
 import SAPLogo from '../resources/sap-logo.svg'
@@ -145,7 +166,6 @@ const LandscapeListEntry = ({
             href={`#${componentPathQuery({
               name: component.name,
               version: component.version,
-              versionFilter: component.versionFilter,
               view: view,
               ocmRepo: component.ocmRepo,
               specialComponentId: component.id,
@@ -302,13 +322,12 @@ ServiceList.propTypes = {}
 
 export const ComponentPage = () => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
-  const [repoCtxFeature, setRepoCtxFeature] = React.useState()
+  const [ocmRepositoryCfgsFeature, setOcmRepositoryCfgsFeature] = React.useState()
 
   const searchParamContext = React.useContext(SearchParamContext)
 
   const componentName = searchParamContext.get('name')
   const version = searchParamContext.get('version')
-  const versionFilter = searchParamContext.get('versionFilter')
   const view = searchParamContext.get('view')
 
   const ocmRepo = searchParamContext.get('ocmRepo')
@@ -321,8 +340,8 @@ export const ComponentPage = () => {
   React.useEffect(() => {
     return registerCallbackHandler({
       featureRegistrationContext: featureRegistrationContext,
-      featureName: features.REPO_CONTEXTS,
-      callback: ({feature}) => setRepoCtxFeature(feature),
+      featureName: features.OCM_REPOSITORY_CFGS,
+      callback: ({feature}) => setOcmRepositoryCfgsFeature(feature),
     })
   }, [featureRegistrationContext])
 
@@ -337,7 +356,7 @@ export const ComponentPage = () => {
     localStorage.removeItem(PATH_POS_KEY)
   }
 
-  if (!repoCtxFeature || !repoCtxFeature.isAvailable) {
+  if (!ocmRepositoryCfgsFeature || !ocmRepositoryCfgsFeature.isAvailable) {
     return <PersistentDrawerLeft
       open={true}
       specialComponentId={specialComponentId}
@@ -410,7 +429,6 @@ export const ComponentPage = () => {
     >
       <ComponentView
         componentMeta={addPresentKeyValuePairs(component, {
-          versionFilter: versionFilter,
           id: specialComponentId,
           browserLocalOnly: specialComponentBrowserLocalOnly,
         })}
@@ -457,7 +475,6 @@ const ComponentView = ({
     componentName: componentMeta.name,
     componentVersion: componentMeta.version,
     ocmRepo: ocmRepo,
-    versionFilter: componentMeta.versionFilter,
     absentOk: true,
   })
 
@@ -560,7 +577,6 @@ const ComponentView = ({
         componentDescriptor={componentDescriptor}
         isLoading={state.isLoading}
         ocmRepo={ocmRepo}
-        versionFilter={componentMeta.versionFilter}
         specialComponentId={componentMeta.id}
         browserLocalOnly={componentMeta.browserLocalOnly}
       />
@@ -581,20 +597,20 @@ const ComponentOcmRepoSelector = ({
   focused,
 }) => {
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
-  const [repoCtxFeature, setRepoCtxFeature] = React.useState()
+  const [ocmRepositoryCfgsFeature, setOcmRepositoryCfgsFeature] = React.useState()
 
   React.useEffect(() => {
     return registerCallbackHandler({
       featureRegistrationContext: featureRegistrationContext,
-      featureName: features.REPO_CONTEXTS,
-      callback: ({feature}) => setRepoCtxFeature(feature),
+      featureName: features.OCM_REPOSITORY_CFGS,
+      callback: ({feature}) => setOcmRepositoryCfgsFeature(feature),
     })
   }, [featureRegistrationContext])
 
   return <Autocomplete
     freeSolo
     value={ocmRepo}
-    options={urlsFromRepoCtxFeature(repoCtxFeature)}
+    options={urlsFromOcmRepositoryCfgsFeature(ocmRepositoryCfgsFeature)}
     fullWidth
     disableClearable
     onChange={(event, value) => setOcmRepo(value)}
@@ -622,6 +638,7 @@ ComponentOcmRepoSelector.propTypes = {
   color: PropTypes.string.isRequired,
   focused: PropTypes.bool.isRequired,
 }
+
 
 const ComponentVersionSelector = ({
   name,
@@ -689,6 +706,73 @@ ComponentVersionSelector.propTypes = {
   color: PropTypes.string.isRequired,
   focused: PropTypes.bool.isRequired,
 }
+
+
+const ComponentVersionFilterSelector = ({
+  versionFilter,
+  setVersionFilter,
+}) => {
+  const versionFilters = Object.values(VERSION_FILTER)
+
+  const versionFilterById = (id) => versionFilters.find((filter) => filter.id === id)
+  const versionFilterByName = (name) => versionFilters.find((filter) => filter.name === name)
+
+  const options = versionFilters.map((filter) => filter.name)
+
+  const help = (
+    `Specifies which versions are suggested in the "Component Version" input. Options:
+
+    - *All*: All versions are considered
+    - *Non Releases Only*: Only versions which contain either SemVer prerelease or build suffix
+    - *Releases Only*: Only versions which contain neither SemVer prerelease nor build suffix
+    - *SemVer All*: Only versions which are SemVer compatible
+    - <custom-regex>: Use a custom regular expression to filter versions
+    - <empty>: Default version filter of OCM repository is used
+    `
+  )
+
+  return <Autocomplete
+    freeSolo
+    value={versionFilterById(versionFilter)?.name ?? versionFilter}
+    options={options}
+    fullWidth
+    disableClearable
+    onChange={(_, value) => setVersionFilter(versionFilterByName(value)?.id ?? value)}
+    renderInput={(params) => {
+      return (
+        <TextField
+          onChange={(e) => setVersionFilter(versionFilterByName(e.target.value)?.id ?? e.target.value)}
+          variant='standard'
+          {...params}
+          label={
+            <Stack direction='row' spacing={1}>
+              <Typography>Version Filter / Regex</Typography>
+              <ExtraWideTooltip title={<Typography
+                variant='inherit'
+                whiteSpace='pre-line'
+              >
+                {
+                  help
+                }
+              </Typography>}>
+                <HelpOutlineIcon fontSize='small'/>
+              </ExtraWideTooltip>
+            </Stack>
+          }
+          InputProps={{
+            ...params.InputProps,
+          }}
+        />
+      )
+    }}
+  />
+}
+ComponentVersionFilterSelector.displayName = 'ComponentVersionFilterSelector'
+ComponentVersionFilterSelector.propTypes = {
+  versionFilter: PropTypes.string,
+  setVersionFilter: PropTypes.func.isRequired,
+}
+
 
 const NavigationHeader = ({
   component,
@@ -774,6 +858,7 @@ const NavigationHeader = ({
         name={component.name}
         version={component.version}
         ocmRepository={searchParamContext.get('ocmRepo') ? searchParamContext.get('ocmRepo') : OCM_REPO_AUTO_OPTION}
+        initialVersionFilter={searchParamContext.get('versionFilter') ?? ''}
         isLoading={isLoading}
       />
     </AccordionDetails>
@@ -789,29 +874,17 @@ const ComponentHeader = ({
   name,
   version,
   ocmRepository,
+  initialVersionFilter,
   isLoading,
 }) => {
   const navigate = useNavigate()
 
   const searchParamContext = React.useContext(SearchParamContext)
 
-  const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
-
   const [componentName, setComponentName] = React.useState(name)
   const [componentVersion, setComponentVersion] = React.useState(version)
-  const [versionFilter, setVersionFilter] = React.useState(VERSION_FILTER.RELEASES_ONLY)
+  const [versionFilter, setVersionFilter] = React.useState('')
   const [ocmRepo, setOcmRepo] = React.useState(ocmRepository)
-  const [searchError, setSearchError] = React.useState()
-
-  React.useEffect(() => {
-    return registerCallbackHandler({
-      featureRegistrationContext: featureRegistrationContext,
-      featureName: features.VERSION_FILTER,
-      callback: ({feature}) => {
-        if (feature?.isAvailable) setVersionFilter(feature.version_filter)
-      },
-    })
-  }, [featureRegistrationContext])
 
   const selectionElementNames = {
     VERSION: 'version',
@@ -844,16 +917,14 @@ const ComponentHeader = ({
     setComponentVersion(version)
   }, [version])
   React.useEffect(() => {
+    setVersionFilter(Object.values(VERSION_FILTER).find((f) => f.name === initialVersionFilter)?.id ?? initialVersionFilter)
+  }, [initialVersionFilter])
+  React.useEffect(() => {
     setOcmRepo(ocmRepository)
   }, [ocmRepository])
 
   return <Grid container display='flex' alignItems='center' spacing={2}>
-    {searchError && (
-      <Grid item xs={12}>
-        <Alert severity='error'>{searchError}</Alert>
-      </Grid>
-    )}
-    <Grid item xs={9} md={12} lg={8} xl={4}>
+    <Grid item xs={9} md={12} lg={6} xl={4}>
       <TextField
         value={componentName}
         onChange={(event) => {
@@ -867,37 +938,40 @@ const ComponentHeader = ({
         disabled={isLoading}
       />
     </Grid>
-    <Grid item xs={9} md={12} lg={8} xl={2}>
-      <div style={{display: 'flex', alignItems: 'end'}}>
-        {
-          isLoading ? <TextField
-            value={componentVersion}
-            label='Component Version'
-            variant='standard'
-            fullWidth
-            disabled
-          /> : <ComponentVersionSelector
-            name={debouncedCName}
-            ocmRepo={debouncedOcmRepo === OCM_REPO_AUTO_OPTION ? null : debouncedOcmRepo}
-            componentVersion={componentVersion}
-            setComponentVersion={setComponentVersion}
-            versionFilter={versionFilter}
-            color={colorForElementName({name: selectionElementNames.VERSION})}
-            focused={focusForElementName({name: selectionElementNames.VERSION})}
-          />
-        }
-        <Tooltip title='Show Prerelease Versions'>
-          <Checkbox
-            size='small'
-            color='default'
-            disabled={isLoading}
-            checked={versionFilter === VERSION_FILTER.ALL}
-            onChange={(e) => setVersionFilter(e.target.checked ? VERSION_FILTER.ALL : VERSION_FILTER.RELEASES_ONLY)}
-          />
-        </Tooltip>
-      </div>
+    <Grid item xs={9} md={6} lg={3} xl={1.5}>
+      {
+        isLoading ? <TextField
+          value={componentVersion}
+          label='Component Version'
+          variant='standard'
+          fullWidth
+          disabled
+        /> : <ComponentVersionSelector
+          name={debouncedCName}
+          ocmRepo={debouncedOcmRepo}
+          componentVersion={componentVersion}
+          setComponentVersion={setComponentVersion}
+          versionFilter={versionFilter}
+          color={colorForElementName({name: selectionElementNames.VERSION})}
+          focused={focusForElementName({name: selectionElementNames.VERSION})}
+        />
+      }
     </Grid>
-    <Grid item xs={8} md={8} lg={10} xl={5}>
+    <Grid item xs={9} md={6} lg={3} xl={1.5}>
+      {
+        isLoading ? <TextField
+          value={Object.values(VERSION_FILTER).find((f) => f.id === versionFilter)?.name ?? versionFilter}
+          label='Version Filter / Regex'
+          variant='standard'
+          fullWidth
+          disabled
+        /> : <ComponentVersionFilterSelector
+          versionFilter={versionFilter}
+          setVersionFilter={setVersionFilter}
+        />
+      }
+    </Grid>
+    <Grid item xs={8} md={11} lg={11} xl={4}>
       {
         isLoading ? <TextField
           value={ocmRepo}
@@ -927,12 +1001,12 @@ const ComponentHeader = ({
             if (!componentVersion) setErroneousElementName(selectionElementNames.VERSION)
             if (!componentName) setErroneousElementName(selectionElementNames.NAME)
           } else {
-            setSearchError('')
             navigate(componentPathQuery({
               name: componentName,
               version: componentVersion,
+              versionFilter: versionFilter ? versionFilter : null, // omit URL parameter if empty
               view: searchParamContext.get('view'),
-              ocmRepo: ocmRepo === OCM_REPO_AUTO_OPTION ? null : ocmRepo,
+              ocmRepo: ocmRepo,
             }))
           }
         }}
@@ -948,5 +1022,6 @@ ComponentHeader.propTypes = {
   name: PropTypes.string.isRequired,
   version: PropTypes.string.isRequired,
   ocmRepository: PropTypes.string.isRequired,
+  initialVersionFilter: PropTypes.string.isRequired,
   isLoading: PropTypes.bool,
 }

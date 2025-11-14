@@ -96,11 +96,10 @@ export const features = {
   CLUSTER_ACCESS: 'cluster-access',
   PROFILES: 'profiles',
   TESTS: 'tests',
-  REPO_CONTEXTS: 'repo-contexts',
+  OCM_REPOSITORY_CFGS: 'ocm-repository-cfgs',
   SPECIAL_COMPONENTS: 'special-components',
   SPRINTS: 'sprints',
   UPGRADE_PRS: 'upgrade-prs',
-  VERSION_FILTER: 'version-filter',
   JOKES_API: 'jokes-api',
   DASHBOARD_CREATE_ISSUE_URL: 'dashboard-create-issue-url',
   EXTENSIONS_CONFIGURATION: 'extensions-configuration',
@@ -127,6 +126,11 @@ export const SHOW_SNOWFLAKES = 'show_snowflakes'
 export const PROFILE_KEY = 'profile'
 
 export const OCM_REPO_AUTO_OPTION = '<auto>'
+export const OCM_REPOSITORY_CFG_TYPES = {
+  STANDARD: 'standard',
+  VIRTUAL: 'virtual',
+}
+Object.freeze(OCM_REPOSITORY_CFG_TYPES)
 
 export const healthStatuses = {
   HEALTHY: {
@@ -157,8 +161,22 @@ export const healthStatuses = {
 }
 
 export const VERSION_FILTER = {
-  ALL: 'all',
-  RELEASES_ONLY: 'releases_only',
+  ALL: {
+    id: 'all',
+    name: 'All',
+  },
+  NON_RELEASES_ONLY: {
+    id: 'non_releases_only',
+    name: 'Non Releases Only',
+  },
+  RELEASES_ONLY: {
+    id: 'releases_only',
+    name: 'Releases Only',
+  },
+  SEMVER_ALL: {
+    id: 'semver_all',
+    name: 'SemVer All',
+  },
 }
 
 // these services work with backlog items

@@ -411,7 +411,6 @@ const useFetchComponentDescriptor = ({
   componentName,
   componentVersion,
   ocmRepo,
-  versionFilter,
   raw,
   absentOk = false,
 }) => {
@@ -421,12 +420,10 @@ const useFetchComponentDescriptor = ({
     ocmRepoUrl: ocmRepo,
     raw: raw,
     absentOk: absentOk,
-    ...(versionFilter !== null && { versionFilter: versionFilter }), // keep cache key stable
   }), [
     componentName,
     componentVersion,
     ocmRepo,
-    versionFilter,
     raw,
     absentOk,
   ])
