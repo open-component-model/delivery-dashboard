@@ -1372,6 +1372,14 @@ const Subject = ({
         </div>
       </div>
     </Stack>
+  } else if (rescoring.finding_type === FINDING_TYPES.IP) {
+    return <Stack>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <Typography variant='inherit'>{finding.package_name}</Typography>
+        <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
+      </div>
+      <Typography variant='inherit' whiteSpace='pre-line'>{finding.package_versions}</Typography>
+    </Stack>
   }
 }
 Subject.displayName = 'Subject'
@@ -1652,6 +1660,47 @@ const Finding = ({
       </Typography>
       <FalcoExtraInfo finding={finding.finding}/>
     </div>
+  } else if (rescoring.finding_type === FINDING_TYPES.IP) {
+    return <Stack spacing={0.5}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography variant='inherit'>Original:</Typography>
+        <Typography
+          variant='inherit'
+          sx={{ color: `${categorisationValueToColor(categorisation.value)}.main` }}
+        >
+          {categorisation.display_name}
+        </Typography>
+
+        {finding.host && (
+          <Tooltip
+            arrow placement='top'
+            title={<Typography variant='caption'>Host: {finding.host}</Typography>}
+          >
+            <IconButton size='small'>
+              <InfoOutlinedIcon sx={{ height: '1rem', width: '1rem' }}/>
+            </IconButton>
+          </Tooltip>
+        )}
+      </Box>
+
+      {finding.policy_violation.name && (
+        <Typography
+          variant='inherit'
+          sx={{ whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.25 }}
+        >
+          {finding.policy_violation.name}
+        </Typography>
+      )}
+
+      {finding.license.name && (
+        <Typography
+          variant='inherit'
+          sx={{ whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.25 }}
+        >
+          {finding.license.name}
+        </Typography>
+      )}
+    </Stack>
   }
 }
 Finding.displayName = 'Finding'
@@ -2136,6 +2185,17 @@ const RescoringContent = ({
       }).value,
     }
 
+    const ipAccess = {
+      [orderAttributes.SUBJECT]: rescoring.finding.package_name + rescoring.finding.package_versions,
+      [orderAttributes.FINDING]: rescoring.finding.license.name,
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
+      [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
+      [orderAttributes.RESCORED]: findCategorisationById({
+        id: rescoring.severity,
+        findingCfg: findingCfg,
+      }).value,
+    }
+
     if (
       rescoringType === FINDING_TYPES.VULNERABILITY
       || rescoringType === FINDING_TYPES.LICENSE
@@ -2151,6 +2211,8 @@ const RescoringContent = ({
       return dikiAccess[desired]
     } else if (rescoringType === FINDING_TYPES.FALCO) {
       return falcoAccess[desired]
+    } else if (rescoringType === FINDING_TYPES.IP) {
+      return ipAccess[desired]
     }
 
   }
@@ -2611,6 +2673,13 @@ const Rescore = ({
       } else if (type === FINDING_TYPES.FALCO) {
         return {
           group_hash: rescoring.finding.finding.group_hash,
+        }
+      } else if (type === FINDING_TYPES.IP) {
+        return {
+          package_name: rescoring.finding.package_name,
+          license: rescoring.finding.license,
+          policy_violation: rescoring.finding.policy_violation,
+          host: rescoring.finding.host,
         }
       }
     }

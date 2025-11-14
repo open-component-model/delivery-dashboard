@@ -2020,6 +2020,7 @@ const ComplianceCell = ({
   const lastMalwareScan = findLastScan(complianceFiltered, datasources.CLAMAV)
   const lastOsIdScan = findLastScan(complianceFiltered, datasources.OSID)
   const lastSastScan = findLastScan(complianceFiltered, datasources.SAST)
+  const lastIPScan = findLastScan(complianceFiltered, datasources.BLACKDUCK)
 
   const retrieveCryptoFindings = retrieveFindingsForType({
     findingType: FINDING_TYPES.CRYPTO,
@@ -2048,6 +2049,11 @@ const ComplianceCell = ({
   })
   const retrieveSastFindings = retrieveFindingsForType({
     findingType: FINDING_TYPES.SAST,
+    findingCfgs: findingCfgs,
+    ocmNode: ocmNode,
+  })
+  const retrieveIPFindings = retrieveFindingsForType({
+    findingType: FINDING_TYPES.IP,
     findingCfgs: findingCfgs,
     ocmNode: ocmNode,
   })
@@ -2134,6 +2140,19 @@ const ComplianceCell = ({
           type={FINDING_TYPES.SAST}
           categorisation={getCategorisation(FINDING_TYPES.SAST)}
           lastScan={lastSastScan}
+          findingCfgs={findingCfgs}
+          fetchComplianceSummary={fetchComplianceSummary}
+          isLoading={state.isLoading}
+        />
+      }
+      {
+        extensionsCfg?.blackduck?.enabled && ocmNode.artefactKind === ARTEFACT_KIND.RESOURCE && retrieveIPFindings && <RescoringCell
+          ocmNodes={ocmNodes}
+          ocmRepo={ocmRepo}
+          datasource={datasources.BLACKDUCK}
+          type={FINDING_TYPES.IP}
+          categorisation={getCategorisation(FINDING_TYPES.IP)}
+          lastScan={lastIPScan}
           findingCfgs={findingCfgs}
           fetchComplianceSummary={fetchComplianceSummary}
           isLoading={state.isLoading}
