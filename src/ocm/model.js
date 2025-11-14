@@ -89,6 +89,7 @@ const datasources = {
   OSID: 'osid',
   CC_UTILS: 'cc-utils',
   CRYPTO: 'crypto',
+  BLACKDUCK: 'blackduck',
 }
 Object.freeze(datasources)
 
@@ -170,6 +171,12 @@ export const dataKey = ({type, data}) => {
   if (type === FINDING_TYPES.FALCO) return asKey({
     props: [data.finding.group_hash],
   })
+  if (type === FINDING_TYPES.IP) {
+    const labelsKey = data.labels.slice().sort().join(',')
+    return asKey({
+      props: [data.package_name, data.package_version, data.license.name, labelsKey, data.policy_violation.name],
+    })
+  }
 }
 
 
