@@ -21,6 +21,7 @@ export const FINDING_TYPES = {
   CRYPTO: 'finding/crypto',
   DIKI: 'finding/diki',
   FALCO: 'finding/falco',
+  IP: 'finding/ip',
   LICENSE: 'finding/license',
   MALWARE: 'finding/malware',
   OSID: 'finding/osid',
