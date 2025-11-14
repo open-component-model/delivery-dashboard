@@ -194,6 +194,16 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
         rescoring.data.finding.cve !== finding.data.cve
         || rescoring.data.finding.package_name !== finding.data.package_name
       ) return false
+    } else if (finding.meta.type === FINDING_TYPES.IP) {
+      const rescoringLabels = rescoring.data.finding.labels.slice().sort()
+      const findingLabels = finding.data.labels.slice().sort()
+      if (
+        rescoring.data.finding.package_name !== finding.data.package_name
+        || rescoring.data.finding.license.name !== finding.data.license.name
+        || rescoring.data.finding.policy_violation.name !== finding.data.policy_violation.name
+        || rescoringLabels.length !== findingLabels.length
+        || !rescoringLabels.every((label, i) => label === findingLabels[i])
+      ) return false
     } else if (finding.meta.type === FINDING_TYPES.LICENSE) {
       if (
         rescoring.data.finding.license.name !== finding.data.license.name
