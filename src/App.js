@@ -54,6 +54,10 @@ const App = () => {
     return storedValue === null ? false : storedValue
   })
 
+  const url = new URL(document.location)
+  // client_id indicates we are coming back from auth-server
+  const [pendingLogin, setPendingLogin] = React.useState(Boolean(url.searchParams.get('client_id')))
+
   React.useEffect(() => {
     localStorage.setItem(SHOW_SNOWFLAKES, showSnowflakes)
   }, [showSnowflakes])
@@ -166,6 +170,8 @@ const App = () => {
     getContrastText: theme.palette.getContrastText,
     toggleSnowflakes: () => setShowSnowflakes(prev => !prev),
     showSnowflakes: showSnowflakes,
+    isLoginPending: pendingLogin,
+    setIsLoginPending: setPendingLogin,
   }
 
   const featureListenerRegistrationHandler = (state, action) => {
@@ -276,6 +282,7 @@ const InnerRouter = () => {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [token, setToken] = React.useState(JSON.parse(localStorage.getItem(TOKEN_KEY)))
+  const configContext = React.useContext(ConfigContext)
 
   addEventListener('token', () => setToken(JSON.parse(localStorage.getItem(TOKEN_KEY))))
 
@@ -286,6 +293,7 @@ const InnerRouter = () => {
     } else if (url.hash.startsWith(`#${LOGIN_PATH}`)) {
       // navigate to landing page if login page is open but user is logged in
       navigate('/')
+      configContext.setIsLoginPending(false)
     }
   }, [token, navigate])
 
@@ -362,6 +370,7 @@ const Router = () => {
 
 const AuthProvider = () => {
   const searchParams = new URLSearchParams(window.location.search)
+  const configContext = React.useContext(ConfigContext)
   const code = searchParams.get('code')
   const clientId = searchParams.get('client_id')
 
@@ -380,6 +389,7 @@ const AuthProvider = () => {
         localStorage.setItem(TOKEN_KEY, JSON.stringify(dashboard_jwt))
         dispatchEvent(new Event('token'))
       } catch (e) {
+        configContext.setIsLoginPending(false)
         enqueueSnackbar(
           e.toString(),
           {

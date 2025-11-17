@@ -20,6 +20,7 @@ const ProfileSelector = ({
   profiles,
   profilesState,
   props,
+  isLoginPending,
 }) => {
   if (profilesState?.error) return <Alert severity='error' {...props}>
     {
@@ -42,6 +43,7 @@ const ProfileSelector = ({
         setSelectedProfile(e.target.value)
         dispatchEvent(new Event('profile'))
       }}
+      disabled={isLoginPending}
     >
       {
         profiles.map((profile) => <MenuItem key={profile} value={profile}>
@@ -60,6 +62,7 @@ ProfileSelector.propTypes = {
   profiles: PropTypes.arrayOf(PropTypes.string),
   profilesState: PropTypes.object,
   props: PropTypes.object,
+  isLoginPending: PropTypes.bool,
 }
 
 

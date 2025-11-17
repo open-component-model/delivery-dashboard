@@ -3,6 +3,7 @@ import React from 'react'
 import {
   Alert,
   Button,
+  CircularProgress,
   FormControl,
   IconButton,
   InputAdornment,
@@ -142,6 +143,8 @@ LoginPanelTop.displayName = 'LoginPanelTop'
 
 
 const LoginPanelBottom = () => {
+  const configContext = React.useContext(ConfigContext)
+
   const theme = useTheme()
   const { enqueueSnackbar } = useSnackbar()
 
@@ -201,6 +204,7 @@ const LoginPanelBottom = () => {
       sx={{
         marginBottom: '1rem',
       }}
+      disabled={configContext.isLoginPending}
     >
       {
         Object.values(loginTabs).map((tab) => <Tab
@@ -210,6 +214,7 @@ const LoginPanelBottom = () => {
           sx={{
             color: theme.palette.text.main,
           }}
+          disabled={configContext.isLoginPending}
         />)
       }
     </Tabs>
@@ -222,6 +227,7 @@ const LoginPanelBottom = () => {
         setSelectedProfile={setSelectedProfile}
         profiles={profiles}
         profilesState={profilesState}
+        isLoginPending={configContext.isLoginPending}
       /> : <TokenTab
         selectedAuthConfig={selectedAuthConfig}
         setSelectedAuthConfig={setSelectedAuthConfig}
@@ -234,6 +240,7 @@ const LoginPanelBottom = () => {
         setSelectedProfile={setSelectedProfile}
         profiles={profiles}
         profilesState={profilesState}
+        isLoginPending={configContext.isLoginPending}
       />
     }
   </div>
@@ -249,6 +256,7 @@ const OAuthTab = ({
   setSelectedProfile,
   profiles,
   profilesState,
+  isLoginPending,
 }) => {
   const theme = useTheme()
 
@@ -283,6 +291,7 @@ const OAuthTab = ({
       authConfigs={authConfigs}
       label='OAuth Provider Configuration'
       authConfigKey='name'
+      isLoginPending={isLoginPending}
     />
     {
       (profilesState.isLoading || profiles.length > 0) && <ProfileSelector
@@ -296,9 +305,13 @@ const OAuthTab = ({
             marginTop: '1rem',
           },
         }}
+        isLoginPending={isLoginPending}
       />
     }
-    <LoginButton login={() => login(selectedAuthConfig)}/>
+    <LoginButton
+      login={() => login(selectedAuthConfig)}
+      isLoginPending={isLoginPending}
+    />
   </>
 }
 OAuthTab.displayName = 'OAuthTab'
@@ -310,6 +323,7 @@ OAuthTab.propTypes = {
   setSelectedProfile: PropTypes.func.isRequired,
   profiles: PropTypes.arrayOf(PropTypes.string),
   profilesState: PropTypes.object.isRequired,
+  isLoginPending: PropTypes.bool.isRequired,
 }
 
 
@@ -325,8 +339,10 @@ const TokenTab = ({
   setSelectedProfile,
   profiles,
   profilesState,
+  isLoginPending,
 }) => {
   const theme = useTheme()
+  const configContext = React.useContext(ConfigContext)
 
   const [error, setError] = React.useState()
 
@@ -341,6 +357,7 @@ const TokenTab = ({
     } catch {
       setError(true)
     }
+    configContext.setIsLoginPending(false)
   }
 
   return <>
@@ -358,6 +375,7 @@ const TokenTab = ({
       authConfigs={authConfigs}
       label='System Configuration'
       authConfigKey='github_host'
+      isLoginPending={isLoginPending}
     />
     <TextField
       onChange={(e) => setToken(e.target.value)}
@@ -387,6 +405,7 @@ const TokenTab = ({
       }}
       helperText={error && 'Wrong credentials'}
       error={error}
+      disabled={isLoginPending}
     />
     {
       (profilesState.isLoading || profiles.length > 0) && <ProfileSelector
@@ -400,9 +419,13 @@ const TokenTab = ({
             marginTop: '1rem',
           },
         }}
+        isLoginPending={isLoginPending}
       />
     }
-    <LoginButton login={() => login(selectedAuthConfig)}/>
+    <LoginButton
+      login={() => login(selectedAuthConfig)}
+      isLoginPending={isLoginPending}
+    />
   </>
 }
 TokenTab.displayName = 'TokenTab'
@@ -418,6 +441,7 @@ TokenTab.propTypes = {
   setSelectedProfile: PropTypes.func.isRequired,
   profiles: PropTypes.arrayOf(PropTypes.string),
   profilesState: PropTypes.object.isRequired,
+  isLoginPending: PropTypes.bool,
 }
 
 
@@ -427,6 +451,7 @@ const AuthConfigSelector = ({
   authConfigs,
   label,
   authConfigKey,
+  isLoginPending,
 }) => {
   if (authConfigs?.length === 0) {
     return <Alert severity='warning' sx={{
@@ -461,6 +486,7 @@ const AuthConfigSelector = ({
       onChange={(e) => {
         setSelectedAuthConfig(authConfigs.find((authConfig) => authConfig[authConfigKey] === e.target.value))
       }}
+      disabled={isLoginPending}
     >
       {
         [...new Set(authConfigs.map((authConfig) => authConfig[authConfigKey]))].map((authConfig) => <MenuItem
@@ -482,10 +508,11 @@ AuthConfigSelector.propTypes = {
   authConfigs: PropTypes.arrayOf(PropTypes.object),
   label: PropTypes.string.isRequired,
   authConfigKey: PropTypes.string.isRequired,
+  isLoginPending: PropTypes.bool,
 }
 
 
-const LoginButton = ({login}) => {
+const LoginButton = ({login, isLoginPending}) => {
   const theme = useTheme()
 
   return <div style={{
@@ -507,6 +534,8 @@ const LoginButton = ({login}) => {
           background: theme.palette.secondary.main,
         },
       }}
+      disabled={isLoginPending}
+      endIcon={isLoginPending && <CircularProgress size={20}/>}
     >
       Login
     </Button>
@@ -515,4 +544,5 @@ const LoginButton = ({login}) => {
 LoginButton.displayName = 'LoginButton'
 LoginButton.propTypes = {
   login: PropTypes.func.isRequired,
+  isLoginPending: PropTypes.bool.isRequired,
 }
