@@ -270,6 +270,7 @@ ComponentSettings.propTypes = {
 
 const Component = React.memo(({
   component,
+  referencingPaths,
   isComponentLoading,
   isComponentError,
   ocmRepo,
@@ -339,9 +340,8 @@ const Component = React.memo(({
                   // don't expand accordion
                   onClick={(event) => {
                     event.stopPropagation()
-                    if (component.comp_ref) {
-                      updatePathFromComponentRef(component.comp_ref)
-                    }
+                    if (referencingPaths.length === 0) return // root component has no paths
+                    updatePathFromComponentRef(referencingPaths[0])
                   }}
                 >
                   {name}
@@ -400,6 +400,7 @@ const Component = React.memo(({
       <AccordionDetails onClick={(event) => event.stopPropagation()}>
         <ComponentDetails
           component={component}
+          referencingPaths={referencingPaths}
           isComponentLoading={isComponentLoading}
           isComponentError={isComponentError}
           ocmRepo={ocmRepo}
@@ -415,6 +416,7 @@ const Component = React.memo(({
 Component.displayName = 'Component'
 Component.propTypes = {
   component: PropTypes.object.isRequired,
+  referencingPaths: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.object)),
   isComponentLoading: PropTypes.bool,
   isComponentError: PropTypes.bool,
   ocmRepo: PropTypes.string,
@@ -528,6 +530,7 @@ ResponsiblesWrapper.propTypes = {
 
 const ComponentDetails = React.memo(({
   component,
+  referencingPaths,
   isComponentLoading,
   isComponentError,
   ocmRepo,
@@ -551,10 +554,13 @@ const ComponentDetails = React.memo(({
           findingCfgs={findingCfgs}
         />
     }
-    <ComponentReferencedBy
-      component={component}
-      ocmRepo={ocmRepo}
-    />
+    {
+      referencingPaths.length > 0 && <ComponentReferencedBy
+        component={component}
+        referencingPaths={referencingPaths}
+        ocmRepo={ocmRepo}
+      />
+    }
     <ResponsiblesWrapper
       component={component}
       ocmRepo={ocmRepo}
@@ -564,6 +570,7 @@ const ComponentDetails = React.memo(({
 ComponentDetails.displayName = 'ComponentDetails'
 ComponentDetails.propTypes = {
   component: PropTypes.object.isRequired,
+  referencingPaths: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.object)),
   isComponentLoading: PropTypes.bool,
   isComponentError: PropTypes.bool,
   ocmRepo: PropTypes.string,
@@ -574,7 +581,7 @@ ComponentDetails.propTypes = {
 }
 
 const Components = ({
-  components,
+  componentReferenceGroups,
   isComponentsLoading,
   isComponentsError,
   ocmRepo,
@@ -583,9 +590,10 @@ const Components = ({
 }) => {
   return <Box>
     {
-      components.map((component, idx) => <Component
-        key={`${component.name}:${component.version}:${idx}`}
-        component={component}
+      componentReferenceGroups.map(compRefGroup => <Component
+        key={`${compRefGroup.component.name}:${compRefGroup.component.version}`}
+        component={compRefGroup.component}
+        referencingPaths={compRefGroup.referencingPaths}
         isComponentLoading={isComponentsLoading}
         isComponentError={isComponentsError}
         ocmRepo={ocmRepo}
@@ -597,7 +605,7 @@ const Components = ({
 }
 Components.displayName = 'Components'
 Components.propTypes = {
-  components: PropTypes.arrayOf(PropTypes.object),
+  componentReferenceGroups: PropTypes.arrayOf(PropTypes.object),
   isComponentsLoading: PropTypes.bool,
   isComponentsError: PropTypes.bool,
   ocmRepo: PropTypes.string,
@@ -941,16 +949,9 @@ ReferenceTableRow.propTypes = {
 
 const ComponentReferencedBy = ({
   component,
+  referencingPaths,
   ocmRepo,
 }) => {
-  const referenced_by_path = enhanceComponentRefFromPath(
-    component.comp_ref?.length > 0
-      ? component.comp_ref
-      : [{name: component.name, version: component.version}]
-  )
-
-  if (referenced_by_path.length == 1) return null
-
   return <Stack direction='column' spacing={4}>
     <Typography variant='h6'>Referenced By</Typography>
     <TableContainer>
@@ -962,7 +963,14 @@ const ComponentReferencedBy = ({
           </TableRow>
         </TableHead>
         <TableBody>
-          <ReferencedByTableRow ocmRepo={ocmRepo} referenced_by_path={referenced_by_path}/>
+          {
+            referencingPaths.map((referencingPath, idx) => <ReferencedByTableRow
+              key={idx}
+              ocmRepo={ocmRepo}
+              referencingPath={referencingPath}
+              component={component}
+            />)
+          }
         </TableBody>
       </Table>
     </TableContainer>
@@ -971,14 +979,22 @@ const ComponentReferencedBy = ({
 ComponentReferencedBy.displayName = 'ComponentReferencedBy'
 ComponentReferencedBy.propTypes = {
   component: PropTypes.object,
+  referencingPaths: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.object)),
   ocmRepo: PropTypes.string,
 }
 
 const ReferencedByTableRow = ({
   ocmRepo,
-  referenced_by_path,
+  component,
+  referencingPath,
 }) => {
   const icon = <GitHubIcon/>
+
+  const path = enhanceComponentRefFromPath(
+    referencingPath.length > 0
+      ? referencingPath
+      : [{name: component.name, version: component.version}]
+  )
 
   return <TableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
     <TableCell component='th' scope='row' align='left' padding='checkbox'>
@@ -998,7 +1014,7 @@ const ReferencedByTableRow = ({
               </TableHead>
               <TableBody>
                 {
-                  referenced_by_path.map((ref, idx) => <TableRow key={idx} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  path.map((ref, idx) => <TableRow key={idx} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                     <TableCell component='th' scope='row' align='left' padding='checkbox'>
                       {icon}
                     </TableCell>
@@ -1014,7 +1030,7 @@ const ReferencedByTableRow = ({
                           ocmRepo: ocmRepo,
                         })}`}
                         onClick={() => {
-                          updatePathFromComponentRef(referenced_by_path)
+                          updatePathFromComponentRef(path)
                         }}
                       >
                         {`${ref.name}:${ref.version}`}
@@ -1029,7 +1045,7 @@ const ReferencedByTableRow = ({
         placement='top-start'
       >
         <Typography variant='inherit'>
-          {`${referenced_by_path[referenced_by_path.length - 2].name}:${referenced_by_path[referenced_by_path.length - 2].version}`}
+          {`${path[path.length - 2].name}:${path[path.length - 2].version}`}
         </Typography>
       </ExtraWideTooltip>
     </TableCell>
@@ -1037,8 +1053,9 @@ const ReferencedByTableRow = ({
 }
 ReferencedByTableRow.displayName = 'ReferencedByTableRow'
 ReferencedByTableRow.propTypes = {
+  component: PropTypes.object.isRequired,
   ocmRepo: PropTypes.string,
-  referenced_by_path: PropTypes.arrayOf(PropTypes.object),
+  referencingPath: PropTypes.arrayOf(PropTypes.object),
 }
 
 
@@ -1467,19 +1484,39 @@ const FetchDependenciesTab = React.memo(({
     populate: fetchBomPopulate.ALL,
   })
 
+  const mostSpecificComponents = () => {
+    if (
+      component
+      && !state.isLoading
+      && !state.error
+    ) return components.componentDependencies
+
+    return componentRefs
+  }
+
+  const referencesForComponent = () => {
+    const components = mostSpecificComponents().sort((a, b) => compareComponentsByName(a, b))
+
+    return components.reduce(
+      (acc, current) => {
+        const id = `${current.name}:${current.version}`
+        if (acc[id]) {
+          acc[id].referencingPaths.push(current.comp_ref)
+        } else {
+          acc[id] = {
+            component: { ...current }, // we will modify this, use copy to avoid side effects
+            referencingPaths: [current.comp_ref],
+          }
+        }
+        delete acc[id].component.comp_ref // sanitise, so there is only the OCM component
+        return acc
+      }, {}
+    )
+  }
+
   const filteredBom = () => {
-    const bom = () => {
-      if (
-        component
-        && !state.isLoading
-        && !state.error
-      ) return components.componentDependencies.sort((a, b) => compareComponentsByName(a, b))
-
-      // to display flat component structure already
-      return componentRefs.sort((a, b) => compareComponentsByName(a, b))
-    }
-
-    return bom().filter((component) => {
+    return Object.values(referencesForComponent()).filter(obj => {
+      const component = obj.component
       if (isParentComponent(component)) return false
       if (!searchQuery) return true
 
@@ -1506,6 +1543,7 @@ const FetchDependenciesTab = React.memo(({
   return <Box>
     <Component
       component={component}
+      referencingPaths={[]} // there are no paths to root component
       ocmRepo={ocmRepo}
       isParentComponent={true}
       extensionsCfg={extensionsCfg}
@@ -1520,7 +1558,7 @@ const FetchDependenciesTab = React.memo(({
         width='50%'
       >
         <Components
-          components={left}
+          componentReferenceGroups={left}
           isComponentsLoading={state.isLoading}
           isComponentsError={state.error}
           ocmRepo={ocmRepo}
@@ -1532,7 +1570,7 @@ const FetchDependenciesTab = React.memo(({
         width='50%'
       >
         <Components
-          components={right}
+          componentReferenceGroups={right}
           isComponentsLoading={state.isLoading}
           isComponentsError={state.error}
           ocmRepo={ocmRepo}
