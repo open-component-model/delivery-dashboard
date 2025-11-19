@@ -3,13 +3,13 @@ installation:
   ocm_references:
     - helm_chart_name: delivery-dashboard
       name: ocm.software/ocm-gear/delivery-dashboard
-      version: 0.412.0
+      version: 0.413.0-dev
       artefact:
         name: delivery-dashboard
-        version: 0.412.0
+        version: 0.413.0-dev
       mappings:
         - name: delivery-dashboard
-          version: 0.412.0
+          version: 0.413.0-dev
           artefact_type: helmchart-imagemap
   value_templates:
     - helm_chart_name: delivery-dashboard
