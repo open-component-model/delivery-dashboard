@@ -194,6 +194,13 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
         rescoring.data.finding.cve !== finding.data.cve
         || rescoring.data.finding.package_name !== finding.data.package_name
       ) return false
+    } else if (finding.meta.type === FINDING_TYPES.IP) {
+      if (
+        rescoring.data.finding.package_name !== finding.data.package_name
+        || rescoring.data.finding.license.name !== finding.data.license.name
+        || rescoring.data.finding.host !== finding.data.host
+        || rescoring.data.finding.policy_violation.name !== finding.data.policy_violation.name
+      ) return false
     } else if (finding.meta.type === FINDING_TYPES.LICENSE) {
       if (
         rescoring.data.finding.license.name !== finding.data.license.name
