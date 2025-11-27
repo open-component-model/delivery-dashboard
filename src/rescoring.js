@@ -2179,7 +2179,7 @@ const RescoringContent = ({
 
     const ipAccess = {
       [orderAttributes.SUBJECT]: rescoring.finding.package_name + rescoring.finding.package_versions,
-      [orderAttributes.FINDING]: rescoring.finding.license.name,
+      [orderAttributes.FINDING]: rescoring.finding.license?.name,
       [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
       [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
       [orderAttributes.RESCORED]: findCategorisationById({
