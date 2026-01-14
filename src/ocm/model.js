@@ -24,7 +24,7 @@ import {
   useTheme,
 } from '@mui/material'
 
-import {errorSnackbarProps} from '../consts'
+import {noMetadataInfoCfg} from '../consts'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
@@ -615,10 +615,11 @@ const MetadataViewerPopover = ({
   handleClose,
 }) => {
   const { componentName, componentVersion, ocmRepo, findingCfgs } = popoverProps
-
+  
   const [open, setOpen] = React.useState(false)
   const [metadataType, setMetadataType] = React.useState()
-
+  const [firstTry, setTry] = React.useState(true)
+  
   const [cd, state] = useFetchComponentDescriptor({
     componentName: componentName,
     componentVersion: componentVersion,
@@ -678,31 +679,34 @@ const MetadataViewerPopover = ({
     setSelectedCategorisations([])
   }, [metadataType])
 
-  if (
-    !open &&
-    cd &&
-    !state.isLoading &&
-    !state.error &&
-    findings &&
-    rescorings &&
-    metadataTypes &&
-    !findingsState.isLoading &&
-    !findingsState.error &&
-    !rescoringsState.isLoading &&
-    !rescoringsState.error) {
-    setMetadataType(metadataTypes[0])
-    setOpen(true)
-  }
+  React.useEffect(() => {
+    if (
+      !open &&
+      cd &&
+      !state.isLoading &&
+      !state.error &&
+      findings &&
+      rescorings &&
+      metadataTypes &&
+      !findingsState.isLoading &&
+      !findingsState.error &&
+      !rescoringsState.isLoading &&
+      !rescoringsState.error) {
+      setMetadataType(metadataTypes[0])
+      setOpen(true)
+    }
+  }, [open, cd, state.isLoading, state.error, findings, rescorings, metadataTypes, findingsState.isLoading, findingsState.error, rescoringsState.isLoading, rescoringsState.error])
 
-  if (!open || !metadataType) {
-    enqueueSnackbar(
-      "No Metadata available for the selected component.",
-      {
-        ...errorSnackbarProps,
-        //details: error.toString(),
-        //onRetry: () => fetchData(),
-      }
-    )
+  console.log(open, ', ', metadataType)
+  React.useEffect(() => {
+    if ( !open && !!!metadataType && !firstTry ) { 
+      enqueueSnackbar('No Metadata available for the selected component.', {
+        ...noMetadataInfoCfg,
+      })
+    }
+  }, [open, metadataType])
+
+  if ( !open && !!!metadataType ) {
     return null
   }
 

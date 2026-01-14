@@ -63,6 +63,15 @@ export const snackBarConfig = {
   autoHideDuration: null,
 }
 
+export const noMetadataInfoCfg = {
+  variant: 'info',
+  anchorOrigin: {
+    vertical: 'top',
+    horizontal: 'center',
+  },
+  autoHideDuration: 3000,
+}
+
 export const copyNotificationCfg = {
   variant: 'info',
   anchorOrigin: {
