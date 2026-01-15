@@ -56,6 +56,7 @@ import {
   worstCategorisation,
 } from '../findings'
 
+const notifcationNoMetadata = 'No Metadata available for the selected component.'
 
 const knownLabelNames = {
   cveCategorisation: 'gardener.cloud/cve-categorisation',
@@ -618,7 +619,6 @@ const MetadataViewerPopover = ({
   
   const [open, setOpen] = React.useState(false)
   const [metadataType, setMetadataType] = React.useState()
-  const [firstTry, setTry] = React.useState(true)
   
   const [cd, state] = useFetchComponentDescriptor({
     componentName: componentName,
@@ -697,16 +697,15 @@ const MetadataViewerPopover = ({
     }
   }, [open, cd, state.isLoading, state.error, findings, rescorings, metadataTypes, findingsState.isLoading, findingsState.error, rescoringsState.isLoading, rescoringsState.error])
 
-  console.log(open, ', ', metadataType)
   React.useEffect(() => {
-    if ( !open && !!!metadataType && !firstTry ) { 
-      enqueueSnackbar('No Metadata available for the selected component.', {
+    if ( open && !metadataType) { 
+      enqueueSnackbar( notifcationNoMetadata, {
         ...noMetadataInfoCfg,
       })
     }
-  }, [open, metadataType])
+  }, [open, metadataType, enqueueSnackbar])
 
-  if ( !open && !!!metadataType ) {
+  if ( !metadataType ) {
     return null
   }
 
