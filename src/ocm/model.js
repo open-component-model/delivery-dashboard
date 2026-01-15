@@ -616,10 +616,10 @@ const MetadataViewerPopover = ({
   handleClose,
 }) => {
   const { componentName, componentVersion, ocmRepo, findingCfgs } = popoverProps
-  
+
   const [open, setOpen] = React.useState(false)
   const [metadataType, setMetadataType] = React.useState()
-  
+
   const [cd, state] = useFetchComponentDescriptor({
     componentName: componentName,
     componentVersion: componentVersion,
@@ -679,31 +679,29 @@ const MetadataViewerPopover = ({
     setSelectedCategorisations([])
   }, [metadataType])
 
-  React.useEffect(() => {
-    if (
-      !open &&
-      cd &&
-      !state.isLoading &&
-      !state.error &&
-      findings &&
-      rescorings &&
-      metadataTypes &&
-      !findingsState.isLoading &&
-      !findingsState.error &&
-      !rescoringsState.isLoading &&
-      !rescoringsState.error) {
-      setMetadataType(metadataTypes[0])
-      setOpen(true)
-    }
-  }, [open, cd, state.isLoading, state.error, findings, rescorings, metadataTypes, findingsState.isLoading, findingsState.error, rescoringsState.isLoading, rescoringsState.error])
+  if (
+    !open &&
+    cd &&
+    !state.isLoading &&
+    !state.error &&
+    findings &&
+    rescorings &&
+    metadataTypes &&
+    !findingsState.isLoading &&
+    !findingsState.error &&
+    !rescoringsState.isLoading &&
+    !rescoringsState.error) {
+    setMetadataType(metadataTypes[0])
+    setOpen(true)
+  }
 
   React.useEffect(() => {
-    if ( open && !metadataType) { 
+    if ( open && !metadataType) {
       enqueueSnackbar( notifcationNoMetadata, {
         ...noMetadataInfoCfg,
       })
     }
-  }, [open, metadataType, enqueueSnackbar])
+  }, [open, metadataType, enqueueSnackbar, noMetadataInfoCfg])
 
   if ( !metadataType ) {
     return null
