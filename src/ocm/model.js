@@ -24,7 +24,6 @@ import {
   useTheme,
 } from '@mui/material'
 
-import {noMetadataInfoCfg} from '../consts'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
@@ -55,8 +54,9 @@ import {
   findingTypeToDisplayName,
   worstCategorisation,
 } from '../findings'
+import {noMetadataInfoCfg} from '../consts'
 
-const notifcationNoMetadata = 'No Metadata available for the selected component.'
+const notificationNoMetadata = 'No metadata available for the selected component.'
 
 const knownLabelNames = {
   cveCategorisation: 'gardener.cloud/cve-categorisation',
@@ -697,7 +697,7 @@ const MetadataViewerPopover = ({
 
   React.useEffect(() => {
     if ( open && !metadataType) {
-      enqueueSnackbar( notifcationNoMetadata, {
+      enqueueSnackbar( notificationNoMetadata, {
         ...noMetadataInfoCfg,
       })
     }
