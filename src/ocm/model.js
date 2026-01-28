@@ -1,4 +1,5 @@
 import React from 'react'
+import { useSnackbar } from 'notistack'
 
 import {
   Accordion,
@@ -22,6 +23,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material'
+
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
@@ -52,7 +54,9 @@ import {
   findingTypeToDisplayName,
   worstCategorisation,
 } from '../findings'
+import {noMetadataInfoCfg} from '../consts'
 
+const notificationNoMetadata = 'No metadata available for the selected component.'
 
 const knownLabelNames = {
   cveCategorisation: 'gardener.cloud/cve-categorisation',
@@ -666,6 +670,8 @@ const MetadataViewerPopover = ({
 
   const [expandAll, setExpandAll] = React.useState(false)
 
+  const { enqueueSnackbar } = useSnackbar()
+
   // only show those types for which some metadata is actually available
   const metadataTypes = [...new Set((findings ?? []).map((finding) => finding.meta.type))].sort()
 
@@ -688,7 +694,18 @@ const MetadataViewerPopover = ({
     setMetadataType(metadataTypes[0])
     setOpen(true)
   }
-  if (!open || !metadataType) return null
+
+  React.useEffect(() => {
+    if ( open && !metadataType) {
+      enqueueSnackbar( notificationNoMetadata, {
+        ...noMetadataInfoCfg,
+      })
+    }
+  }, [open, metadataType, enqueueSnackbar, noMetadataInfoCfg])
+
+  if ( !metadataType ) {
+    return null
+  }
 
   // finding cfg might not be available as we also allow plain informational metadata (e.g. structure info)
   const findingCfg = findingCfgForType({
