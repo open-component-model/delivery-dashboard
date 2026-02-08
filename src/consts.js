@@ -24,6 +24,10 @@ export const tabConfig = {
     id: 'compliance',
     caption: 'Compliance',
   },
+  QUERY: {
+    id: 'query',
+    caption: 'Query'
+  },
   DORA: {
     id: 'dora',
     caption: 'Dora',
