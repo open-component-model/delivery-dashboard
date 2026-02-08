@@ -110,6 +110,21 @@ const _toJson = async (
   return await resp.json()
 }
 
+export async function getQueryFields() {
+  const url = new URL(routes.artefacts.metadataSearch.fields)
+  return await _toJson(withAuth(url, { method: 'GET' }))
+}
+
+export async function runSearchQuery(payload) {
+  const url = new URL(routes.artefacts.metadataSearch.run)
+  return await _toJson(
+    withAuth(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+  )
+}
 
 export const routes = {
   auth: {
@@ -124,6 +139,10 @@ export const routes = {
   profiles: api('profiles'),
   artefacts: {
     queryMetadata: api('artefacts/metadata/query'),
+    metadataSearch: {
+      fields: api('artefacts/metadata/search/fields'),
+      run: api('artefacts/metadata/search/run')
+    }
   },
   os: {
     branches: (name) => api(`os/${name}/branches`),
