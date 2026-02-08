@@ -22,6 +22,7 @@ import { registerCallbackHandler } from '../feature'
 import { TestDownload } from './tests'
 import { CdTab } from './componentDescriptor'
 import { DoraTabWrapper } from './dora'
+import MetadataBrowserTab from './metadataBrowser'
 
 
 export const TabPanel = (props) => {
@@ -64,6 +65,7 @@ export const ComponentTabs = ({
 
   const [searchQuery, setSearchQuery] = React.useState(searchParamContext.get('query'))
   const [searchQueryTimer, setSearchQueryTimer] = React.useState(null)
+  const [deliveryDbFeature, setDeliveryDbFeature] = React.useState()
 
   const delaySearchQueryUpdate = (change) => {
     if (searchQueryTimer) {
@@ -110,6 +112,14 @@ export const ComponentTabs = ({
     })
   }, [featureRegistrationContext])
 
+  React.useEffect(() => {
+    return registerCallbackHandler({
+      featureRegistrationContext: featureRegistrationContext,
+      featureName: features.DELIVERY_DB,
+      callback: ({ feature }) => setDeliveryDbFeature(feature),
+    })
+  }, [featureRegistrationContext])
+
   const handleChange = (_, newView) => {
     searchParamContext.update({'view': newView})
   }
@@ -126,6 +136,7 @@ export const ComponentTabs = ({
     if (!upgradePRsFeature || upgradePRsFeature.isAvailable) yield tabConfig.COMPONENT_DIFF
     if (!testsFeature || testsFeature.isAvailable) yield tabConfig.TESTS
     if ((!authFeature || authFeature.isAvailable) && complianceTabIsRequired) yield tabConfig.COMPLIANCE
+    if (!deliveryDbFeature || deliveryDbFeature.isAvailable) yield tabConfig.QUERY
 
     yield tabConfig.DORA
   }
@@ -209,6 +220,15 @@ export const ComponentTabs = ({
           specialComponentId={specialComponentId}
         />
       }
+    </TabPanel>
+    <TabPanel value={searchParamContext.get('view')} index={tabConfig.QUERY.id}>
+      {isLoading ? <CenteredSpinner sx={{ height: '90vh' }} /> : (
+        <MetadataBrowserTab
+          component={componentDescriptor.component}
+          prefill={searchQuery}
+          findingCfgs={findingCfgs}
+        />
+      )}
     </TabPanel>
   </div>
 }
