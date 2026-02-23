@@ -15,6 +15,8 @@ on:
 jobs:
   prepare:
     uses: gardener/cc-utils/.github/workflows/prepare.yaml@master
+    permissions:
+      id-token: write
     with:
       mode: ${{ inputs.mode }}
 
@@ -23,7 +25,7 @@ jobs:
     needs:
     - prepare
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Export odg-extension-definitions
       run: |
         export version=${{ needs.prepare.outputs.version }}
@@ -55,7 +57,7 @@ jobs:
     needs:
       - prepare
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
