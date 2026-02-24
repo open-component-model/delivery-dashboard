@@ -47,7 +47,7 @@ import {
   DatePicker,
   LocalizationProvider,
 } from '@mui/x-date-pickers'
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon'
 import { useTheme } from '@emotion/react'
 import { enqueueSnackbar } from 'notistack'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
@@ -58,8 +58,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat'
 import UndoIcon from '@mui/icons-material/Undo'
-import dayjs from 'dayjs'
-import 'dayjs/locale/en-gb'
+import { DateTime } from 'luxon'
 
 import PropTypes from 'prop-types'
 
@@ -1953,13 +1952,13 @@ const RescoringContentTableRow = ({
               }}
             >
               <LocalizationProvider
-                dateAdapter={AdapterDayjs}
-                adapterLocale='en-gb'
+                dateAdapter={AdapterLuxon}
+                adapterLocale={navigator.language}
               >
                 <DatePicker
                   label='Due Date'
-                  defaultValue={dayjs(due_date ? new Date(due_date) : new Date())}
-                  onChange={(value) => delayRescoringUpdate({due_date: value.format('YYYY-MM-DD')})}
+                  defaultValue={DateTime.fromJSDate(due_date ? new Date(due_date) : new Date())}
+                  onChange={(value) => delayRescoringUpdate({due_date: value.toFormat('yyyy-MM-dd')})}
                   slotProps={{
                     textField: {
                       size: 'small',
