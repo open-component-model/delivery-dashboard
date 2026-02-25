@@ -303,7 +303,7 @@ const ComponentOrArtefactItem = ({
     <Typography>{name}</Typography>
     <div style={{width: '1rem'}}/>
     {
-      extraId && <NoMaxWidthTooltip
+      (extraId && Object.keys(extraId).length > 0) && <NoMaxWidthTooltip
         title={
           <MultilineTextViewer
             text={toYamlString(extraId)}
