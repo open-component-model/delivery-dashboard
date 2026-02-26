@@ -60,7 +60,6 @@ import {
   componentPathQuery,
   enhanceComponentRefFromPath,
   normaliseExtraIdentity,
-  normaliseObject,
   trimComponentName,
   trimLongString,
   updatePathFromComponentRef,
@@ -1474,7 +1473,6 @@ const FetchDependenciesTab = React.memo(({
 
   const isParentComponent = (c) => {
     return c.name === component.name && c.version === component.version
-      && JSON.stringify(normaliseObject(c.repositoryContexts)) === JSON.stringify(normaliseObject(component.repositoryContexts))
   }
 
   const [components, state] = useFetchBom({
