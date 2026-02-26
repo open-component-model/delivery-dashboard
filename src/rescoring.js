@@ -942,7 +942,7 @@ const ApplicableRescoringsRow = ({
       )
     )
 
-  const localeDate = new Date(applicableRescoring.meta.creation_date).toLocaleString()
+  const localeDate = new Date(applicableRescoring.meta.creation_date).toLocaleString(navigator.language)
   const categorisation = findCategorisationById({
     id: applicableRescoring.data.severity,
     findingCfg: findingCfg,
@@ -952,13 +952,13 @@ const ApplicableRescoringsRow = ({
     const _dueDate = applicableRescoring.data.due_date
     const _allowedProcessingTime = applicableRescoring.data.allowed_processing_time
 
-    if (_dueDate) return (new Date(_dueDate)).toLocaleDateString()
+    if (_dueDate) return (new Date(_dueDate)).toLocaleDateString(navigator.language)
     if (!_allowedProcessingTime) return null
 
     const _discoveryDate = new Date(discoveryDate)
     // `allowed_processing_time` of a rescoring is always stored as seconds
     _discoveryDate.setSeconds(_discoveryDate.getSeconds() + _allowedProcessingTime.replace('s', ''))
-    return _discoveryDate.toLocaleDateString()
+    return _discoveryDate.toLocaleDateString(navigator.language)
   }
 
   return <TableRow hover>
@@ -1827,7 +1827,7 @@ const RescoringContentTableRow = ({
               whiteSpace='pre-line'
             >
               {
-                `${sprintInfo.tooltip}\nFirst discovered on ${new Date(discovery_date).toLocaleDateString()}`
+                `${sprintInfo.tooltip}\nFirst discovered on ${new Date(discovery_date).toLocaleDateString(navigator.language)}`
               }
             </Typography>}
           >

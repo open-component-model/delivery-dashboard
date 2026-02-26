@@ -273,13 +273,13 @@ export const formatAndSortSprints = (sprints) => {
       if (timeDeltaDays === 0) return 'Today'
       if (timeDeltaDays <= 14) return `In ${timeDeltaDays} Days`
 
-      return endDate.toLocaleDateString()
+      return endDate.toLocaleDateString(navigator.language)
     }
 
     return {
       ...commonSprintInfo,
       displayName: displayName(),
-      tooltip: `Sprint ${sprint.name}\nDue in ${timeDeltaDays} days on ${endDate.toLocaleDateString()}`,
+      tooltip: `Sprint ${sprint.name}\nDue in ${timeDeltaDays} days on ${endDate.toLocaleDateString(navigator.language)}`,
       color: 'default',
       endDate: endDate,
     }

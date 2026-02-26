@@ -745,7 +745,7 @@ const BacklogItemRow = ({
     </TableCell>
     <TableCell sx={{width: '10vw', textAlign: 'center'}}>
       {
-        backlogItem.claimed && <Tooltip title={`Started at: ${new Date(backlogItem.claimedAt).toLocaleString()}`}>
+        backlogItem.claimed && <Tooltip title={`Started at: ${new Date(backlogItem.claimedAt).toLocaleString(navigator.language)}`}>
           <HourglassBottomIcon fontSize='small'/>
         </Tooltip>
       }

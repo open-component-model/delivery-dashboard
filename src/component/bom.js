@@ -1930,7 +1930,7 @@ const findLastScan = (complianceData, datasource) => {
 
 const lastScanTimestampStr = (lastScan) => {
   if (!lastScan) return 'No last scan'
-  return `Last scan: ${new Date(lastScan.meta.last_update ?? lastScan.meta.creation_date).toLocaleString()}`
+  return `Last scan: ${new Date(lastScan.meta.last_update ?? lastScan.meta.creation_date).toLocaleString(navigator.language)}`
 }
 
 

@@ -258,7 +258,7 @@ const MetadataViewer = ({
         <Grid item xs={2}>
           <Chip
             variant='outlined'
-            label={new Date(timestamp).toLocaleString()}
+            label={new Date(timestamp).toLocaleString(navigator.language)}
           />
         </Grid>
         <Grid item xs={1}/>

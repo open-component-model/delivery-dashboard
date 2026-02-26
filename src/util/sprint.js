@@ -116,7 +116,7 @@ const SprintInfo = ({
             // overwrite table theme
           }}
         >
-          {eventDate.toLocaleDateString()}
+          {eventDate.toLocaleDateString(navigator.language)}
         </Typography>
       </TableCell>
     </TableRow>
