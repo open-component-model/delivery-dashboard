@@ -39,3 +39,5 @@ set -e
 repo_dir=$(readlink -f $(dirname $0)/../..)
 ${repo_dir}/.ci/lint
 ```
+
+<p align="center"><img alt="Bundesministerium für Wirtschaft und Energie (BMWE)-EU funding logo" src="https://apeirora.eu/assets/img/BMWK-EU.png" width="400"/></p>
