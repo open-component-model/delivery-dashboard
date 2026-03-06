@@ -17,6 +17,10 @@ installation:
       value: ${target_namespace}
       value_type: python-string-template
     - helm_chart_name: delivery-dashboard
+      helm_attribute: host
+      value: delivery-dashboard.${base_url}
+      value_type: python-string-template
+    - helm_chart_name: delivery-dashboard
       helm_attribute: ingress.hosts
       value:
         - delivery-dashboard.${base_url}
