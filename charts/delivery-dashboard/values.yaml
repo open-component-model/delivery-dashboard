@@ -3,6 +3,7 @@ image:
   repository: ~
   tag: ~
 envVars: []
+host: localhost
 ingress:
   hosts: []
   tlsHostNames: []
