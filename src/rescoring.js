@@ -2668,7 +2668,6 @@ const Rescore = ({
           package_name: rescoring.finding.package_name,
           license: rescoring.finding.license,
           labels: rescoring.finding.labels.slice().sort(),
-          host: rescoring.finding.host,
         }
       }
     }
