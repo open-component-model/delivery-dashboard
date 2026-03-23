@@ -200,7 +200,6 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
       if (
         rescoring.data.finding.package_name !== finding.data.package_name
         || rescoring.data.finding.license.name !== finding.data.license.name
-        || rescoring.data.finding.policy_violation.name !== finding.data.policy_violation.name
         || rescoringLabels.length !== findingLabels.length
         || !rescoringLabels.every((label, i) => label === findingLabels[i])
       ) return false
