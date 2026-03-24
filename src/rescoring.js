@@ -1654,14 +1654,12 @@ const Finding = ({
     </div>
   } else if (rescoring.finding_type === FINDING_TYPES.IP) {
     return <Stack spacing={0.5}>
-      {finding.policy_violation.name &&
-        <Typography
-          variant='inherit'
-          sx={{ whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.25 }}
-        >
-          {finding.policy_violation.name}
-        </Typography>
-      }
+      <Typography
+        variant='inherit'
+        sx={{ whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.25 }}
+      >
+        {finding.policy_violations.map((pv) => pv.name).sort().join('\n')}
+      </Typography>
 
       {finding.license.name &&
         <Typography
@@ -2669,9 +2667,7 @@ const Rescore = ({
         return {
           package_name: rescoring.finding.package_name,
           license: rescoring.finding.license,
-          policy_violation: rescoring.finding.policy_violation,
           labels: rescoring.finding.labels.slice().sort(),
-          host: rescoring.finding.host,
         }
       }
     }
