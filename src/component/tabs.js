@@ -60,6 +60,7 @@ export const ComponentTabs = ({
   const [testsFeature, setTestsFeature] = React.useState()
   const [authFeature, setAuthFeature] = React.useState()
   const [findingCfgsFeature, setFindingCfgsFeature] = React.useState()
+  const [doraFeature, setDoraFeature] = React.useState()
 
   const searchParamContext = React.useContext(SearchParamContext)
 
@@ -120,6 +121,14 @@ export const ComponentTabs = ({
     })
   }, [featureRegistrationContext])
 
+  React.useEffect(() => {
+    return registerCallbackHandler({
+      featureRegistrationContext: featureRegistrationContext,
+      featureName: features.DORA,
+      callback: ({ feature }) => setDoraFeature(feature),
+    })
+  }, [featureRegistrationContext])
+
   const handleChange = (_, newView) => {
     searchParamContext.update({'view': newView})
   }
@@ -137,8 +146,7 @@ export const ComponentTabs = ({
     if (!testsFeature || testsFeature.isAvailable) yield tabConfig.TESTS
     if ((!authFeature || authFeature.isAvailable) && complianceTabIsRequired) yield tabConfig.COMPLIANCE
     if (!deliveryDbFeature || deliveryDbFeature.isAvailable) yield tabConfig.QUERY
-
-    yield tabConfig.DORA
+    if (!doraFeature || doraFeature.isAvailable) yield tabConfig.DORA
   }
 
   const tabs = [...iterTabs()]
@@ -213,14 +221,16 @@ export const ComponentTabs = ({
         </TabPanel>
       </FeatureDependent>
     }
-    <TabPanel value={searchParamContext.get('view')} index={tabConfig.DORA.id}>
-      {
-        isLoading ? <CenteredSpinner sx={{ height: '90vh' }} /> : <DoraTabWrapper
-          componentName={componentDescriptor.component.name}
-          specialComponentId={specialComponentId}
-        />
-      }
-    </TabPanel>
+    <FeatureDependent requiredFeatures={[features.DORA]}>
+      <TabPanel value={searchParamContext.get('view')} index={tabConfig.DORA.id}>
+        {
+          isLoading ? <CenteredSpinner sx={{ height: '90vh' }} /> : <DoraTabWrapper
+            componentName={componentDescriptor.component.name}
+            specialComponentId={specialComponentId}
+          />
+        }
+      </TabPanel>
+    </FeatureDependent>
     <TabPanel value={searchParamContext.get('view')} index={tabConfig.QUERY.id}>
       {isLoading ? <CenteredSpinner sx={{ height: '90vh' }} /> : (
         <MetadataBrowserTab
