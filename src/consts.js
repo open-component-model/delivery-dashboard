@@ -107,6 +107,7 @@ export const features = {
   AUTHENTICATION: 'authentication',
   DELIVERY_DB: 'delivery-db',
   CLUSTER_ACCESS: 'cluster-access',
+  DORA: 'dora',
   PROFILES: 'profiles',
   TESTS: 'tests',
   OCM_REPOSITORY_CFGS: 'ocm-repository-cfgs',
