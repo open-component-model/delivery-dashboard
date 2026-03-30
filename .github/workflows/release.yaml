@@ -2,6 +2,12 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      next-version:
+        type: choice
+        options:
+          - bump-minor
+          - bump-patch
 
 jobs:
   build:
@@ -22,4 +28,4 @@ jobs:
       id-token: write
     with:
       release-commit-target: branch
-      next-version: bump-minor
+      next-version: ${{ inputs.next-version }}
