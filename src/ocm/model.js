@@ -178,7 +178,7 @@ export const dataKey = ({type, data}) => {
   if (type === FINDING_TYPES.IP) {
     const labelsKey = data.labels.slice().sort().join(',')
     return asKey({
-      props: [data.package_name, data.package_version, data.license.name, labelsKey, data.policy_violation.name],
+      props: [data.package_name, data.package_version, data.license.name, labelsKey, data.policy_violation?.name],
     })
   }
 }
