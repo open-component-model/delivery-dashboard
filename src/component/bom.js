@@ -2427,6 +2427,13 @@ const RescoringCell = ({
                 text='View in BDBA'
               />
             }
+            {
+              datasource === datasources.BLACKDUCK && lastScan?.data.hrefs.map(href => <ExternalReferenceButton
+                key={href}
+                href={href}
+                text='View in BlackDuck'
+              />)
+            }
           </List>
           {
             isLoading ? <Skeleton/> : <Typography variant='inherit'>
