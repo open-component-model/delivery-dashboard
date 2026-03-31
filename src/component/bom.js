@@ -1821,23 +1821,10 @@ const IssueChip = ({
           ocmNodes={ocmNodes}
           service={COMPLIANCE_TOOLS.ISSUE_REPLICATOR}
         />
-        <ListItemButton
-          onClick={(e) => e.stopPropagation()}
-          component='a'
+        <ExternalReferenceButton
           href={repoUrlForArtefact}
-          target='_blank'
-        >
-          <ListItemAvatar>
-            <Avatar>
-              <OpenInNewIcon/>
-            </Avatar>
-          </ListItemAvatar>
-          <ListItemText
-            primary={'View on GitHub'}
-            secondary={repoUrl}
-            secondaryTypographyProps={{color: 'lightgrey'}}
-          />
-        </ListItemButton>
+          text='View on GitHub'
+        />
       </List>
     }
   >
