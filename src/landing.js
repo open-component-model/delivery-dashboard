@@ -105,7 +105,7 @@ const SpecialComponent = ({
   const [componentDependencies, state] = useFetchBom({
     componentName: component.name,
     componentVersion: component.version,
-    ocmRepo: null,
+    ocmRepo: component.ocmRepo,
     populate: fetchBomPopulate.COMPONENT_REFS,
   })
 
