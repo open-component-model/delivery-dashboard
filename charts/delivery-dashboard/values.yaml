@@ -4,6 +4,3 @@ image:
   tag: ~
 envVars: []
 host: localhost
-ingress:
-  hosts: []
-  tlsHostNames: []
