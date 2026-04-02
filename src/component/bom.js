@@ -1821,23 +1821,10 @@ const IssueChip = ({
           ocmNodes={ocmNodes}
           service={COMPLIANCE_TOOLS.ISSUE_REPLICATOR}
         />
-        <ListItemButton
-          onClick={(e) => e.stopPropagation()}
-          component='a'
+        <ExternalReferenceButton
           href={repoUrlForArtefact}
-          target='_blank'
-        >
-          <ListItemAvatar>
-            <Avatar>
-              <OpenInNewIcon/>
-            </Avatar>
-          </ListItemAvatar>
-          <ListItemText
-            primary={'View on GitHub'}
-            secondary={repoUrl}
-            secondaryTypographyProps={{color: 'lightgrey'}}
-          />
-        </ListItemButton>
+          text='View on GitHub'
+        />
       </List>
     }
   >
@@ -2332,13 +2319,14 @@ RescoringButton.propTypes = {
 }
 
 
-const BDBAButton = ({
-  reportUrl,
+const ExternalReferenceButton = ({
+  href,
+  text,
 }) => {
   return <ListItemButton
     onClick={(e) => e.stopPropagation()}
     component='a'
-    href={reportUrl}
+    href={href}
     target='_blank'
     divider
   >
@@ -2348,15 +2336,16 @@ const BDBAButton = ({
       </Avatar>
     </ListItemAvatar>
     <ListItemText
-      primary='View in BDBA'
-      secondary={new URL(reportUrl).host}
+      primary={text}
+      secondary={new URL(href).host}
       secondaryTypographyProps={{ color: 'lightgrey' }}
     />
   </ListItemButton>
 }
-BDBAButton.displayName = 'BDBAButton'
-BDBAButton.propTypes = {
-  reportUrl: PropTypes.string.isRequired,
+ExternalReferenceButton.displayName = 'ExternalReferenceButton'
+ExternalReferenceButton.propTypes = {
+  href: PropTypes.string.isRequired,
+  text: PropTypes.string.isRequired,
 }
 
 
@@ -2420,9 +2409,17 @@ const RescoringCell = ({
               title={'Rescoring'}
             />
             {
-              datasource === datasources.BDBA && lastScan?.data.report_url && <BDBAButton
-                reportUrl={lastScan?.data.report_url}
+              datasource === datasources.BDBA && lastScan?.data.report_url && <ExternalReferenceButton
+                href={lastScan?.data.report_url}
+                text='View in BDBA'
               />
+            }
+            {
+              datasource === datasources.BLACKDUCK && lastScan?.data?.hrefs?.map(href => <ExternalReferenceButton
+                key={href}
+                href={href}
+                text='View in BlackDuck'
+              />)
             }
           </List>
           {
