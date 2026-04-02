@@ -2415,7 +2415,7 @@ const RescoringCell = ({
               />
             }
             {
-              datasource === datasources.BLACKDUCK && lastScan?.data.hrefs.map(href => <ExternalReferenceButton
+              datasource === datasources.BLACKDUCK && lastScan?.data?.hrefs?.map(href => <ExternalReferenceButton
                 key={href}
                 href={href}
                 text='View in BlackDuck'
