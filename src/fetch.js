@@ -64,6 +64,22 @@ const _useFetch = ({
     error: null,
   })
   const honourCacheKey = React.useRef(true)
+  const lastFetchParams = React.useRef(fetchParams)
+
+  // Clear stale data synchronously during render when params change, as useEffect clean only runs
+  // after the next render, creating a time window where components render with inconsistent state
+  const paramsChanged = JSON.stringify(lastFetchParams.current) !== JSON.stringify(fetchParams)
+  if (paramsChanged) {
+    lastFetchParams.current = fetchParams
+    // Only clear if we already had data (not initial render)
+    if (data !== undefined) {
+      setData(undefined)
+      setState({
+        isLoading: true,
+        error: null,
+      })
+    }
+  }
 
   const isConnected = useConnected()
 
