@@ -68,7 +68,6 @@ import {
   ExtraIdentityHover,
   matchObjectWithSearchQuery,
   shortenComponentName,
-  downloadObject,
 } from '../util'
 import ExtraWideTooltip from '../util/extraWideTooltip'
 import FeatureDependent from '../util/featureDependent'
@@ -96,6 +95,7 @@ import { OcmNode } from '../ocm/iter'
 import { artefactMetadataFilter } from '../ocm/util'
 import { MetadataViewerPopover, artefactMetadataTypes, datasources } from '../ocm/model'
 import { components, routes } from '../api'
+import { DownloadBom } from '../util/downloadButtons'
 import { SprintInfo } from '../util/sprint'
 import ErrorBoundary from '../util/errorBoundary'
 import { VersionOverview, evaluateVersionMatch } from '../util/versionOverview'
@@ -1147,59 +1147,6 @@ const LoadingDependencies = () => {
       <LoadingComponents loadingComponentsCount={loadingComponentsCount}/>
     </Stack>
   </Box>
-}
-
-const bomCache = {}
-
-const DownloadBom = ({
-  component,
-  ocmRepo,
-  isLoading,
-}) => {
-  const theme = useTheme()
-
-  const handleClick = async () => {
-    const key = `${component.name}:${component.version}`
-    let dependencies = null
-    if (!bomCache[key]) {
-      bomCache[key] = await components.componentDependencies({
-        componentName: component.name,
-        componentVersion: component.version,
-        ocmRepoUrl: ocmRepo,
-        populate: 'all',
-      })
-    }
-    dependencies = bomCache[key]
-
-    const blob = new Blob([JSON.stringify(dependencies)], {
-      type: 'application/json',
-    })
-
-    const fname = `${component.name ? component.name : component.target}-bom.json`
-
-    downloadObject({
-      obj: blob,
-      fname: fname,
-    })
-  }
-
-  return <Button
-    startIcon={<CloudDownloadIcon />}
-    onClick={handleClick}
-    variant='outlined'
-    style={{
-      color: isLoading ? 'grey' : theme.bomButton.color,
-    }}
-    disabled={isLoading}
-  >
-    download bom
-  </Button>
-}
-DownloadBom.displayName = 'DownloadBom'
-DownloadBom.propTypes = {
-  component: PropTypes.object,
-  ocmRepo: PropTypes.string,
-  isLoading: PropTypes.bool.isRequired,
 }
 
 const ComponentSearch = ({
