@@ -9,7 +9,6 @@ import {
   Avatar,
   Badge,
   Box,
-  Button,
   capitalize,
   Chip,
   CircularProgress,
@@ -94,8 +93,8 @@ import { RescoringModal } from '../rescoring'
 import { OcmNode } from '../ocm/iter'
 import { artefactMetadataFilter } from '../ocm/util'
 import { MetadataViewerPopover, artefactMetadataTypes, datasources } from '../ocm/model'
-import { components, routes } from '../api'
-import { DownloadBom } from '../util/downloadButtons'
+import { routes } from '../api'
+import { DownloadBom, DownloadSbom } from '../util/downloadButtons'
 import { SprintInfo } from '../util/sprint'
 import ErrorBoundary from '../util/errorBoundary'
 import { VersionOverview, evaluateVersionMatch } from '../util/versionOverview'
@@ -1206,7 +1205,7 @@ const DependenciesTabHeader = React.memo(({
     spacing={3}
     alignItems='center'
   >
-    <Grid item width='50%'>
+    <Grid item width='40%'>
       <ComponentSearch
         updateSearchQuery={updateSearchQuery}
         defaultValue={defaultSearchValue}
@@ -1243,8 +1242,13 @@ const DependenciesTabHeader = React.memo(({
         }
       </FeatureDependent>
     </Grid>
-    <Grid item width='17%' display='flex' justifyContent='right' flexDirection='column'>
+    <Grid item width='25%' display='flex' justifyContent='right' flexDirection='row' gap={1}>
       <DownloadBom
+        component={component}
+        ocmRepo={searchParamContext.get('ocmRepo')}
+        isLoading={isComponentLoading}
+      />
+      <DownloadSbom
         component={component}
         ocmRepo={searchParamContext.get('ocmRepo')}
         isLoading={isComponentLoading}
