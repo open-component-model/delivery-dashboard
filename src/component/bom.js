@@ -1196,6 +1196,7 @@ const DependenciesTabHeader = React.memo(({
   specialComponentId,
   browserLocalOnly,
   defaultSearchValue,
+  extensionsCfg,
 }) => {
   const searchParamContext = React.useContext(SearchParamContext)
   const now = new Date()
@@ -1248,11 +1249,13 @@ const DependenciesTabHeader = React.memo(({
         ocmRepo={searchParamContext.get('ocmRepo')}
         isLoading={isComponentLoading}
       />
-      <DownloadSbom
-        component={component}
-        ocmRepo={searchParamContext.get('ocmRepo')}
-        isLoading={isComponentLoading}
-      />
+      {
+        extensionsCfg?.sbom_generator?.enabled && <DownloadSbom
+          component={component}
+          ocmRepo={searchParamContext.get('ocmRepo')}
+          isLoading={isComponentLoading}
+        />
+      }
     </Grid>
   </Grid>
 })
@@ -1267,6 +1270,7 @@ DependenciesTabHeader.propTypes = {
   specialComponentId: PropTypes.string,
   browserLocalOnly: PropTypes.bool,
   defaultSearchValue: PropTypes.string,
+  extensionsCfg: PropTypes.object,
 }
 
 
@@ -1384,6 +1388,7 @@ export const BomTab = React.memo(({
       specialComponentId={specialComponentId}
       browserLocalOnly={browserLocalOnly}
       defaultSearchValue={searchQuery}
+      extensionsCfg={extensionsCfg}
     />
     <div style={{ padding: '0.5em' }} />
     {
