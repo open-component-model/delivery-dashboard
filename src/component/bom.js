@@ -9,7 +9,6 @@ import {
   Avatar,
   Badge,
   Box,
-  Button,
   capitalize,
   Chip,
   CircularProgress,
@@ -68,7 +67,6 @@ import {
   ExtraIdentityHover,
   matchObjectWithSearchQuery,
   shortenComponentName,
-  downloadObject,
 } from '../util'
 import ExtraWideTooltip from '../util/extraWideTooltip'
 import FeatureDependent from '../util/featureDependent'
@@ -95,7 +93,8 @@ import { RescoringModal } from '../rescoring'
 import { OcmNode } from '../ocm/iter'
 import { artefactMetadataFilter } from '../ocm/util'
 import { MetadataViewerPopover, artefactMetadataTypes, datasources } from '../ocm/model'
-import { components, routes } from '../api'
+import { routes } from '../api'
+import { DownloadBom, DownloadSbom } from '../util/downloadButtons'
 import { SprintInfo } from '../util/sprint'
 import ErrorBoundary from '../util/errorBoundary'
 import { VersionOverview, evaluateVersionMatch } from '../util/versionOverview'
@@ -1149,59 +1148,6 @@ const LoadingDependencies = () => {
   </Box>
 }
 
-const bomCache = {}
-
-const DownloadBom = ({
-  component,
-  ocmRepo,
-  isLoading,
-}) => {
-  const theme = useTheme()
-
-  const handleClick = async () => {
-    const key = `${component.name}:${component.version}`
-    let dependencies = null
-    if (!bomCache[key]) {
-      bomCache[key] = await components.componentDependencies({
-        componentName: component.name,
-        componentVersion: component.version,
-        ocmRepoUrl: ocmRepo,
-        populate: 'all',
-      })
-    }
-    dependencies = bomCache[key]
-
-    const blob = new Blob([JSON.stringify(dependencies)], {
-      type: 'application/json',
-    })
-
-    const fname = `${component.name ? component.name : component.target}-bom.json`
-
-    downloadObject({
-      obj: blob,
-      fname: fname,
-    })
-  }
-
-  return <Button
-    startIcon={<CloudDownloadIcon />}
-    onClick={handleClick}
-    variant='outlined'
-    style={{
-      color: isLoading ? 'grey' : theme.bomButton.color,
-    }}
-    disabled={isLoading}
-  >
-    download bom
-  </Button>
-}
-DownloadBom.displayName = 'DownloadBom'
-DownloadBom.propTypes = {
-  component: PropTypes.object,
-  ocmRepo: PropTypes.string,
-  isLoading: PropTypes.bool.isRequired,
-}
-
 const ComponentSearch = ({
   isComponentsError,
   isComponentsLoading,
@@ -1250,6 +1196,7 @@ const DependenciesTabHeader = React.memo(({
   specialComponentId,
   browserLocalOnly,
   defaultSearchValue,
+  extensionsCfg,
 }) => {
   const searchParamContext = React.useContext(SearchParamContext)
   const now = new Date()
@@ -1259,7 +1206,7 @@ const DependenciesTabHeader = React.memo(({
     spacing={3}
     alignItems='center'
   >
-    <Grid item width='50%'>
+    <Grid item width='40%'>
       <ComponentSearch
         updateSearchQuery={updateSearchQuery}
         defaultValue={defaultSearchValue}
@@ -1296,12 +1243,19 @@ const DependenciesTabHeader = React.memo(({
         }
       </FeatureDependent>
     </Grid>
-    <Grid item width='17%' display='flex' justifyContent='right' flexDirection='column'>
+    <Grid item width='27%' display='flex' justifyContent='right' flexDirection='row' gap={1}>
       <DownloadBom
         component={component}
         ocmRepo={searchParamContext.get('ocmRepo')}
         isLoading={isComponentLoading}
       />
+      {
+        extensionsCfg?.sbom_generator?.enabled && <DownloadSbom
+          component={component}
+          ocmRepo={searchParamContext.get('ocmRepo')}
+          isLoading={isComponentLoading}
+        />
+      }
     </Grid>
   </Grid>
 })
@@ -1316,6 +1270,7 @@ DependenciesTabHeader.propTypes = {
   specialComponentId: PropTypes.string,
   browserLocalOnly: PropTypes.bool,
   defaultSearchValue: PropTypes.string,
+  extensionsCfg: PropTypes.object,
 }
 
 
@@ -1433,6 +1388,7 @@ export const BomTab = React.memo(({
       specialComponentId={specialComponentId}
       browserLocalOnly={browserLocalOnly}
       defaultSearchValue={searchQuery}
+      extensionsCfg={extensionsCfg}
     />
     <div style={{ padding: '0.5em' }} />
     {
