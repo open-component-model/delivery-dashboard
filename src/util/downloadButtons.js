@@ -40,7 +40,7 @@ export const DownloadBom = ({ component, ocmRepo, isLoading }) => {
     <Button
       startIcon={<CloudDownloadIcon />}
       onClick={handleClick}
-      variant="outlined"
+      variant='outlined'
       style={{
         color: isLoading ? 'grey' : theme.bomButton.color,
       }}
@@ -85,7 +85,7 @@ export const DownloadSbom = ({ component, ocmRepo, isLoading }) => {
     <Button
       startIcon={<CloudDownloadIcon />}
       onClick={handleClick}
-      variant="outlined"
+      variant='outlined'
       style={{
         color: isLoading ? 'grey' : theme.bomButton.color,
       }}

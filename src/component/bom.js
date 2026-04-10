@@ -1243,7 +1243,7 @@ const DependenciesTabHeader = React.memo(({
         }
       </FeatureDependent>
     </Grid>
-    <Grid item width='25%' display='flex' justifyContent='right' flexDirection='row' gap={1}>
+    <Grid item width='27%' display='flex' justifyContent='right' flexDirection='row' gap={1}>
       <DownloadBom
         component={component}
         ocmRepo={searchParamContext.get('ocmRepo')}
