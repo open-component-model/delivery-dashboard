@@ -285,11 +285,13 @@ const ocmComponentVersions = async ({
 const componentUpgradePRs = async ({
   componentName,
   state,
+  ocmRepo,
 }) => {
   const url = new URL(routes.upgradePullRequests())
   appendPresentParams(url, {
     componentName,
     state,
+    ocmRepo,
   })
 
   return await _toJson(withAuth(url))

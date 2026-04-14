@@ -795,7 +795,10 @@ const ArtefactTableRow = ({
 }) => {
   return <TableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
     <IconCell artefact={ocmNode.artefact}/>
-    <ArtefactCell ocmNode={ocmNode}/>
+    <ArtefactCell
+      ocmNode={ocmNode}
+      ocmRepo={ocmRepo}
+    />
     <FeatureDependent requiredFeatures={[features.DELIVERY_DB]}>
       {
         findingCfgs.length > 0 && <ComplianceCell
@@ -2154,6 +2157,7 @@ ComplianceCell.propTypes = {
 
 const ArtefactCell = ({
   ocmNode,
+  ocmRepo,
 }) => {
   const component = ocmNode.component
   const artefact = ocmNode.artefact
@@ -2166,6 +2170,7 @@ const ArtefactCell = ({
       version: artefact.version,
       ...artefact.extraIdentity
     }),
+    ocm_repository: ocmRepo,
     unzip: 'true',
   })
 
@@ -2246,6 +2251,7 @@ const ArtefactCell = ({
 ArtefactCell.displayName = 'ArtefactCell'
 ArtefactCell.propTypes = {
   ocmNode: PropTypes.instanceOf(OcmNode).isRequired,
+  ocmRepo: PropTypes.string,
 }
 
 

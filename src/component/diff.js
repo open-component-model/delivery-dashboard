@@ -785,6 +785,7 @@ const FetchUpgradePullRequests = ({
   setIsError,
   componentName,
   prState,
+  ocmRepo,
 }) => {
   React.useEffect(() => {
     setIsLoading(true)
@@ -793,6 +794,7 @@ const FetchUpgradePullRequests = ({
         const prs = await components.upgradePullRequests({
           componentName: componentName,
           state: prState,
+          ocmRepo: ocmRepo,
         })
         setPullRequests(prs)
         setIsLoading(false)
@@ -815,6 +817,7 @@ const FetchUpgradePullRequests = ({
   }, [
     componentName,
     prState,
+    ocmRepo,
     setIsError,
     setIsLoading,
     setPullRequests,
@@ -828,6 +831,7 @@ FetchUpgradePullRequests.propTypes = {
   setIsError: PropTypes.func.isRequired,
   componentName: PropTypes.string.isRequired,
   prState: PropTypes.string.isRequired,
+  ocmRepo: PropTypes.string,
 }
 
 
@@ -849,6 +853,7 @@ export const ComponentDiffTab = React.memo(({
   const [prs, prState] = useFetchUpgradePRs({
     componentName: component.name,
     state: pullRequestsStates.OPEN,
+    ocmRepo: ocmRepo,
   })
 
   const [mountFetchClosedPrs, setMountFetchClosedPrs] = React.useState(false)
@@ -982,6 +987,7 @@ export const ComponentDiffTab = React.memo(({
         setIsError={setClosedPrsError}
         componentName={component.name}
         prState={pullRequestsStates.CLOSED}
+        ocmRepo={ocmRepo}
       />
     }
     <Typography>Compare Component Versions</Typography>

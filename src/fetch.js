@@ -304,13 +304,16 @@ const useFetchProfiles = () => {
 const useFetchUpgradePRs = ({
   componentName,
   state,
+  ocmRepo,
 }) => {
   const params = React.useMemo(() => ({
     componentName,
     state,
+    ocmRepo,
   }), [
     componentName,
     state,
+    ocmRepo,
   ])
 
   return _useFetch({
