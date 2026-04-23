@@ -465,7 +465,7 @@ const ResponsiblesHeading = ({
             the corresponding resource entry in Component Descriptor,
             exemplarily done{' '}
             <a
-              href='https://github.com/gardener/cc-utils/blob/master/.ci/pipeline_definitions#L24-L28'
+              href='https://github.com/open-component-model/delivery-dashboard/blob/master/.ocm/base-component.yaml'
               rel='noreferrer'
               target='_blank'
             >

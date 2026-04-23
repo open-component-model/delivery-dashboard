@@ -109,7 +109,7 @@ const asKey = ({
 
 /**
  * Generates a key to uniquely identify artefact metadata `data` properties. Mirrors key defintions
- * from https://github.com/gardener/cc-utils/blob/master/dso/model.py.
+ * from https://github.com/open-component-model/delivery-service/blob/master/odg/model.py.
  *
  * @param {String} type - artefact metadata type
  * @param {Object} data - the artefact metadata `data` payload
