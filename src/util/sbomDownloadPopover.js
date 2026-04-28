@@ -174,11 +174,11 @@ const SbomDownloadPopover = ({
     (!isPolling && scanInfosState.isLoading)
   const isError = bomState.error || scanInfosState.error
   const isDisabled = isLoading || isTriggering || isPolling
-  const isClosable = !isLoading && !isTriggering
+  const isClosable = !isLoading && !isTriggering && !isPolling
 
   const toListItem = (r) => ({
     primary: `${r.name}${r.version ? `:${r.version}` : ''}`,
-    secondary: `${r.accessType ? `${r.accessType}` : ''}${r.artefactType ? ` · ${r.artefactType}` : ''}`,
+
     component: r.component,
   })
 
