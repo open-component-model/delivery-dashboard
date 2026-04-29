@@ -498,8 +498,8 @@ const useFetchQueryMetadata = ({
   }, [featureRegistrationContext])
 
   const fetchCondition = React.useCallback(() => {
-    return deliveryDbFeature?.isAvailable
-  }, [deliveryDbFeature])
+    return deliveryDbFeature?.isAvailable && artefacts?.length > 0
+  }, [deliveryDbFeature, artefacts])
 
   const params = React.useMemo(() => ({
     artefacts,

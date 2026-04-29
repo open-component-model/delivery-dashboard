@@ -94,6 +94,7 @@ const datasources = {
   CC_UTILS: 'cc-utils',
   CRYPTO: 'crypto',
   BLACKDUCK: 'blackduck',
+  SBOM_GENERATOR: 'sbom-generator'
 }
 Object.freeze(datasources)
 

@@ -203,6 +203,7 @@ export const COMPLIANCE_TOOLS = {
   OSID: 'osid',
   RESPONSIBLES: 'responsibles',
   SAST: 'sast',
+  SBOM_GENERATOR: 'sbomGenerator'
 }
 
 export const PRIORITIES = {

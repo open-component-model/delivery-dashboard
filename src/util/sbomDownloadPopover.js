@@ -21,14 +21,16 @@ import PropTypes from 'prop-types'
 import { useSnackbar } from 'notistack'
 
 import { DownloadSbom } from './downloadButtons'
-import { useFetchQueryMetadata, useFetchBom } from '../fetch'
+import MissingPermissionsButton from './missingPermissionsButton'
+import { useFetchQueryMetadata, useFetchBom, useFetchAuthUser } from '../fetch'
 import { artefactMetadataTypes } from '../ocm/model'
 import { errorSnackbarProps, fetchBomPopulate, ARTEFACT_KIND } from '../consts'
 import ScrollableList from './scrollableList'
-import { serviceExtensions } from '../api'
+import { routes, serviceExtensions } from '../api'
+import { COMPLIANCE_TOOLS, PRIORITIES } from '../consts'
+import { datasources } from '../ocm/model'
+import { hasUserAccess, normaliseExtraIdentity } from '../util'
 
-const SBOM_GENERATOR_SERVICE = 'sbomGenerator'
-const SBOM_GENERATOR_DATASOURCE = 'sbom-generator'
 const POLL_INTERVAL_MS = 10000
 
 const SUPPORTED_ACCESS_TYPES_BY_MODE = {
@@ -46,11 +48,12 @@ const isResourceSupported = (resource, generationMode) => {
   const artefactType = resource?.type
 
   const supportedAccessTypes = SUPPORTED_ACCESS_TYPES_BY_MODE[generationMode]
-  if (supportedAccessTypes && !supportedAccessTypes.includes(accessType))
+  if (supportedAccessTypes && 
+      accessType &&
+      !supportedAccessTypes.includes(accessType))
     return false
 
-  const supportedArtefactTypes =
-    SUPPORTED_ARTEFACT_TYPES_BY_MODE[generationMode]
+  const supportedArtefactTypes = SUPPORTED_ARTEFACT_TYPES_BY_MODE[generationMode]
   if (
     supportedArtefactTypes &&
     artefactType &&
@@ -102,12 +105,20 @@ const SbomDownloadPopover = ({
   }, [])
 
   const [scanInfos, scanInfosState, refreshScanInfos] = useFetchQueryMetadata({
-    artefacts: artefacts ?? [],
+    artefacts: artefacts,
     types: types,
   })
 
-  const generationMode =
-    extensionsCfg?.sbom_generator?.generation_mode ?? 'syft'
+  const [user] = useFetchAuthUser()
+  const route = new URL(routes.serviceExtensions.backlogItems()).pathname
+  const method = 'POST'
+  const isAuthorised = hasUserAccess({
+    permissions: user?.permissions,
+    route: route,
+    method: method,
+  })
+
+  const generationMode = extensionsCfg?.sbom_generator?.generation_mode ?? 'syft'
 
   const sbomReadiness = React.useMemo(() => {
     if (!bom?.componentDependencies || !scanInfos) return null
@@ -121,10 +132,13 @@ const SbomDownloadPopover = ({
           scanInfos.some(
             (entry) =>
               entry.meta.type === artefactMetadataTypes.ARTEFACT_SCAN_INFO &&
-              entry.meta.datasource === SBOM_GENERATOR_DATASOURCE &&
-              entry.artefact?.component_name === c.name &&
-              entry.artefact?.component_version === c.version &&
-              entry.artefact?.artefact?.artefact_name === resource.name,
+              entry.meta.datasource === datasources.SBOM_GENERATOR &&
+              entry.artefact.component_name === c.name &&
+              entry.artefact.component_version === c.version &&
+              entry.artefact.artefact.artefact_name === resource.name &&
+              entry.artefact.artefact.artefact_version === resource.version &&
+              entry.artefact.artefact.artefact_type === resource.type &&
+              normaliseExtraIdentity(entry.artefact.artefact.artefact_extra_id) === normaliseExtraIdentity(resource.extraIdentity),
           )
 
         return {
@@ -132,6 +146,7 @@ const SbomDownloadPopover = ({
           version: resource.version,
           accessType: resource?.access?.type,
           artefactType: resource?.type,
+          extraIdentity: resource.extraIdentity,
           component: `${c.name}:${c.version}`,
           ready: hasScan,
           supported: isSupported,
@@ -143,10 +158,8 @@ const SbomDownloadPopover = ({
   }, [bom, scanInfos, generationMode])
 
   const readyComponents = sbomReadiness?.filter((c) => c.ready) ?? []
-  const notReadyComponents =
-    sbomReadiness?.filter((c) => !c.ready && c.supported) ?? []
-  const unsupportedComponents =
-    sbomReadiness?.filter((c) => !c.supported) ?? []
+  const notReadyComponents = sbomReadiness?.filter((c) => !c.ready && c.supported) ?? []
+  const unsupportedComponents = sbomReadiness?.filter((c) => !c.supported) ?? []
 
   React.useEffect(() => {
     if (
@@ -177,7 +190,7 @@ const SbomDownloadPopover = ({
   const isClosable = !isLoading && !isTriggering
 
   const toListItem = (r) => ({
-    primary: `${r.name}${r.version ? `:${r.version}` : ''}`,
+    primary: `${r.name}:${r.version}`,
     secondary: `${r.accessType ? `${r.accessType}` : ''}${r.artefactType ? ` · ${r.artefactType}` : ''}`,
     component: r.component,
   })
@@ -186,19 +199,19 @@ const SbomDownloadPopover = ({
     if (!artefacts || notReadyComponents.length === 0) return
 
     const notReadyKeys = new Set(
-      notReadyComponents.map((r) => `${r.component}:${r.name}`),
+      notReadyComponents.map((r) => `${r.component}:${r.name}:${r.version}:${r.artefactType}:${normaliseExtraIdentity(r.extraIdentity)}`),
     )
     const backlogArtefacts = artefacts.filter((a) =>
       notReadyKeys.has(
-        `${a.component_name}:${a.component_version}:${a.artefact.artefact_name}`,
+        `${a.component_name}:${a.component_version}:${a.artefact.artefact_name}:${a.artefact.artefact_version}:${a.artefact.artefact_type}:${normaliseExtraIdentity(a.artefact.artefact_extra_id)}`,
       ),
     )
 
     setIsTriggering(true)
     try {
       await serviceExtensions.backlogItems.create({
-        service: SBOM_GENERATOR_SERVICE,
-        priority: 'Critical',
+        service: COMPLIANCE_TOOLS.SBOM_GENERATOR,
+        priority: PRIORITIES.CRITICAL.name,
         artefacts: backlogArtefacts,
       })
       enqueueSnackbar(
@@ -229,7 +242,7 @@ const SbomDownloadPopover = ({
     <Dialog
       open={true}
       onClose={isClosable ? onClose : undefined}
-      maxWidth="md"
+      maxWidth='md'
       fullWidth
     >
       <DialogTitle
@@ -240,18 +253,18 @@ const SbomDownloadPopover = ({
         }}
       >
         Download SBOM
-        <Box display="flex" gap={1}>
+        <Box display='flex' gap={1}>
           {generationMode && (
-            <Tooltip title="Generation mode">
-              <Chip label={generationMode} size="small" variant="outlined" />
+            <Tooltip title='Generation mode'>
+              <Chip label={generationMode} size='small' variant='outlined' />
             </Tooltip>
           )}
           {extensionsCfg?.sbom_generator?.output_format && (
-            <Tooltip title="Output format">
+            <Tooltip title='Output format'>
               <Chip
                 label={extensionsCfg.sbom_generator.output_format}
-                size="small"
-                variant="outlined"
+                size='small'
+                variant='outlined'
               />
             </Tooltip>
           )}
@@ -259,72 +272,82 @@ const SbomDownloadPopover = ({
       </DialogTitle>
       <DialogContent>
         {isLoading ? (
-          <Box display="flex" justifyContent="center" py={4}>
+          <Box display='flex' justifyContent='center' py={4}>
             <CircularProgress size={32} />
           </Box>
         ) : isError ? (
-          <Alert severity="error">Failed to check SBOM readiness.</Alert>
+          <Alert severity='error'>Failed to check SBOM readiness.</Alert>
         ) : (
           <Stack spacing={2} mt={0.5}>
             {isPolling && (
-              <Alert severity="info" icon={<CircularProgress size={16} />}>
+              <Alert severity='info' icon={<CircularProgress size={16} />}>
                 Waiting for SBOM generation to complete...
               </Alert>
             )}
             {generationMode && unsupportedComponents.length > 0 && (
-              <Alert severity="warning">
-                {`Generation mode "${generationMode}" does not support all artefact access types. Unsupported components are listed below and will be skipped.`}
+              <Alert severity='warning'>
+                {`Generation mode '${generationMode}' does not support all artefact access types. Unsupported components are listed below and will be skipped.`}
               </Alert>
             )}
             <ScrollableList
               title={`Ready (${readyComponents.length})`}
               titleIcon={
-                <CheckCircleOutlineIcon color="success" fontSize="small" />
+                <CheckCircleOutlineIcon color='success' fontSize='small' />
               }
-              titleColor="success.main"
+              titleColor='success.main'
               items={readyComponents.map(toListItem)}
-              emptyText="No SBOMs are ready yet."
-              maxHeight="220px"
-              groupBy="component"
+              emptyText='No SBOMs are ready yet.'
+              maxHeight='220px'
+              groupBy='component'
             />
             <ScrollableList
               title={`Not ready (${notReadyComponents.length})`}
-              titleIcon={<WarningAmberIcon color="warning" fontSize="small" />}
-              titleColor="warning.main"
+              titleIcon={<WarningAmberIcon color='warning' fontSize='small' />}
+              titleColor='warning.main'
               items={notReadyComponents.map(toListItem)}
-              emptyText="All SBOMs are ready."
-              maxHeight="220px"
-              groupBy="component"
+              emptyText='All SBOMs are ready.'
+              maxHeight='220px'
+              groupBy='component'
             />
             {unsupportedComponents.length > 0 && (
               <ScrollableList
                 title={`Unsupported (${unsupportedComponents.length})`}
-                titleIcon={<BlockIcon color="error" fontSize="small" />}
-                titleColor="error.main"
+                titleIcon={<BlockIcon color='error' fontSize='small' />}
+                titleColor='error.main'
                 items={unsupportedComponents.map(toListItem)}
-                emptyText=""
-                maxHeight="220px"
-                groupBy="component"
+                emptyText=''
+                maxHeight='220px'
+                groupBy='component'
               />
             )}
           </Stack>
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} color="error" disabled={!isClosable}>
-          Abort
+        <Button onClick={onClose} color='error' disabled={!isClosable}>
+          Cancel
         </Button>
         {notReadyComponents && notReadyComponents.length > 0 && (
-          <Button
-            color="secondary"
-            onClick={triggerSbomGeneration}
-            disabled={isDisabled}
-            startIcon={
-              isTriggering ? <CircularProgress size={16} /> : undefined
-            }
-          >
-            Trigger SBOM generation
-          </Button>
+          isAuthorised ? (
+            <Button
+              color='secondary'
+              onClick={triggerSbomGeneration}
+              disabled={isDisabled}
+              startIcon={
+                isTriggering && <CircularProgress size={16} />
+              }
+            >
+              Trigger SBOM generation
+            </Button>
+          ) : (
+            <MissingPermissionsButton
+              route={route}
+              method={method}
+              buttonText='Trigger SBOM generation'
+              variant='text'
+              fullWidth={false}
+            />
+          )
         )}
         <DownloadSbom
           component={component}
@@ -333,8 +356,7 @@ const SbomDownloadPopover = ({
           buttonText={
             isLoading
               ? 'loading...'
-              : notReadyComponents.length > 0 ||
-                  unsupportedComponents.length > 0
+              : notReadyComponents.length > 0
                 ? 'download anyway'
                 : 'download sbom'
           }

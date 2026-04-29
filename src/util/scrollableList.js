@@ -36,16 +36,16 @@ const GroupedSection = ({ groupKey, items, renderItem }) => {
           primary={groupKey}
           primaryTypographyProps={{ variant: 'body2', fontWeight: 'bold' }}
         />
-        <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5 }}>
+        <Typography variant='caption' color='text.secondary' sx={{ mr: 0.5 }}>
           {items.length}
         </Typography>
         {open ? (
-          <ExpandLessIcon fontSize="small" />
+          <ExpandLessIcon fontSize='small' />
         ) : (
-          <ExpandMoreIcon fontSize="small" />
+          <ExpandMoreIcon fontSize='small' />
         )}
       </ListItemButton>
-      <Collapse in={open} timeout="auto" unmountOnExit>
+      <Collapse in={open} timeout='auto' unmountOnExit>
         <List dense disablePadding>
           {items.map((item, idx) => (
             <ListItem key={idx} disablePadding sx={{ px: 2.5, py: 0.25 }}>
@@ -151,15 +151,15 @@ const ScrollableList = ({
   }, [items, groupBy])
 
   const titleRow = (
-    <Box display="flex" alignItems="center" gap={0.5}>
+    <Box display='flex' alignItems='center' gap={0.5}>
       {titleIcon}
-      <Typography variant="subtitle2" color={titleColor} sx={{ flexGrow: 1 }}>
+      <Typography variant='subtitle2' color={titleColor} sx={{ flexGrow: 1 }}>
         {title}
       </Typography>
       {items.length > 0 && (
-        <Tooltip title="Expand">
-          <IconButton size="small" onClick={() => setExpanded(true)}>
-            <OpenInFullIcon fontSize="small" />
+        <Tooltip title='Expand'>
+          <IconButton size='small' onClick={() => setExpanded(true)}>
+            <OpenInFullIcon fontSize='small' />
           </IconButton>
         </Tooltip>
       )}
@@ -180,7 +180,7 @@ const ScrollableList = ({
         }}
       >
         {items.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ p: 1.5 }}>
+          <Typography variant='body2' color='text.secondary' sx={{ p: 1.5 }}>
             {emptyText ?? 'No items.'}
           </Typography>
         ) : (
@@ -191,7 +191,7 @@ const ScrollableList = ({
       <Dialog
         open={expanded}
         onClose={() => setExpanded(false)}
-        maxWidth="md"
+        maxWidth='md'
         fullWidth
       >
         <DialogTitle
@@ -201,14 +201,14 @@ const ScrollableList = ({
             justifyContent: 'space-between',
           }}
         >
-          <Box display="flex" alignItems="center" gap={0.5}>
+          <Box display='flex' alignItems='center' gap={0.5}>
             {titleIcon}
-            <Typography variant="subtitle1" color={titleColor}>
+            <Typography variant='subtitle1' color={titleColor}>
               {title}
             </Typography>
           </Box>
-          <IconButton size="small" onClick={() => setExpanded(false)}>
-            <CloseIcon fontSize="small" />
+          <IconButton size='small' onClick={() => setExpanded(false)}>
+            <CloseIcon fontSize='small' />
           </IconButton>
         </DialogTitle>
         <DialogContent dividers sx={{ p: 0 }}>
