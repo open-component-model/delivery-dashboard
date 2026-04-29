@@ -16,6 +16,8 @@ const MissingPermissionsButton = ({
   route,
   method,
   buttonText,
+  variant,
+  fullWidth = true,
 }) => {
   const [rbac, rbacState] = useFetchAuthRbac()
 
@@ -23,7 +25,7 @@ const MissingPermissionsButton = ({
     variant='contained'
     color='secondary'
     disabled
-    fullWidth
+    fullWidth={fullWidth}
   >
     {
       buttonText
@@ -54,12 +56,12 @@ const MissingPermissionsButton = ({
       </>
     }
   >
-    <div style={{ width: '100%' }}> {/* disabled button requires span to be "interactive" */}
+    <div style={fullWidth ? { width: '100%' } : undefined}> {/* disabled button requires span to be "interactive" */}
       <Button
-        variant='contained'
+        variant={variant ?? 'contained'}
         color='secondary'
         disabled
-        fullWidth
+        fullWidth={fullWidth}
       >
         {
           buttonText
@@ -73,6 +75,8 @@ MissingPermissionsButton.propTypes = {
   route: PropTypes.string.isRequired,
   method: PropTypes.string.isRequired,
   buttonText: PropTypes.string.isRequired,
+  variant: PropTypes.string,
+  fullWidth: PropTypes.bool,
 }
 
 

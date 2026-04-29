@@ -10,11 +10,33 @@ import { useTheme } from '@emotion/react'
 import { downloadObject } from '../util'
 import { components } from '../api'
 
+export const DownloadButton = ({ onClick, isLoading, children }) => {
+  const theme = useTheme()
+
+  return (
+    <Button
+      startIcon={<CloudDownloadIcon />}
+      onClick={onClick}
+      variant='outlined'
+      style={{
+        color: isLoading ? 'grey' : theme.bomButton.color,
+      }}
+      disabled={isLoading}
+    >
+      {children}
+    </Button>
+  )
+}
+DownloadButton.displayName = 'DownloadButton'
+DownloadButton.propTypes = {
+  onClick: PropTypes.func.isRequired,
+  isLoading: PropTypes.bool.isRequired,
+  children: PropTypes.node.isRequired,
+}
+
 const bomCache = {}
 
 export const DownloadBom = ({ component, ocmRepo, isLoading }) => {
-  const theme = useTheme()
-
   const handleClick = async () => {
     const key = `${component.name}:${component.version}`
     if (!bomCache[key]) {
@@ -37,20 +59,11 @@ export const DownloadBom = ({ component, ocmRepo, isLoading }) => {
   }
 
   return (
-    <Button
-      startIcon={<CloudDownloadIcon />}
-      onClick={handleClick}
-      variant='outlined'
-      style={{
-        color: isLoading ? 'grey' : theme.bomButton.color,
-      }}
-      disabled={isLoading}
-    >
+    <DownloadButton onClick={handleClick} isLoading={isLoading}>
       download bom
-    </Button>
+    </DownloadButton>
   )
 }
-
 DownloadBom.displayName = 'DownloadBom'
 DownloadBom.propTypes = {
   component: PropTypes.object,
@@ -58,46 +71,50 @@ DownloadBom.propTypes = {
   isLoading: PropTypes.bool.isRequired,
 }
 
-const sbomCache = {}
+export const OpenSbomPopoverButton = ({ onClick, isLoading }) => {
+  return (
+    <DownloadButton onClick={onClick} isLoading={isLoading}>
+      download sbom
+    </DownloadButton>
+  )
+}
+OpenSbomPopoverButton.displayName = 'OpenSbomPopoverButton'
+OpenSbomPopoverButton.propTypes = {
+  onClick: PropTypes.func.isRequired,
+  isLoading: PropTypes.bool.isRequired,
+}
 
-export const DownloadSbom = ({ component, ocmRepo, isLoading }) => {
-  const theme = useTheme()
-
+export const DownloadSbom = ({ component, ocmRepo, isLoading, buttonText, onError }) => {
   const handleClick = async () => {
-    const key = `${component.name}:${component.version}`
-    if (!sbomCache[key]) {
-      sbomCache[key] = await components.componentSbom({
+    try {
+      const sbom = await components.componentSbom({
         componentName: component.name,
         componentVersion: component.version,
         ocmRepoUrl: ocmRepo,
       })
+
+      const fname = `${component.name ? component.name : component.target}_${component.version}.sbom.tar`
+
+      downloadObject({
+        obj: sbom,
+        fname: fname,
+      })
+    } catch (error) {
+      if (onError) onError(error)
     }
-
-    const fname = `${component.name ? component.name : component.target}_${component.version}.sbom.tar`
-
-    downloadObject({
-      obj: sbomCache[key],
-      fname: fname,
-    })
   }
 
   return (
-    <Button
-      startIcon={<CloudDownloadIcon />}
-      onClick={handleClick}
-      variant='outlined'
-      style={{
-        color: isLoading ? 'grey' : theme.bomButton.color,
-      }}
-      disabled={isLoading}
-    >
-      download sbom
-    </Button>
+    <DownloadButton onClick={handleClick} isLoading={isLoading}>
+      {buttonText ?? 'download sbom'}
+    </DownloadButton>
   )
 }
 DownloadSbom.displayName = 'DownloadSbom'
 DownloadSbom.propTypes = {
-  component: PropTypes.object,
+  component: PropTypes.object.isRequired,
   ocmRepo: PropTypes.string,
   isLoading: PropTypes.bool.isRequired,
+  buttonText: PropTypes.string,
+  onError: PropTypes.func,
 }

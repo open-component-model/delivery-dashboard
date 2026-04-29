@@ -94,11 +94,12 @@ import { OcmNode } from '../ocm/iter'
 import { artefactMetadataFilter } from '../ocm/util'
 import { MetadataViewerPopover, artefactMetadataTypes, datasources } from '../ocm/model'
 import { routes } from '../api'
-import { DownloadBom, DownloadSbom } from '../util/downloadButtons'
+import { DownloadBom, OpenSbomPopoverButton } from '../util/downloadButtons'
 import { SprintInfo } from '../util/sprint'
 import ErrorBoundary from '../util/errorBoundary'
 import { VersionOverview, evaluateVersionMatch } from '../util/versionOverview'
 import TriggerComplianceToolButton from '../util/triggerComplianceToolButton'
+import SbomDownloadPopover from '../util/sbomDownloadPopover'
 import {
   categorisationValueToColor,
   categorisationValueToIndicator,
@@ -1202,6 +1203,7 @@ const DependenciesTabHeader = React.memo(({
   extensionsCfg,
 }) => {
   const searchParamContext = React.useContext(SearchParamContext)
+  const [showDownloadSbomPopover, setShowDownloadSbomPopover] = React.useState(false)
   const now = new Date()
 
   return <Grid
@@ -1253,13 +1255,23 @@ const DependenciesTabHeader = React.memo(({
         isLoading={isComponentLoading}
       />
       {
-        extensionsCfg?.sbom_generator?.enabled && <DownloadSbom
-          component={component}
-          ocmRepo={searchParamContext.get('ocmRepo')}
-          isLoading={isComponentLoading}
-        />
+        extensionsCfg?.sbom_generator?.enabled &&
+          <OpenSbomPopoverButton
+            onClick={() => setShowDownloadSbomPopover(true)}
+            isLoading={isComponentLoading}
+          />
       }
     </Grid>
+    {
+      showDownloadSbomPopover &&
+        <SbomDownloadPopover
+          component={component}
+          ocmRepo={searchParamContext.get('ocmRepo')}
+          isComponentLoading={isComponentLoading}
+          onClose={() => setShowDownloadSbomPopover(false)}
+          extensionsCfg={extensionsCfg}
+        />
+    }
   </Grid>
 })
 DependenciesTabHeader.displayName = 'DependenciesTabHeader'
