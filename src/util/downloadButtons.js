@@ -71,8 +71,6 @@ DownloadBom.propTypes = {
   isLoading: PropTypes.bool.isRequired,
 }
 
-const sbomCache = {}
-
 export const OpenSbomPopoverButton = ({ onClick, isLoading }) => {
   return (
     <DownloadButton onClick={onClick} isLoading={isLoading}>
@@ -86,23 +84,24 @@ OpenSbomPopoverButton.propTypes = {
   isLoading: PropTypes.bool.isRequired,
 }
 
-export const DownloadSbom = ({ component, ocmRepo, isLoading, buttonText }) => {
+export const DownloadSbom = ({ component, ocmRepo, isLoading, buttonText, onError }) => {
   const handleClick = async () => {
-    const key = `${component.name}:${component.version}`
-    if (!sbomCache[key]) {
-      sbomCache[key] = await components.componentSbom({
+    try {
+      const sbom = await components.componentSbom({
         componentName: component.name,
         componentVersion: component.version,
         ocmRepoUrl: ocmRepo,
       })
+
+      const fname = `${component.name ? component.name : component.target}_${component.version}.sbom.tar`
+
+      downloadObject({
+        obj: sbom,
+        fname: fname,
+      })
+    } catch (error) {
+      if (onError) onError(error)
     }
-
-    const fname = `${component.name ? component.name : component.target}_${component.version}.sbom.tar`
-
-    downloadObject({
-      obj: sbomCache[key],
-      fname: fname,
-    })
   }
 
   return (
@@ -117,4 +116,5 @@ DownloadSbom.propTypes = {
   ocmRepo: PropTypes.string,
   isLoading: PropTypes.bool.isRequired,
   buttonText: PropTypes.string,
+  onError: PropTypes.func,
 }

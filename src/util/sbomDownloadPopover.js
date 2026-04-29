@@ -360,6 +360,10 @@ const SbomDownloadPopover = ({
                 ? 'download anyway'
                 : 'download sbom'
           }
+          onError={(error) => enqueueSnackbar('Could not download SBOM', {
+            ...errorSnackbarProps,
+            details: error.toString(),
+          })}
         />
       </DialogActions>
     </Dialog>
