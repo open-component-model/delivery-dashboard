@@ -138,6 +138,7 @@ export const routes = {
   features: api('features'),
   profiles: api('profiles'),
   artefacts: {
+    metadata: api('artefacts/metadata'),
     queryMetadata: api('artefacts/metadata/query'),
     queryAttributes: api('artefacts/metadata/query-attributes'),
     queryBySearchExpression: api('artefacts/metadata/query/by-search-expression'),
@@ -350,6 +351,30 @@ const componentsComplianceSummary = async ({
   return await _toJson(withAuth(url, {
     headers,
   }))
+}
+
+
+const artefactsMetadata = {
+  put: async ({
+    metadata,
+  }) => {
+    const url = new URL(routes.artefacts.metadata)
+
+    const entries = {
+      entries: metadata,
+    }
+
+    const resp = await withAuth(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(entries),
+    })
+    await raiseIfNotOk(resp)
+
+    return true
+  },
 }
 
 
@@ -623,6 +648,7 @@ const dora = {
 }
 
 export {
+  artefactsMetadata,
   auth,
   features,
   profiles,

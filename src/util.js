@@ -115,6 +115,12 @@ export const camelCaseToDisplayText = (camelCase) => {
   return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1)
 }
 
+export const dashCaseToDisplayText = (dashCase) => {
+  return dashCase.split('-').map((word) => {
+    return word.charAt(0).toUpperCase() + word.slice(1)
+  }).join(' ')
+}
+
 export const snakeToCamelCase = (snakeCase) => {
   return snakeCase.toLowerCase().replace(/([-_][a-z])/g, (group) => {
     return group.toUpperCase().replace('-', '').replace('_', '')
@@ -199,7 +205,6 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
       const findingLabels = finding.data.labels.slice().sort()
       if (
         rescoring.data.finding.package_name !== finding.data.package_name
-        || rescoring.data.finding.license.name !== finding.data.license.name
         || rescoringLabels.length !== findingLabels.length
         || !rescoringLabels.every((label, i) => label === findingLabels[i])
       ) return false
