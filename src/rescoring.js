@@ -54,6 +54,7 @@ import { useTheme } from '@emotion/react'
 import { enqueueSnackbar } from 'notistack'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import EditNoteIcon from '@mui/icons-material/EditNote'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
@@ -2210,6 +2211,8 @@ const RescoringContentTableRow = ({
   const [expanded, setExpanded] = React.useState(false)
   const [overwriteOpen, setOverwriteOpen] = React.useState(false)
   const [scannerWritebackType, setScannerWritebackType] = React.useState()
+  const licenseOverwriteKey = '_licenseOverwrite'
+  const packageVersionOverwriteKey = '_packageVersionOverwrite'
 
   const matchingRules = matching_rules
   const applicableRescorings = applicable_rescorings
@@ -2354,6 +2357,17 @@ const RescoringContentTableRow = ({
               value={severity}
               onChange={(e) => {
                 const id = e.target.value
+
+                if (id === licenseOverwriteKey) {
+                  setScannerWritebackType(SCANNER_WRITEBACK_TYPES.LICENSE)
+                  setOverwriteOpen(true)
+                  return
+                } else if (id === packageVersionOverwriteKey) {
+                  setScannerWritebackType(SCANNER_WRITEBACK_TYPES.PACKAGE_VERSION)
+                  setOverwriteOpen(true)
+                  return
+                }
+
                 const categorisation = findCategorisationById({id, findingCfg})
                 const dueDate = categorisation.allowed_processing_time === META_ALLOWED_PROCESSING_TIME.INPUT
                   ? originalDueDate
@@ -2378,6 +2392,28 @@ const RescoringContentTableRow = ({
                 },
               }}
             >
+              {
+                [
+                  FINDING_TYPES.IP,
+                ].includes(findingCfg.type) && <MenuItem key={licenseOverwriteKey} value={licenseOverwriteKey}>
+                  <EditNoteIcon fontSize='small'/>
+                  <Typography variant='body2' fontStyle='italic' marginLeft='0.25em'>
+                    Change License
+                  </Typography>
+                </MenuItem>
+              }
+              {
+                [
+                  FINDING_TYPES.IP,
+                  FINDING_TYPES.LICENSE,
+                  FINDING_TYPES.VULNERABILITY,
+                ].includes(findingCfg.type) && <MenuItem key={packageVersionOverwriteKey} value={packageVersionOverwriteKey}>
+                  <EditNoteIcon fontSize='small'/>
+                  <Typography variant='body2' fontStyle='italic' marginLeft='0.25em'>
+                    Change Package Version
+                  </Typography>
+                </MenuItem>
+              }
               {
                 findingCfg.categorisations.filter((categorisation) => {
                   return categorisation.rescoring?.includes(RESCORING_MODES.MANUAL)
