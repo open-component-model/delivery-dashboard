@@ -78,6 +78,7 @@ import { OcmNode, OcmNodeDetails } from './ocm/iter'
 import {
   artefactMetadataTypes,
   dataKey,
+  datasources,
   knownLabelNames,
 } from './ocm/model'
 import {
@@ -2652,7 +2653,7 @@ const Rescore = ({
 
     const date = new Date().toISOString()
     const meta = {
-      datasource: 'delivery-dashboard',
+      datasource: datasources.DELIVERY_DASHBOARD,
       type: artefactMetadataTypes.RESCORINGS,
       creation_date: date,
       last_update: date,
