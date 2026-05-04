@@ -59,6 +59,7 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
+import PendingActionsIcon from '@mui/icons-material/PendingActions'
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat'
 import UndoIcon from '@mui/icons-material/Undo'
 import { DateTime } from 'luxon'
@@ -2187,6 +2188,73 @@ Finding.propTypes = {
 }
 
 
+const PendingScannerWritebacks = ({
+  pendingScannerWritebacks,
+}) => {
+  if (!(pendingScannerWritebacks?.length > 0)) return null
+
+  const licenseOverwrites = pendingScannerWritebacks.filter((wb) => wb.data.sub_type === SCANNER_WRITEBACK_TYPES.LICENSE)
+  const packageVersionOverwrites = pendingScannerWritebacks.filter((wb) => wb.data.sub_type === SCANNER_WRITEBACK_TYPES.PACKAGE_VERSION)
+
+  return <Tooltip
+    title={<Stack spacing={0.5}>
+      <Typography variant='inherit' fontWeight='bold'>
+        {`${pendingScannerWritebacks.length} pending change${pendingScannerWritebacks.length > 1 ? 's' : ''}`}
+      </Typography>
+      <Typography variant='inherit' sx={{ opacity: 0.85 }}>
+        A re-scan is required before these take effect.
+      </Typography>
+      {
+        licenseOverwrites.length > 0 && <>
+          <Typography variant='inherit' fontWeight='bold'>
+            License Changes
+          </Typography>
+          {
+            licenseOverwrites.map((licenseOverwrite, idx) => {
+              const from = licenseOverwrite.data.license_from
+              const to = licenseOverwrite.data.license_to
+              const version = licenseOverwrite.data.package_version
+              const operation = !from ? 'added' : (!to ? 'removed' : '')
+              return <Box key={`license-${idx}`} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                {from && <Typography variant='inherit' sx={{ fontFamily: 'monospace' }}>{from}</Typography>}
+                {from && to && <Typography variant='inherit'>{'→'}</Typography>}
+                {to && <Typography variant='inherit' sx={{ fontFamily: 'monospace' }}>{to}</Typography>}
+                {operation && <Typography variant='inherit' sx={{ opacity: 0.7 }}>{`(${operation})`}</Typography>}
+                {version && <Typography variant='inherit' sx={{ opacity: 0.7 }}>{`(${version})`}</Typography>}
+              </Box>
+            })
+          }
+        </>
+      }
+      {
+        packageVersionOverwrites.length > 0 && <>
+          <Typography variant='inherit' fontWeight='bold'>
+            Package Version Changes
+          </Typography>
+          {
+            packageVersionOverwrites.map((packageVersionOverwrite, idx) => {
+              const from = packageVersionOverwrite.data.package_version_from ?? '(any)'
+              const to = packageVersionOverwrite.data.package_version_to
+              return <Box key={`license-${idx}`} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Typography variant='inherit' sx={{ fontFamily: 'monospace' }}>{from}</Typography>
+                <Typography variant='inherit'>{'→'}</Typography>
+                <Typography variant='inherit' sx={{ fontFamily: 'monospace' }}>{to}</Typography>
+              </Box>
+            })
+          }
+        </>
+      }
+    </Stack>}
+  >
+    <PendingActionsIcon color='levelWarning'/>
+  </Tooltip>
+}
+PendingScannerWritebacks.displayName = 'PendingScannerWritebacks'
+PendingScannerWritebacks.propTypes = {
+  pendingScannerWritebacks: PropTypes.arrayOf(PropTypes.object),
+}
+
+
 const RescoringContentTableRow = ({
   ocmRepo,
   rescoring,
@@ -2202,6 +2270,7 @@ const RescoringContentTableRow = ({
     applicable_rescorings,
     discovery_date,
     due_date,
+    pending_scanner_writebacks,
     ocmNode,
     originalSeverityProposal,
     originalMatchingRules,
@@ -2454,6 +2523,7 @@ const RescoringContentTableRow = ({
               </IconButton>
             </Tooltip>
           }
+          <PendingScannerWritebacks pendingScannerWritebacks={pending_scanner_writebacks}/>
           <AppliedRulesExtraInfo matchingRules={matchingRules}/>
         </div>
       </TableCell>
