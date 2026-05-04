@@ -78,6 +78,7 @@ Object.freeze(cryptoAssetTypes)
 
 const artefactMetadataTypes = {
   ARTEFACT_SCAN_INFO: 'meta/artefact_scan_info',
+  SCANNER_WRITEBACK: 'meta/scanner_writeback',
   STRUCTURE_INFO: 'structure_info',
   CRYPTO_ASSET: 'crypto_asset',
   RESCORINGS: 'rescorings',

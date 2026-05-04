@@ -115,6 +115,12 @@ export const camelCaseToDisplayText = (camelCase) => {
   return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1)
 }
 
+export const dashCaseToDisplayText = (dashCase) => {
+  return dashCase.split('-').map((word) => {
+    return word.charAt(0).toUpperCase() + word.slice(1)
+  }).join(' ')
+}
+
 export const snakeToCamelCase = (snakeCase) => {
   return snakeCase.toLowerCase().replace(/([-_][a-z])/g, (group) => {
     return group.toUpperCase().replace('-', '').replace('_', '')

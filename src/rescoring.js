@@ -1,6 +1,7 @@
 import React from 'react'
 
 import {
+  Autocomplete,
   Button,
   Box,
   Card,
@@ -15,6 +16,7 @@ import {
   Divider,
   Drawer,
   FormControl,
+  FormHelperText,
   Grid,
   IconButton,
   InputLabel,
@@ -66,13 +68,14 @@ import {
   ConfigContext,
   SearchParamContext,
 } from './App'
-import { rescore, routes } from './api'
+import { artefactsMetadata, rescore, routes } from './api'
 import {
   errorSnackbarProps,
   META_ALLOWED_PROCESSING_TIME,
   META_RESCORING_RULES,
   META_SPRINT_NAMES,
   RESCORING_MODES,
+  SCANNER_WRITEBACK_TYPES,
 } from './consts'
 import { OcmNode, OcmNodeDetails } from './ocm/iter'
 import {
@@ -82,6 +85,7 @@ import {
   knownLabelNames,
 } from './ocm/model'
 import {
+  dashCaseToDisplayText,
   formatAndSortSprints,
   normaliseExtraIdentity,
   pluralise,
@@ -109,6 +113,7 @@ import {
   rescorableFindingTypes,
   sprintNameForRescoring,
 } from './findings'
+import ALL_LICENSES from './resources/licenses'
 
 
 const scopeOptions = {
@@ -1477,6 +1482,451 @@ const diki_rule_url = (finding) => {
 }
 
 
+const LicenseSelectValue = ({ label, marqueeClass }) => {
+  const outerRef = React.useRef(null)
+  const innerRef = React.useRef(null)
+  const [overflow, setOverflow] = React.useState(0)
+
+  React.useEffect(() => {
+    const outer = outerRef.current
+    const inner = innerRef.current
+    if (!outer || !inner) return
+    const delta = inner.offsetWidth - outer.offsetWidth
+    setOverflow(delta > 0 ? delta : 0)
+  }, [label])
+
+  return <Box
+    component='span'
+    ref={outerRef}
+    sx={{
+      display: 'block',
+      overflow: 'hidden',
+      whiteSpace: 'nowrap',
+      ...(overflow > 0 && {
+        '@keyframes marquee': {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: `translateX(-${overflow}px)` },
+        },
+        ...(!marqueeClass && {
+          '&:hover > span': {
+            display: 'inline-block',
+            animation: 'marquee 3s linear infinite',
+          },
+        }),
+      }),
+    }}
+  >
+    <Box component='span' ref={innerRef} className={marqueeClass} sx={{ whiteSpace: 'nowrap' }}>{label}</Box>
+  </Box>
+}
+LicenseSelectValue.displayName = 'LicenseSelectValue'
+LicenseSelectValue.propTypes = {
+  label: PropTypes.string.isRequired,
+  marqueeClass: PropTypes.string,
+}
+
+
+const LicenseOverwriteFields = ({
+  currentLicenses,
+  packageName,
+  licenseFrom,
+  setLicenseFrom,
+  licenseTo,
+  setLicenseTo,
+  packageVersion,
+  setPackageVersion,
+  setButtonText,
+  setHasError,
+}) => {
+  const sortedLicenses = [...currentLicenses].sort((a, b) => a.name.localeCompare(b.name))
+
+  const unknownLicense = licenseTo && !ALL_LICENSES.includes(licenseTo) ? 'Must be a known license' : null
+  const equalLicenses = licenseFrom && licenseTo && licenseFrom === licenseTo ? 'Licenses must not be equal' : null
+  const emptyLicenses = !licenseFrom && !licenseTo ? 'At least one license must be set' : null
+
+  const hasError = Boolean(unknownLicense || equalLicenses || emptyLicenses)
+
+  React.useEffect(() => {
+    if (!emptyLicenses) {
+      setButtonText(`${!licenseFrom ? 'Add' : !licenseTo ? 'Remove' : 'Replace'} License`)
+    }
+  }, [licenseFrom, licenseTo])
+
+  React.useEffect(() => {
+    setHasError(hasError)
+  }, [licenseFrom, licenseTo])
+
+  const licenseMenuItems = [
+    <MenuItem key='' value=''>
+      <Typography variant='inherit' sx={{ color: 'text.secondary' }}>(none)</Typography>
+    </MenuItem>,
+    ...sortedLicenses.map((license) => <MenuItem key={license.name} value={license.name}>
+      <Typography variant='inherit'>{license.name}</Typography>
+    </MenuItem>),
+  ]
+
+  const [licenseToFocused, setLicenseToFocused] = React.useState(false)
+
+  return <Stack spacing={2}>
+    <Box>
+      <Typography variant='caption' color='text.secondary'>Package Name</Typography>
+      <Typography variant='body2'>{packageName}</Typography>
+    </Box>
+    <TextField
+      label='Package Version (optional)'
+      value={packageVersion}
+      onChange={(e) => setPackageVersion(e.target.value)}
+      variant='outlined'
+      size='small'
+      helperText={`Leave empty to apply to all versions of ${packageName}`}
+    />
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <FormControl variant='outlined' size='small' sx={{ flex: 1 }} error={Boolean(equalLicenses || emptyLicenses)}>
+        <InputLabel>License From</InputLabel>
+        <Select
+          value={licenseFrom}
+          onChange={(e) => setLicenseFrom(e.target.value)}
+          renderValue={(value) => <LicenseSelectValue label={value}/>}
+          label='License From'
+        >
+          {licenseMenuItems}
+        </Select>
+        <FormHelperText>{' '/* this is a dummy for formatting reasons*/}</FormHelperText>
+      </FormControl>
+      <Box sx={{ marginBottom: '1.25rem', display: 'flex' }}>
+        <TrendingFlatIcon/>
+      </Box>
+      <Autocomplete
+        options={ALL_LICENSES}
+        value={licenseTo || null}
+        onChange={(_, newValue) => setLicenseTo(newValue ?? '')}
+        onInputChange={(_, newValue, reason) => {
+          if (reason === 'input') setLicenseTo(newValue)
+        }}
+        freeSolo
+        sx={{ flex: 1 }}
+        ListboxProps={{ style: { maxHeight: '20rem' } }}
+        renderInput={(params) => <Box sx={{
+          position: 'relative',
+          '&:hover .license-to-marquee': {
+            display: 'inline-block',
+            animation: 'marquee 3s linear infinite',
+          },
+        }}>
+          <TextField
+            {...params}
+            label='License To'
+            variant='outlined'
+            size='small'
+            error={hasError}
+            helperText={unknownLicense ?? emptyLicenses ?? equalLicenses ?? ' '}
+            onFocus={() => setLicenseToFocused(true)}
+            onBlur={() => setLicenseToFocused(false)}
+            InputProps={{
+              ...params.InputProps,
+              sx: !licenseToFocused ? { '& input': { color: 'transparent' } } : undefined,
+            }}
+          />
+          {!licenseToFocused && <Box sx={{
+            position: 'absolute',
+            top: '50%',
+            transform: 'translateY(calc(-50% - 0.65rem))',
+            left: '14px',
+            right: '40px',
+            overflow: 'hidden',
+            pointerEvents: 'none',
+          }}>
+            <LicenseSelectValue label={licenseTo ?? ''} marqueeClass='license-to-marquee'/>
+          </Box>}
+        </Box>}
+      />
+    </Box>
+  </Stack>
+}
+LicenseOverwriteFields.displayName = 'LicenseOverwriteFields'
+LicenseOverwriteFields.propTypes = {
+  currentLicenses: PropTypes.arrayOf(PropTypes.object).isRequired,
+  packageName: PropTypes.string.isRequired,
+  licenseFrom: PropTypes.string.isRequired,
+  setLicenseFrom: PropTypes.func.isRequired,
+  licenseTo: PropTypes.string.isRequired,
+  setLicenseTo: PropTypes.func.isRequired,
+  packageVersion: PropTypes.string.isRequired,
+  setPackageVersion: PropTypes.func.isRequired,
+  setButtonText: PropTypes.func.isRequired,
+  setHasError: PropTypes.func.isRequired,
+}
+
+
+const PackageVersionOverwriteFields = ({
+  currentPackageVersions,
+  packageName,
+  packageVersionFrom,
+  setPackageVersionFrom,
+  packageVersionTo,
+  setPackageVersionTo,
+  setHasError,
+}) => {
+  const sortedPackageVersions = [...currentPackageVersions].sort()
+
+  const equalPackageVersions = packageVersionFrom && packageVersionTo && packageVersionFrom === packageVersionTo ? 'Versions must not be equal' : null
+  const emptyPackageVersion = !packageVersionTo.replaceAll(' ', '') ? 'Package Version To must be set' : null
+
+  const hasError = Boolean(equalPackageVersions || emptyPackageVersion)
+
+  React.useEffect(() => {
+    setHasError(hasError)
+  }, [packageVersionFrom, packageVersionTo])
+
+  const packageVersionMenuItems = [
+    <MenuItem key='' value=''>
+      <Typography variant='inherit' sx={{ color: 'text.secondary' }}>(none)</Typography>
+    </MenuItem>,
+    ...sortedPackageVersions.map((packageVersion) => <MenuItem key={packageVersion} value={packageVersion}>
+      <Typography variant='inherit'>{packageVersion}</Typography>
+    </MenuItem>),
+  ]
+
+  return <Stack spacing={2}>
+    <Box>
+      <Typography variant='caption' color='text.secondary'>Package Name</Typography>
+      <Typography variant='body2'>{packageName}</Typography>
+    </Box>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <FormControl variant='outlined' size='small' sx={{ flex: 1 }}>
+        <InputLabel>Package Version From</InputLabel>
+        <Select
+          value={packageVersionFrom}
+          onChange={(e) => setPackageVersionFrom(e.target.value)}
+          label='Package Version From'
+        >
+          {packageVersionMenuItems}
+        </Select>
+        <FormHelperText>Leave empty to apply to all versions</FormHelperText>
+      </FormControl>
+      <Box sx={{ marginBottom: '1.25rem', display: 'flex' }}>
+        <TrendingFlatIcon/>
+      </Box>
+      <TextField
+        label='Package Version To'
+        variant='outlined'
+        size='small'
+        sx={{ flex: 1 }}
+        error={hasError}
+        helperText={equalPackageVersions ?? emptyPackageVersion ?? ' '}
+        value={packageVersionTo}
+        onChange={(e) => setPackageVersionTo(e.target.value)}
+      />
+    </Box>
+  </Stack>
+}
+PackageVersionOverwriteFields.displayName = 'PackageVersionOverwriteFields'
+PackageVersionOverwriteFields.propTypes = {
+  currentPackageVersions: PropTypes.arrayOf(PropTypes.string).isRequired,
+  packageName: PropTypes.string.isRequired,
+  packageVersionFrom: PropTypes.string.isRequired,
+  setPackageVersionFrom: PropTypes.func.isRequired,
+  packageVersionTo: PropTypes.string.isRequired,
+  setPackageVersionTo: PropTypes.func.isRequired,
+  setHasError: PropTypes.func.isRequired,
+}
+
+
+const OverwriteDialog = ({
+  rescoring,
+  editRescoring,
+  scannerWritebackType,
+  defaultScope,
+  onClose,
+}) => {
+  const component = rescoring.ocmNode.component
+  const artefact = rescoring.ocmNode.artefact
+  const artefactKind = rescoring.ocmNode.artefactKind
+
+  const [buttonText, setButtonText] = React.useState(scannerWritebackType === SCANNER_WRITEBACK_TYPES.PACKAGE_VERSION ? 'Overwrite Version' : 'Apply')
+  const [scope, setScope] = React.useState(defaultScope)
+  const [isLoading, setIsLoading] = React.useState(false)
+  const [hasError, setHasError] = React.useState(false)
+
+  const [user] = useFetchAuthUser()
+  const route = new URL(routes.artefacts.metadata).pathname
+  const method = 'PUT'
+  const isAuthorised = hasUserAccess({
+    permissions: user?.permissions,
+    route: route,
+    method: method,
+  })
+
+  // license-overwrite fields
+  const [packageVersion, setPackageVersion] = React.useState('')
+  const [licenseFrom, setLicenseFrom] = React.useState(rescoring.finding.licenses?.length > 0 ? rescoring.finding.licenses[0].name : '')
+  const [licenseTo, setLicenseTo] = React.useState('')
+
+  // package-version-overwrite fields
+  const [packageVersionFrom, setPackageVersionFrom] = React.useState(rescoring.finding.package_versions?.length > 0 ? rescoring.finding.package_versions[0] : '')
+  const [packageVersionTo, setPackageVersionTo] = React.useState('')
+
+  const serialiseWriteback = () => {
+    const componentArtefactId = {
+      component_name: [scopeOptions.COMPONENT, scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? component.name : null,
+      component_version: scopeOptions.SINGLE === scope && component.version !== 'greatest' ? component.version : null,
+      artefact_kind: artefactKind,
+      artefact: {
+        artefact_name: [scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? artefact.name : null,
+        artefact_version: scopeOptions.SINGLE === scope ? artefact.version : null,
+        artefact_type: artefact.type,
+        artefact_extra_id: scopeOptions.SINGLE === scope ? artefact.extraIdentity : {},
+      },
+    }
+
+    const payloadForType = (type) => {
+      const basePayload = {
+        sub_type: type,
+      }
+
+      if (type === SCANNER_WRITEBACK_TYPES.LICENSE) {
+        return {
+          ...basePayload,
+          package_name: rescoring.finding.package_name,
+          package_version: packageVersion || null,
+          license_from: licenseFrom || null,
+          license_to: licenseTo || null,
+        }
+      } else if (type === SCANNER_WRITEBACK_TYPES.PACKAGE_VERSION) {
+        return {
+          ...basePayload,
+          package_name: rescoring.finding.package_name,
+          package_version_from: packageVersionFrom || null,
+          package_version_to: packageVersionTo || null,
+        }
+      }
+
+      return basePayload
+    }
+
+    return {
+      artefact: componentArtefactId,
+      meta: {
+        datasource: datasources.DELIVERY_DASHBOARD,
+        type: artefactMetadataTypes.SCANNER_WRITEBACK,
+      },
+      data: payloadForType(scannerWritebackType),
+    }
+  }
+
+  const handleApply = async () => {
+    setIsLoading(true)
+    try {
+      const serialisedWriteback = serialiseWriteback()
+      await artefactsMetadata.put({ metadata: [serialisedWriteback] })
+
+      // update local state
+      editRescoring({
+        rescoring: {
+          ...rescoring,
+          pending_scanner_writebacks: [
+            ...rescoring.pending_scanner_writebacks ?? [],
+            serialisedWriteback,
+          ],
+        },
+      })
+
+      enqueueSnackbar('Change applied successfully', {
+        variant: 'success',
+        anchorOrigin: { vertical: 'bottom', horizontal: 'right' },
+        autoHideDuration: 6000,
+      })
+      onClose()
+    } catch (error) {
+      enqueueSnackbar('Change could not be applied', {
+        ...errorSnackbarProps,
+        details: error.toString(),
+        onRetry: handleApply,
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const renderFieldsForType = (type) => {
+    if (type === SCANNER_WRITEBACK_TYPES.LICENSE) {
+      return <LicenseOverwriteFields
+        currentLicenses={rescoring.finding.licenses}
+        packageName={rescoring.finding.package_name}
+        licenseFrom={licenseFrom}
+        setLicenseFrom={setLicenseFrom}
+        licenseTo={licenseTo}
+        setLicenseTo={setLicenseTo}
+        packageVersion={packageVersion}
+        setPackageVersion={setPackageVersion}
+        setButtonText={setButtonText}
+        setHasError={setHasError}
+      />
+    } else if (type === SCANNER_WRITEBACK_TYPES.PACKAGE_VERSION) {
+      return <PackageVersionOverwriteFields
+        currentPackageVersions={rescoring.finding.package_versions}
+        packageName={rescoring.finding.package_name}
+        packageVersionFrom={packageVersionFrom}
+        setPackageVersionFrom={setPackageVersionFrom}
+        packageVersionTo={packageVersionTo}
+        setPackageVersionTo={setPackageVersionTo}
+        setHasError={setHasError}
+      />
+    }
+    return null
+  }
+
+  return <Dialog
+    onClose={onClose}
+    onClick={(e) => e.stopPropagation()}
+    maxWidth='sm'
+    fullWidth
+    open
+  >
+    <DialogTitle>
+      {
+        `Change ${dashCaseToDisplayText(scannerWritebackType)}`
+      }
+    </DialogTitle>
+    <DialogContent>
+      {
+        renderFieldsForType(scannerWritebackType)
+      }
+    </DialogContent>
+    <DialogActions>
+      <ScopeSelector scope={scope} setScope={setScope}/>
+      <Button onClick={onClose} color='secondary'>Cancel</Button>
+      {
+        isAuthorised ? <Button
+          variant='contained'
+          color='secondary'
+          disabled={isLoading || hasError}
+          startIcon={isLoading && <CircularProgress size='1em'/>}
+          onClick={handleApply}
+        >
+          {
+            buttonText
+          }
+        </Button> : <MissingPermissionsButton
+          route={route}
+          method={method}
+          buttonText={buttonText}
+          fullWidth={false}
+        />
+      }
+    </DialogActions>
+  </Dialog>
+}
+OverwriteDialog.displayName = 'OverwriteDialog'
+OverwriteDialog.propTypes = {
+  rescoring: PropTypes.object.isRequired,
+  editRescoring: PropTypes.func.isRequired,
+  scannerWritebackType: PropTypes.string.isRequired,
+  defaultScope: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
+}
+
+
 const Finding = ({
   rescoring,
   findingCfg,
@@ -1758,6 +2208,8 @@ const RescoringContentTableRow = ({
   } = rescoring
 
   const [expanded, setExpanded] = React.useState(false)
+  const [overwriteOpen, setOverwriteOpen] = React.useState(false)
+  const [scannerWritebackType, setScannerWritebackType] = React.useState()
 
   const matchingRules = matching_rules
   const applicableRescorings = applicable_rescorings
@@ -1822,6 +2274,15 @@ const RescoringContentTableRow = ({
   }
 
   return <>
+    {
+      overwriteOpen && <OverwriteDialog
+        rescoring={rescoring}
+        editRescoring={editRescoring}
+        scannerWritebackType={scannerWritebackType}
+        defaultScope={findingCfg.default_scope}
+        onClose={() => setOverwriteOpen(false)}
+      />
+    }
     <TableRow
       onClick={() => {
         if (applicableRescorings.length > 0) {
