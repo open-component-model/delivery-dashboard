@@ -118,6 +118,7 @@ export const features = {
   DASHBOARD_CREATE_ISSUE_URL: 'dashboard-create-issue-url',
   EXTENSIONS_CONFIGURATION: 'extensions-configuration',
   FINDING_CONFIGURATIONS: 'finding-configurations',
+  LICENSES: 'licenses',
 }
 
 export const featureStates = {
@@ -286,4 +287,10 @@ export const SUMMARY_CATEGORISATIONS = {
 export const RESCORING_MODES = {
   'AUTOMATIC': 'automatic',
   'MANUAL': 'manual',
+}
+
+
+export const SCANNER_WRITEBACK_TYPES = {
+  LICENSE: 'license',
+  PACKAGE_VERSION: 'package-version',
 }
