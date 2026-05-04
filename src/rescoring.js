@@ -1409,6 +1409,45 @@ TruncatedTextWithTooltip.propTypes = {
 }
 
 
+const ScopeSelector = ({
+  scope,
+  setScope,
+}) => {
+  return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'end', marginRight: 'auto' }}>
+    <Tooltip title={
+      <Typography variant='inherit' whiteSpace='pre-line'>
+        {
+          scopeHelp
+        }
+      </Typography>
+    }>
+      <div style={{ display: 'flex', alignItems: 'center', marginRight: '1rem' }}>
+        <Typography variant='inherit'>Scope</Typography>
+        <HelpOutlineIcon sx={{ height: '1rem' }}/>
+      </div>
+    </Tooltip>
+    <Select
+      value={scope}
+      onChange={(e) => setScope(e.target.value)}
+      variant='standard'
+      fullWidth
+      sx={{ minWidth: '8rem' }}
+    >
+      {
+        Object.values(scopeOptions).map((scopeOption) => <MenuItem key={scopeOption} value={scopeOption}>
+          <Typography variant='inherit'>{capitalise(scopeOption)}</Typography>
+        </MenuItem>)
+      }
+    </Select>
+  </div>
+}
+ScopeSelector.displayName = 'ScopeSelector'
+ScopeSelector.propTypes = {
+  scope: PropTypes.string.isRequired,
+  setScope: PropTypes.func.isRequired,
+}
+
+
 const diki_rule_url = (finding) => {
   if (finding.ruleset_id === 'disa-kubernetes-stig') {
     return `https://stigviewer.com/stigs/kubernetes/2024-08-22/finding/V-${finding.rule_id}`
@@ -3112,35 +3151,7 @@ const RescoringModal = ({
           }
         </Grid>
         <Grid item xs={2}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'end' }}>
-            <Tooltip
-              title={<Typography
-                variant='inherit'
-                whiteSpace='pre-line'
-              >
-                {
-                  scopeHelp
-                }
-              </Typography>}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', marginRight: '1rem' }}>
-                <Typography variant='inherit'>Scope</Typography>
-                <HelpOutlineIcon sx={{ height: '1rem' }}/>
-              </div>
-            </Tooltip>
-            <Select
-              value={scope}
-              onChange={(e) => setScope(e.target.value)}
-              variant='standard'
-              fullWidth
-            >
-              {
-                Object.values(scopeOptions).map((scopeOption) => <MenuItem key={scopeOption} value={scopeOption}>
-                  <Typography variant='inherit'>{capitalise(scopeOption)}</Typography>
-                </MenuItem>)
-              }
-            </Select>
-          </div>
+          <ScopeSelector scope={scope} setScope={setScope}/>
         </Grid>
         <Grid item xs={4}>
           <Box display='flex' justifyContent='center'>
