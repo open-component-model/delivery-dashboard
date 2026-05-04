@@ -1656,19 +1656,16 @@ const Finding = ({
     return <Stack spacing={0.5}>
       <Typography
         variant='inherit'
-        sx={{ whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.25 }}
+        sx={{ whiteSpace: 'pre-line', wordBreak: 'break-word', lineHeight: 1.25 }}
       >
         {finding.policy_violations.map((pv) => pv.name).sort().join('\n')}
       </Typography>
-
-      {finding.license.name &&
-        <Typography
-          variant='inherit'
-          sx={{ whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.25 }}
-        >
-          {finding.license.name}
-        </Typography>
-      }
+      <Typography
+        variant='inherit'
+        sx={{ whiteSpace: 'pre-line', wordBreak: 'break-word', lineHeight: 1.25 }}
+      >
+        {finding.licenses.map((license) => license.name).sort().join('\n')}
+      </Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Typography variant='inherit'>Original:</Typography>
         <Typography
@@ -2666,7 +2663,6 @@ const Rescore = ({
       } else if (type === FINDING_TYPES.IP) {
         return {
           package_name: rescoring.finding.package_name,
-          license: rescoring.finding.license,
           labels: rescoring.finding.labels.slice().sort(),
         }
       }

@@ -199,7 +199,6 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
       const findingLabels = finding.data.labels.slice().sort()
       if (
         rescoring.data.finding.package_name !== finding.data.package_name
-        || rescoring.data.finding.license.name !== finding.data.license.name
         || rescoringLabels.length !== findingLabels.length
         || !rescoringLabels.every((label, i) => label === findingLabels[i])
       ) return false
