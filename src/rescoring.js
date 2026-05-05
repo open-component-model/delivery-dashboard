@@ -164,6 +164,26 @@ const rescoringNeedsComment = (rescoring) => {
 }
 
 
+const scopedComponentArtefactId = ({
+  scope,
+  component,
+  artefact,
+  artefactKind,
+}) => {
+  return {
+    component_name: [scopeOptions.COMPONENT, scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? component.name : null,
+    component_version: scopeOptions.SINGLE === scope && component.version !== 'greatest' ? component.version : null,
+    artefact_kind: artefactKind,
+    artefact: {
+      artefact_name: [scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? artefact.name : null,
+      artefact_version: scopeOptions.SINGLE === scope ? artefact.version : null,
+      artefact_type: artefact.type,
+      artefact_extra_id: scopeOptions.SINGLE === scope ? artefact.extraIdentity : {},
+    },
+  }
+}
+
+
 const LinearProgressWithLabel = ({value}) => {
   return <Box sx={{ display: 'flex', alignItems: 'center' }}>
     <Box sx={{ width: '100%', mr: 1 }}>
@@ -2639,18 +2659,6 @@ const Rescore = ({
     const artefact = rescoring.ocmNode.artefact
     const artefactKind = rescoring.ocmNode.artefactKind
 
-    const componentArtefactId = {
-      component_name: [scopeOptions.COMPONENT, scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? component.name : null,
-      component_version: scopeOptions.SINGLE === scope && component.version !== 'greatest' ? component.version : null,
-      artefact_kind: artefactKind,
-      artefact: {
-        artefact_name: [scopeOptions.ARTEFACT, scopeOptions.SINGLE].includes(scope) ? artefact.name : null,
-        artefact_version: scopeOptions.SINGLE === scope ? artefact.version : null,
-        artefact_type: artefact.type,
-        artefact_extra_id: scopeOptions.SINGLE === scope ? artefact.extraIdentity : {},
-      },
-    }
-
     const date = new Date().toISOString()
     const meta = {
       datasource: datasources.DELIVERY_DASHBOARD,
@@ -2729,7 +2737,7 @@ const Rescore = ({
     }
 
     return {
-      artefact: componentArtefactId,
+      artefact: scopedComponentArtefactId({scope, component, artefact, artefactKind}),
       meta: meta,
       data: data,
     }
