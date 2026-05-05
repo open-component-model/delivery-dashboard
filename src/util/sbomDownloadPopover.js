@@ -75,6 +75,7 @@ const SbomDownloadPopover = ({
   const [isTriggering, setIsTriggering] = React.useState(false)
   const [isPolling, setIsPolling] = React.useState(false)
   const pollIntervalRef = React.useRef(null)
+  const cancelDownloadRef = React.useRef(null)
 
   const [bom, bomState] = useFetchBom({
     componentName: component.name,
@@ -324,7 +325,7 @@ const SbomDownloadPopover = ({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} color='error' disabled={!isClosable}>
+        <Button onClick={() => { cancelDownloadRef.current?.(); onClose() }} color='error' disabled={!isClosable}>
           Cancel
         </Button>
         {notReadyComponents && notReadyComponents.length > 0 && (
@@ -364,6 +365,7 @@ const SbomDownloadPopover = ({
             ...errorSnackbarProps,
             details: error.toString(),
           })}
+          cancelRef={cancelDownloadRef}
         />
       </DialogActions>
     </Dialog>

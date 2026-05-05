@@ -467,6 +467,7 @@ const componentSbom = async ({
   componentName,
   componentVersion,
   ocmRepoUrl,
+  signal,
 }) => {
   const url = new URL(routes.components.sbom())
   appendPresentParams(url, {
@@ -475,9 +476,9 @@ const componentSbom = async ({
     ocm_repo_url: ocmRepoUrl,
   })
 
-  const resp = await withAuth(url)
+  const resp = await withAuth(url, { signal })
   await raiseIfNotOk(resp)
-  return await resp.blob()
+  return resp.body
 }
 
 
