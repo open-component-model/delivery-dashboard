@@ -14,7 +14,7 @@ on:
 
 jobs:
   prepare:
-    uses: gardener/cc-utils/.github/workflows/prepare.yaml@master
+    uses: gardener/cc-utils/.github/workflows/prepare.yaml@v1
     permissions:
       id-token: write
     with:
@@ -25,7 +25,7 @@ jobs:
     needs:
     - prepare
     steps:
-    - uses: actions/checkout@v6
+    - uses: gardener/cc-utils/.github/actions/trusted-checkout@v1
     - name: Export odg-extension-definitions
       run: |
         export version=${{ needs.prepare.outputs.version }}
@@ -41,7 +41,7 @@ jobs:
 
         tar czf ${blobs_dir}/extension_definitions.tar.gz ${extension_definitions}
 
-    - uses: gardener/cc-utils/.github/actions/export-ocm-fragments@master
+    - uses: gardener/cc-utils/.github/actions/export-ocm-fragments@v1
       with:
         ocm-resources: |
           name: odg-extension-definitions
@@ -57,7 +57,7 @@ jobs:
     needs:
       - prepare
     steps:
-      - uses: actions/checkout@v6
+      - uses: gardener/cc-utils/.github/actions/trusted-checkout@v1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -81,7 +81,7 @@ jobs:
           tar czf $eslint_evidence $eslint_logfile eslint.sast.config.mjs
 
       - name: Export ESLint SAST evidence to component descriptor
-        uses: gardener/cc-utils/.github/actions/export-ocm-fragments@master
+        uses: gardener/cc-utils/.github/actions/export-ocm-fragments@v1
         with:
           blobs-directory: blobs.d
           ocm-resources: |
@@ -110,7 +110,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    uses: gardener/cc-utils/.github/workflows/oci-ocm.yaml@master
+    uses: gardener/cc-utils/.github/workflows/oci-ocm.yaml@v1
     with:
       name: delivery-dashboard
       version: ${{ needs.prepare.outputs.version }}
@@ -140,7 +140,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    uses: gardener/cc-utils/.github/workflows/helmchart-ocm.yaml@master
+    uses: gardener/cc-utils/.github/workflows/helmchart-ocm.yaml@v1
     with:
       name: delivery-dashboard
       dir: charts/delivery-dashboard
