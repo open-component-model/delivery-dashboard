@@ -25,7 +25,7 @@ jobs:
     needs:
     - prepare
     steps:
-    - uses: actions/checkout@v6
+    - uses: gardener/cc-utils/.github/actions/trusted-checkout@master
     - name: Export odg-extension-definitions
       run: |
         export version=${{ needs.prepare.outputs.version }}
@@ -57,7 +57,7 @@ jobs:
     needs:
       - prepare
     steps:
-      - uses: actions/checkout@v6
+      - uses: gardener/cc-utils/.github/actions/trusted-checkout@master
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
