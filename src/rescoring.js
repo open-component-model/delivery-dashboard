@@ -88,6 +88,7 @@ import {
   trimLongString,
   capitalise,
   hasUserAccess,
+  sprintEndDate,
 } from './util'
 import CopyOnClickChip from './util/copyOnClickChip'
 import ErrorBoundary from './util/errorBoundary'
@@ -2111,7 +2112,7 @@ const RescoringContent = ({
     const bdbaAccesses = {
       [orderAttributes.SUBJECT]: rescoring.finding.package_name,
       [orderAttributes.FINDING]: bdbaFinding(rescoring),
-      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000), // maximum date according to https://262.ecma-international.org/11.0/#sec-time-values-and-time-range
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(sprintEndDate(rescoring.sprint)) : new Date(8640000000000000), // maximum date according to https://262.ecma-international.org/11.0/#sec-time-values-and-time-range
       [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
       [orderAttributes.RESCORED]: findCategorisationById({
         id: rescoring.severity,
@@ -2122,7 +2123,7 @@ const RescoringContent = ({
     const malwareAccess = {
       [orderAttributes.SUBJECT]: rescoring.finding.filename,
       [orderAttributes.FINDING]: `${FINDING_TYPES.MALWARE}_${rescoring.finding.malware}`,
-      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(sprintEndDate(rescoring.sprint)) : new Date(8640000000000000),
       [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
       [orderAttributes.RESCORED]: findCategorisationById({
         id: rescoring.severity,
@@ -2133,7 +2134,7 @@ const RescoringContent = ({
     const sastAccesses = {
       [orderAttributes.SUBJECT]: rescoring.finding.sub_type,
       [orderAttributes.FINDING]: rescoring.finding.sast_status,
-      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(sprintEndDate(rescoring.sprint)) : new Date(8640000000000000),
       [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
       [orderAttributes.RESCORED]: findCategorisationById({
         id: rescoring.severity,
@@ -2144,7 +2145,7 @@ const RescoringContent = ({
     const cryptoAccess = {
       [orderAttributes.SUBJECT]: rescoring.finding.asset?.names.sort(),
       [orderAttributes.FINDING]: `${FINDING_TYPES.CRYPTO}_${rescoring.finding.standard}_${rescoring.finding.asset?.asset_type}`,
-      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(sprintEndDate(rescoring.sprint)) : new Date(8640000000000000),
       [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
       [orderAttributes.RESCORED]: findCategorisationById({
         id: rescoring.severity,
@@ -2155,7 +2156,7 @@ const RescoringContent = ({
     const dikiAccess = {
       [orderAttributes.SUBJECT]: rescoring.finding.ruleset_id,
       [orderAttributes.FINDING]: rescoring.finding.rule_id,
-      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(sprintEndDate(rescoring.sprint)) : new Date(8640000000000000),
       [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
       [orderAttributes.RESCORED]: findCategorisationById({
         id: rescoring.severity,
@@ -2166,7 +2167,7 @@ const RescoringContent = ({
     const falcoAccess = {
       [orderAttributes.SUBJECT]: rescoring.finding.finding?.landscape,
       [orderAttributes.FINDING]: rescoring.finding.finding?.rule ?? 'Interactive Event',
-      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(sprintEndDate(rescoring.sprint)) : new Date(8640000000000000),
       [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
       [orderAttributes.RESCORED]: findCategorisationById({
         id: rescoring.severity,
@@ -2177,7 +2178,7 @@ const RescoringContent = ({
     const ipAccess = {
       [orderAttributes.SUBJECT]: rescoring.finding.package_name + rescoring.finding.package_versions,
       [orderAttributes.FINDING]: rescoring.finding.license?.name,
-      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(rescoring.sprint.end_date) : new Date(8640000000000000),
+      [orderAttributes.SPRINT]: rescoring.sprint ? new Date(sprintEndDate(rescoring.sprint)) : new Date(8640000000000000),
       [orderAttributes.CURRENT]: categoriseRescoringProposal({rescoring, findingCfg}).value,
       [orderAttributes.RESCORED]: findCategorisationById({
         id: rescoring.severity,

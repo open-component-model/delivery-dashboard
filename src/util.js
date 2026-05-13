@@ -236,6 +236,11 @@ export const mixupFindingsWithRescorings = (findings, rescorings) => {
 }
 
 
+export const sprintEndDate = (sprint) => {
+  return sprint.dates.find((date) => date.name === 'end_date').value
+}
+
+
 export const formatAndSortSprints = (sprints) => {
   return sprints.map((sprint) => {
     const commonSprintInfo = {
@@ -265,7 +270,7 @@ export const formatAndSortSprints = (sprints) => {
     }
 
     const now = new Date(new Date().setHours(0, 0, 0, 0))
-    const endDate = new Date(sprint.end_date)
+    const endDate = new Date(sprintEndDate(sprint))
     const timeDeltaDays = Math.round((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
     const displayName = () => {

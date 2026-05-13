@@ -13,6 +13,7 @@ import {
   capitalise,
   mostSpecificRescoring,
   orderRescoringsBySpecificity,
+  sprintEndDate,
 } from './util'
 import { artefactMetadataFilter } from './ocm/util'
 
@@ -207,7 +208,7 @@ export const sprintNameForRescoring = ({
     return META_SPRINT_NAMES.RESOLVED
   if (!rescoring.sprint)
     return null
-  if (new Date(rescoring.sprint.end_date) < now)
+  if (new Date(sprintEndDate(rescoring.sprint)) < now)
     return META_SPRINT_NAMES.OVERDUE
 
   return rescoring.sprint.name
