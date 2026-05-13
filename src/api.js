@@ -463,31 +463,12 @@ const rescore = {
 }
 
 
-const componentSbom = async ({
-  componentName,
-  componentVersion,
-  ocmRepoUrl,
-}) => {
-  const url = new URL(routes.components.sbom())
-  appendPresentParams(url, {
-    component_name: componentName,
-    version: componentVersion,
-    ocm_repo_url: ocmRepoUrl,
-  })
-
-  const resp = await withAuth(url)
-  await raiseIfNotOk(resp)
-  return await resp.blob()
-}
-
-
 const components = {
   diff: componentsDiff,
   complianceSummary: componentsComplianceSummary,
   upgradePullRequests: componentUpgradePRs,
   ocmComponent: ocmComponent,
   componentDependencies: ocmComponentDependencies,
-  componentSbom: componentSbom,
   componentResponsibles: ocmComponentResponsibles,
   lastVersions: ocmComponentVersions,
 }

@@ -1,14 +1,14 @@
 import React from 'react'
 
-import { Button } from '@mui/material'
+import { Box, Button, Link } from '@mui/material'
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
 
 import PropTypes from 'prop-types'
 
 import { useTheme } from '@emotion/react'
 
-import { downloadObject } from '../util'
-import { components } from '../api'
+import { appendPresentParams, downloadObject } from '../util'
+import { components, routes } from '../api'
 
 export const DownloadButton = ({ onClick, isLoading, children }) => {
   const theme = useTheme()
@@ -29,7 +29,7 @@ export const DownloadButton = ({ onClick, isLoading, children }) => {
 }
 DownloadButton.displayName = 'DownloadButton'
 DownloadButton.propTypes = {
-  onClick: PropTypes.func.isRequired,
+  onClick: PropTypes.func,
   isLoading: PropTypes.bool.isRequired,
   children: PropTypes.node.isRequired,
 }
@@ -84,37 +84,29 @@ OpenSbomPopoverButton.propTypes = {
   isLoading: PropTypes.bool.isRequired,
 }
 
-export const DownloadSbom = ({ component, ocmRepo, isLoading, buttonText, onError }) => {
-  const handleClick = async () => {
-    try {
-      const sbom = await components.componentSbom({
-        componentName: component.name,
-        componentVersion: component.version,
-        ocmRepoUrl: ocmRepo,
-      })
-
-      const fname = `${component.name ? component.name : component.target}_${component.version}.sbom.tar`
-
-      downloadObject({
-        obj: sbom,
-        fname: fname,
-      })
-    } catch (error) {
-      if (onError) onError(error)
-    }
-  }
+export const DownloadSbom = ({ componentName, componentVersion, ocmRepo, isLoading, buttonText }) => {
+  const downloadUrl = new URL(routes.components.sbom())
+  appendPresentParams(downloadUrl, {
+    component_name: componentName,
+    version: componentVersion,
+    ocm_repo_url: ocmRepo,
+  })
 
   return (
-    <DownloadButton onClick={handleClick} isLoading={isLoading}>
-      {buttonText ?? 'download sbom'}
-    </DownloadButton>
+    <Box>
+      <Link href={downloadUrl} target='_blank' rel='noreferrer'>
+        <DownloadButton isLoading={isLoading}>
+          {buttonText ?? 'download sbom'}
+        </DownloadButton>
+      </Link>
+    </Box>
   )
 }
 DownloadSbom.displayName = 'DownloadSbom'
 DownloadSbom.propTypes = {
-  component: PropTypes.object.isRequired,
+  componentName: PropTypes.string,
+  componentVersion: PropTypes.string,
   ocmRepo: PropTypes.string,
   isLoading: PropTypes.bool.isRequired,
   buttonText: PropTypes.string,
-  onError: PropTypes.func,
 }

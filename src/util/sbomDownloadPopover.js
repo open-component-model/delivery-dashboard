@@ -350,7 +350,8 @@ const SbomDownloadPopover = ({
           )
         )}
         <DownloadSbom
-          component={component}
+          componentName={component.name}
+          componentVersion={component.version}
           ocmRepo={ocmRepo}
           isLoading={isLoading || isDisabled || readyComponents.length === 0}
           buttonText={
@@ -360,10 +361,6 @@ const SbomDownloadPopover = ({
                 ? 'download anyway'
                 : 'download sbom'
           }
-          onError={(error) => enqueueSnackbar('Could not download SBOM', {
-            ...errorSnackbarProps,
-            details: error.toString(),
-          })}
         />
       </DialogActions>
     </Dialog>
