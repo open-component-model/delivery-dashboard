@@ -78,6 +78,7 @@ Object.freeze(cryptoAssetTypes)
 
 const artefactMetadataTypes = {
   ARTEFACT_SCAN_INFO: 'meta/artefact_scan_info',
+  SCANNER_WRITEBACK: 'meta/scanner_writeback',
   STRUCTURE_INFO: 'structure_info',
   CRYPTO_ASSET: 'crypto_asset',
   RESCORINGS: 'rescorings',
@@ -94,7 +95,8 @@ const datasources = {
   CC_UTILS: 'cc-utils',
   CRYPTO: 'crypto',
   BLACKDUCK: 'blackduck',
-  SBOM_GENERATOR: 'sbom-generator'
+  SBOM_GENERATOR: 'sbom-generator',
+  DELIVERY_DASHBOARD: 'delivery-dashboard',
 }
 Object.freeze(datasources)
 
@@ -179,7 +181,7 @@ export const dataKey = ({type, data}) => {
   if (type === FINDING_TYPES.IP) {
     const labelsKey = data.labels.slice().sort().join(',')
     return asKey({
-      props: [data.package_name, data.package_version, data.license.name, labelsKey, data.policy_violation?.name],
+      props: [data.package_name, data.package_version, data.license?.name, labelsKey, data.policy_violation?.name],
     })
   }
 }
