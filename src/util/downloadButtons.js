@@ -1,14 +1,14 @@
 import React from 'react'
 
-import { Box, Button, LinearProgress } from '@mui/material'
+import { Box, Button, Link } from '@mui/material'
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
 
 import PropTypes from 'prop-types'
 
 import { useTheme } from '@emotion/react'
 
-import { downloadObject, downloadStream } from '../util'
-import { components } from '../api'
+import { appendPresentParams, downloadObject } from '../util'
+import { components, routes } from '../api'
 
 export const DownloadButton = ({ onClick, isLoading, children }) => {
   const theme = useTheme()
@@ -29,7 +29,7 @@ export const DownloadButton = ({ onClick, isLoading, children }) => {
 }
 DownloadButton.displayName = 'DownloadButton'
 DownloadButton.propTypes = {
-  onClick: PropTypes.func.isRequired,
+  onClick: PropTypes.func,
   isLoading: PropTypes.bool.isRequired,
   children: PropTypes.node.isRequired,
 }
@@ -84,56 +84,29 @@ OpenSbomPopoverButton.propTypes = {
   isLoading: PropTypes.bool.isRequired,
 }
 
-export const DownloadSbom = ({ component, ocmRepo, isLoading, buttonText, onError, cancelRef }) => {
-  const [isDownloading, setIsDownloading] = React.useState(false)
-  const abortControllerRef = React.useRef(null)
-
-  React.useEffect(() => {
-    if (cancelRef) cancelRef.current = () => abortControllerRef.current?.abort()
-  }, [cancelRef])
-
-  const handleClick = async () => {
-    const controller = new AbortController()
-    abortControllerRef.current = controller
-    setIsDownloading(true)
-    try {
-      const stream = await components.componentSbom({
-        componentName: component.name,
-        componentVersion: component.version,
-        ocmRepoUrl: ocmRepo,
-        signal: controller.signal,
-      })
-
-      const fname = `${component.name ? component.name : component.target}_${component.version}.sbom.tar`
-
-      await downloadStream({
-        stream,
-        fname,
-        signal: controller.signal,
-      })
-    } catch (error) {
-      if (error?.name !== 'AbortError' && onError) onError(error)
-    } finally {
-      abortControllerRef.current = null
-      setIsDownloading(false)
-    }
-  }
+export const DownloadSbom = ({ componentName, componentVersion, ocmRepo, isLoading, buttonText }) => {
+  const downloadUrl = new URL(routes.components.sbom())
+  appendPresentParams(downloadUrl, {
+    component_name: componentName,
+    version: componentVersion,
+    ocm_repo_url: ocmRepo,
+  })
 
   return (
     <Box>
-      <DownloadButton onClick={handleClick} isLoading={isLoading || isDownloading}>
-        {buttonText ?? 'download sbom'}
-      </DownloadButton>
-      {isDownloading && <LinearProgress sx={{ mt: 0.5 }} />}
+      <Link href={downloadUrl} target='_blank' rel='noreferrer'>
+        <DownloadButton isLoading={isLoading}>
+          {buttonText ?? 'download sbom'}
+        </DownloadButton>
+      </Link>
     </Box>
   )
 }
 DownloadSbom.displayName = 'DownloadSbom'
 DownloadSbom.propTypes = {
-  component: PropTypes.object.isRequired,
+  componentName: PropTypes.string,
+  componentVersion: PropTypes.string,
   ocmRepo: PropTypes.string,
   isLoading: PropTypes.bool.isRequired,
   buttonText: PropTypes.string,
-  onError: PropTypes.func,
-  cancelRef: PropTypes.object,
 }

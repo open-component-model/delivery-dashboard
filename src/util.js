@@ -655,36 +655,6 @@ export const downloadObject = async ({
 }
 
 
-export const downloadStream = async ({
-  stream,
-  fname,
-  signal = null,
-}) => {
-  if (window.showSaveFilePicker) {
-    const handle = await window.showSaveFilePicker({ suggestedName: fname })
-    const writable = await handle.createWritable()
-    await stream.pipeTo(writable, signal ? { signal } : undefined)
-    return
-  }
-
-  const chunks = []
-  const reader = stream.getReader()
-  try {
-    while (true) {
-      if (signal?.aborted) break
-      const { done, value } = await reader.read()
-      if (done) break
-      chunks.push(value)
-    }
-  } finally {
-    reader.releaseLock()
-  }
-  if (signal?.aborted) return
-  const blob = new Blob(chunks)
-  await downloadObject({ obj: blob, fname })
-}
-
-
 export const appendPresentParams = (url, keyValuePairs) => {
   Object.entries(keyValuePairs).map(([key, value]) => {
     if (value !== undefined && value !== null) {

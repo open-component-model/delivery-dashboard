@@ -75,7 +75,6 @@ const SbomDownloadPopover = ({
   const [isTriggering, setIsTriggering] = React.useState(false)
   const [isPolling, setIsPolling] = React.useState(false)
   const pollIntervalRef = React.useRef(null)
-  const cancelDownloadRef = React.useRef(null)
 
   const [bom, bomState] = useFetchBom({
     componentName: component.name,
@@ -325,7 +324,7 @@ const SbomDownloadPopover = ({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => { cancelDownloadRef.current?.(); onClose() }} color='error' disabled={!isClosable}>
+        <Button onClick={onClose} color='error' disabled={!isClosable}>
           Cancel
         </Button>
         {notReadyComponents && notReadyComponents.length > 0 && (
@@ -351,7 +350,8 @@ const SbomDownloadPopover = ({
           )
         )}
         <DownloadSbom
-          component={component}
+          componentName={component.name}
+          componentVersion={component.version}
           ocmRepo={ocmRepo}
           isLoading={isLoading || isDisabled || readyComponents.length === 0}
           buttonText={
@@ -361,11 +361,6 @@ const SbomDownloadPopover = ({
                 ? 'download anyway'
                 : 'download sbom'
           }
-          onError={(error) => enqueueSnackbar('Could not download SBOM', {
-            ...errorSnackbarProps,
-            details: error.toString(),
-          })}
-          cancelRef={cancelDownloadRef}
         />
       </DialogActions>
     </Dialog>
