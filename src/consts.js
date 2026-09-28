@@ -104,7 +104,6 @@ export const labelMissingCfg = {
 }
 
 export const features = {
-  AUTHENTICATION: 'authentication',
   DELIVERY_DB: 'delivery-db',
   CLUSTER_ACCESS: 'cluster-access',
   DORA: 'dora',

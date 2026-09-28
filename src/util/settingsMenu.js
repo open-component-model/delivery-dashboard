@@ -180,7 +180,7 @@ const LoginPanel = ({
     }
   }, [selectedProfile, profiles])
 
-  return <FeatureDependent requiredFeatures={[features.AUTHENTICATION]}>
+  return <>
     <ListItem sx={{ display: 'flex', justifyContent: 'center' }}>
       {
         username ? <Tooltip title={`logged in as ${username}`}>
@@ -209,7 +209,7 @@ const LoginPanel = ({
         <ListItemText primary='Logout'/>
       </ListItemButton>
     </ListItem>
-  </FeatureDependent>
+  </>
 }
 LoginPanel.displayName = 'LoginPanel'
 LoginPanel.propTypes = {
