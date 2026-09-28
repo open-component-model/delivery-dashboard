@@ -60,7 +60,6 @@ export const ComponentTabs = ({
   const featureRegistrationContext = React.useContext(FeatureRegistrationContext)
   const [upgradePRsFeature, setUpgradePRsFeature] = React.useState()
   const [testsFeature, setTestsFeature] = React.useState()
-  const [authFeature, setAuthFeature] = React.useState()
   const [findingCfgsFeature, setFindingCfgsFeature] = React.useState()
   const [doraFeature, setDoraFeature] = React.useState()
 
@@ -96,14 +95,6 @@ export const ComponentTabs = ({
       featureRegistrationContext: featureRegistrationContext,
       featureName: features.TESTS,
       callback: ({feature}) => setTestsFeature(feature),
-    })
-  }, [featureRegistrationContext])
-
-  React.useEffect(() => {
-    return registerCallbackHandler({
-      featureRegistrationContext: featureRegistrationContext,
-      featureName: features.AUTHENTICATION,
-      callback: ({feature}) => setAuthFeature(feature),
     })
   }, [featureRegistrationContext])
 
@@ -146,7 +137,7 @@ export const ComponentTabs = ({
 
     if (!upgradePRsFeature || upgradePRsFeature.isAvailable) yield tabConfig.COMPONENT_DIFF
     if (!testsFeature || testsFeature.isAvailable) yield tabConfig.TESTS
-    if ((!authFeature || authFeature.isAvailable) && complianceTabIsRequired) yield tabConfig.COMPLIANCE
+    if (complianceTabIsRequired) yield tabConfig.COMPLIANCE
     if (!deliveryDbFeature || deliveryDbFeature.isAvailable) yield tabConfig.QUERY
     if (!doraFeature || doraFeature.isAvailable) yield tabConfig.DORA
   }
@@ -211,17 +202,15 @@ export const ComponentTabs = ({
       </TabPanel>
     </FeatureDependent>
     {
-      complianceTabIsRequired && <FeatureDependent requiredFeatures={[features.AUTHENTICATION]}>
-        <TabPanel value={searchParamContext.get('view')} index={tabConfig.COMPLIANCE.id}>
-          {
-            isLoading || !findingCfgs ? <CenteredSpinner sx={{ height: '90vh' }} /> : <ComplianceTab
-              component={componentDescriptor.component}
-              ocmRepo={ocmRepo}
-              findingCfgs={findingCfgs}
-            />
-          }
-        </TabPanel>
-      </FeatureDependent>
+      complianceTabIsRequired && <TabPanel value={searchParamContext.get('view')} index={tabConfig.COMPLIANCE.id}>
+        {
+          isLoading || !findingCfgs?.length > 0 ? <CenteredSpinner sx={{ height: '90vh' }} /> : <ComplianceTab
+            component={componentDescriptor.component}
+            ocmRepo={ocmRepo}
+            findingCfgs={findingCfgs}
+          />
+        }
+      </TabPanel>
     }
     <FeatureDependent requiredFeatures={[features.DORA]}>
       <TabPanel value={searchParamContext.get('view')} index={tabConfig.DORA.id}>
