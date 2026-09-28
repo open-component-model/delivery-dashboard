@@ -160,14 +160,6 @@ export const filterRescoringsForFinding = (finding, rescorings) => {
   return rescorings.filter((rescoring) => {
     if (rescoring.data.referenced_type !== finding.meta.type) return false
     if (
-      rescoring.artefact.artefact_kind
-      && rescoring.artefact.artefact_kind !== finding.artefact.artefact_kind
-    ) return false
-    if (
-      rescoring.artefact.artefact.artefact_type
-      && rescoring.artefact.artefact.artefact_type !== finding.artefact.artefact.artefact_type
-    ) return false
-    if (
       rescoring.artefact.component_name
       && rescoring.artefact.component_name !== finding.artefact.component_name
     ) return false
