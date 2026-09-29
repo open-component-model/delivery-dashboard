@@ -77,18 +77,29 @@ started it without `--rm`, delete it explicitly with `docker rm odg-ui`.
 
 ## Code style
 
-Make use of [eslint](https://eslint.org/) and use our config `eslint.config.mjs`.
-Also, it is recommended to install a pre-push hook executing `eslint`.
-Please note that linter plugins are expected to be installed in global npm context.
-Either install them via `npm install -g` or adjust `.ci/lint` accordingly.
+We use [eslint](https://eslint.org/) with the configs `eslint.config.mjs` (code style) and
+`eslint.sast.config.mjs` (security-focused, also run in CI to produce SAST evidence).
+All plugins are regular dev dependencies, so a plain `npm install` is sufficient.
+
+Run the linter via:
 
 ```
-> cat odg-ui/.git/hooks/pre-push
+npm run lint       # same as CI lint job (.ci/lint)
+npm run lint:sast  # same as CI SAST job (.ci/lint eslint.sast.config.mjs)
+```
 
-#!/usr/bin/env sh
+It is recommended to install a pre-push hook executing the linter. Create it like this
+(works on macOS and Linux):
+
+```bash
+cat > .git/hooks/pre-push <<'EOF'
+#!/bin/sh
 set -e
-repo_dir=$(readlink -f $(dirname $0)/../..)
-${repo_dir}/.ci/lint
+repo_dir=$(git rev-parse --show-toplevel)
+"$repo_dir/.ci/lint"
+"$repo_dir/.ci/lint" eslint.sast.config.mjs
+EOF
+chmod +x .git/hooks/pre-push
 ```
 
 <p align="center"><img alt="Bundesministerium für Wirtschaft und Energie (BMWE)-EU funding logo" src="https://apeirora.eu/assets/img/BMWK-EU.png" width="400"/></p>

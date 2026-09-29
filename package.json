@@ -33,7 +33,9 @@
   "scripts": {
     "start": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": ".ci/lint",
+    "lint:sast": ".ci/lint eslint.sast.config.mjs"
   },
   "browserslist": {
     "production": [
