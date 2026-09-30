@@ -28,7 +28,11 @@ spec:
       {{- end }}
       {{- end }}
     spec:
+      serviceAccountName: delivery-dashboard
+      # pod-level is kept even though the ServiceAccount also disables automount,
+      # so either one alone suffices
       automountServiceAccountToken: false
+      enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 10000
@@ -134,4 +138,8 @@ spec:
   ingress:
   - ports:
     - protocol: TCP
-      port: 8080
+      # must match the container port (Service targetPort); a mismatch silently
+      # blackholes gateway traffic, so template it identically
+      port: {{ default 8080 .Values.containerPort }}
+    # In order to achive even better security, we could add a `from:` restriction 
+    # to limit ingress the source of gateway traffic only (e.g. Envoy pods) in the future.
