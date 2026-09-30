@@ -67,6 +67,7 @@ const SnackbarWithDetails = ({ id, message, details, onRetry, ref }) => {
               alignItems: 'center',
               display: 'flex',
               flexDirection: 'row',
+              flexGrow: 1,
               paddingLeft: '0.5em'
             }}>
             <Grid size={10}>
