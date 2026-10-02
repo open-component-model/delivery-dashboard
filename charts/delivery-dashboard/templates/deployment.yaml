@@ -28,6 +28,10 @@ spec:
       {{- end }}
       {{- end }}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       initContainers:
         - name: init-config-volume
           image: {{ include "image" .Values.busybox.image }}
