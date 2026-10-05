@@ -144,11 +144,18 @@ export const pluralise = (word, count, verbSingular, verbPlural) => {
 }
 
 
+const normaliseDateToUTC = (dateStr) => {
+  if (!dateStr) return new Date(0)
+  // treat naive ISO strings as UTC, matching odg-core's normalise_date behaviour
+  const normalised = /[Zz]$|[+-]\d{2}:\d{2}$/.test(dateStr) ? dateStr : `${dateStr}Z`
+  return new Date(normalised)
+}
+
 export const mostSpecificRescoring = (rescorings) => {
   if (!rescorings?.length > 0) return null
 
   return rescorings.sort((a, b) => {
-    return new Date(b.meta.creation_date) - new Date(a.meta.creation_date)
+    return normaliseDateToUTC(b.meta.creation_date) - normaliseDateToUTC(a.meta.creation_date)
   })[0]
 }
 
