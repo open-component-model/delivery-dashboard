@@ -1,4 +1,5 @@
 # image property will be set during release
+# accepts a tag (repo:tag) or a digest-pinned tag (sha256:... -> repo@digest)
 image:
   repository: ~
   tag: ~

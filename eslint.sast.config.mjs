@@ -4,6 +4,7 @@ import js from '@eslint/js'
 import pluginSecurity from 'eslint-plugin-security'
 
 export default [
+  { ignores: ['build/', 'dist/'] },
   js.configs.recommended,
   pluginSecurity.configs.recommended,
   reactRecommended,
@@ -15,7 +16,7 @@ export default [
 
     settings: {
       react: {
-        version: '18.2.0',
+        version: 'detect',
       },
     },
 

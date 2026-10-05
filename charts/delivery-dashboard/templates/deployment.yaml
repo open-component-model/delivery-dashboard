@@ -28,6 +28,18 @@ spec:
       {{- end }}
       {{- end }}
     spec:
+      serviceAccountName: delivery-dashboard
+      # pod-level is kept even though the ServiceAccount also disables automount,
+      # so either one alone suffices
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10000
+        runAsGroup: 10000
+        fsGroup: 10000
+        seccompProfile:
+          type: RuntimeDefault
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -35,19 +47,29 @@ spec:
       initContainers:
         - name: init-config-volume
           image: {{ include "image" .Values.busybox.image }}
+          imagePullPolicy: IfNotPresent
           command: # write all env-vars starting with REACT into config.js
             - sh
             - -c
             - |
-              touch /delivery-dashboard/config.js;
-              for var in $(env | grep ^REACT); do
-                key=${var%%=*};
-                value=${var#*=*};
-                echo "window.$key = '$value'" >> /delivery-dashboard/dynamic/config.js;
+              set -e
+              out=/delivery-dashboard/dynamic/config.js
+              : > "$out"
+              # read line-wise so values may contain spaces
+              env | grep '^REACT' | while IFS= read -r line; do
+                key=${line%%=*}
+                value=${line#*=}
+                # escape backslashes first, then single quotes, so values cannot
+                # break out of the JS string literal in config.js
+                escaped=$(printf '%s' "$value" | sed -e 's/\\/\\\\/g' -e "s/'/\\\\'/g")
+                printf "window.%s = '%s';\n" "$key" "$escaped" >> "$out"
               done
-              cat /delivery-dashboard/config.js;
+              cat "$out"
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           {{- if default dict .Values.envVars }}
           env:
           {{- range $key, $value := .Values.envVars }}
@@ -55,6 +77,12 @@ spec:
             value: {{ $value }}
           {{- end }}
           {{- end }}
+          resources:
+            requests:
+              memory: 10Mi
+              cpu: 10m
+            limits:
+              memory: 32Mi
           volumeMounts:
             - name: delivery-dashboard-config
               mountPath: /delivery-dashboard/dynamic
@@ -64,27 +92,43 @@ spec:
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: {{ default 8080 .Values.containerPort }}
               name: default
+          readinessProbe:
+            httpGet:
+              path: /
+              port: default
+          livenessProbe:
+            httpGet:
+              path: /
+              port: default
           volumeMounts:
             - name: delivery-dashboard-config
               mountPath: /delivery-dashboard/dynamic
+            - name: lighttpd-cache
+              mountPath: /cache
           resources:
             requests:
               memory: 10Mi
               cpu: 10m
             limits:
               memory: 100Mi
-              cpu: 100m
       volumes:
       - name: delivery-dashboard-config
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: 1Mi
+      - name: lighttpd-cache
+        emptyDir:
+          sizeLimit: 10Mi
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-ingress-to-delivery-dashboard
+  name: delivery-dashboard-networking-policy
   namespace: {{ .Values.target_namespace | default .Release.Namespace }}
 spec:
   podSelector:
@@ -92,7 +136,12 @@ spec:
       app: {{ $podName }}
   policyTypes:
     - Ingress
+    - Egress # no egress rules = deny all egress; replies to ingress still work
   ingress:
   - ports:
     - protocol: TCP
-      port: 8080
+      # must match the container port (Service targetPort); a mismatch silently
+      # blackholes gateway traffic, so template it identically
+      port: {{ default 8080 .Values.containerPort }}
+    # In order to achive even better security, we could add a `from:` restriction 
+    # to limit ingress the source of gateway traffic only (e.g. Envoy pods) in the future.
