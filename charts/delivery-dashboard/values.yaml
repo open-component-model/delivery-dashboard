@@ -3,5 +3,6 @@
 image:
   repository: ~
   tag: ~
+imagePullSecrets: []
 envVars: []
 host: localhost

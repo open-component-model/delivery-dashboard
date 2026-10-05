@@ -40,6 +40,10 @@ spec:
         fsGroup: 10000
         seccompProfile:
           type: RuntimeDefault
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       initContainers:
         - name: init-config-volume
           image: {{ include "image" .Values.busybox.image }}
