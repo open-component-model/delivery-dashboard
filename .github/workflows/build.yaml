@@ -91,7 +91,7 @@ jobs:
               type: localBlob
               localReference: eslint-sast.tar.gz
             labels:
-              - name: gardener.cloud/purposes
+              - name: odg.ocm.software/purposes
                 value:
                   - lint
                   - sast
@@ -120,7 +120,7 @@ jobs:
       ctx: oci-images
       oci-platforms: linux/amd64,linux/arm64
       ocm-labels: |
-        name: gardener.cloud/cve-categorisation
+        name: security.ocm.software/risk-profile
         value:
           network_exposure: public
           authentication_enforced: false
