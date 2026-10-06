@@ -144,7 +144,7 @@ export const pluralise = (word, count, verbSingular, verbPlural) => {
 }
 
 
-const normaliseDateToUTC = (dateStr) => {
+export const normaliseDateToUTC = (dateStr) => {
   if (!dateStr) return new Date(0)
   // treat naive ISO strings as UTC, matching odg-core's normalise_date behaviour
   const normalised = /[Zz]$|[+-]\d{2}:\d{2}$/.test(dateStr) ? dateStr : `${dateStr}Z`
