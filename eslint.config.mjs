@@ -22,7 +22,7 @@ export default [
       'no-extra-semi': ['error'],
       semi: ['error', 'never'],
       'react/prop-types': ['warn'],
-      'no-unused-vars': ['warn'],
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       'no-unreachable': ['warn'],
       'eol-last': ['warn'],
       'jsx-a11y/no-autofocus': ['off'],
