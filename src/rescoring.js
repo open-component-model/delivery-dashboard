@@ -703,7 +703,7 @@ const RescoringFilter = ({
           return categoriseRescoringProposal({rescoring, findingCfg}).id === categorisation.id
         }).length}
         colorCallback={(categorisation) => categorisationValueToColor(categorisation.value)}
-        options={findingCfg.categorisations}
+        options={[...findingCfg.categorisations].sort((a, b) => b.value - a.value)}
         optionIdCallback={(categorisation) => categorisation.id}
         optionNameCallback={(categorisation) => categorisation.display_name}
         title='Categorisation'
