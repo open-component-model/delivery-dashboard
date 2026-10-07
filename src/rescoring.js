@@ -1444,7 +1444,7 @@ const Subject = ({
       <Stack>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <Typography variant='inherit'>{finding.package_name}</Typography>
-          <CopyButton value={finding.package_name} tooltipText='Copy Package' successMessage='Package copied!'/>
+          <CopyButton value={finding.package_name} tooltipText='Copy package' successMessage='Package copied!'/>
           <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -1469,7 +1469,7 @@ const Subject = ({
     return <Stack>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <Typography variant='inherit'>{finding.sub_type}</Typography>
-        <CopyButton value={finding.sub_type} tooltipText='Copy Type' successMessage='Type copied!'/>
+        <CopyButton value={finding.sub_type} tooltipText='Copy type' successMessage='Type copied!'/>
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
