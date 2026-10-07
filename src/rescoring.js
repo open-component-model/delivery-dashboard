@@ -126,7 +126,7 @@ import {
 } from './findings'
 
 
-const CopyButton = ({ value, tooltipText = 'Copy to clipboard', successMessage }) => {
+const CopyButton = ({ value, tooltipText = 'Copy to clipboard', successMessage = 'Copied to clipboard!' }) => {
   const [copied, setCopied] = React.useState(false)
 
   const handleCopy = async (e) => {
@@ -136,7 +136,7 @@ const CopyButton = ({ value, tooltipText = 'Copy to clipboard', successMessage }
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
       enqueueSnackbar(
-        successMessage || 'Copied to clipboard!',
+        successMessage,
         { ...copyNotificationCfg }
       )
     } catch (err) {
