@@ -128,6 +128,7 @@ import {
 
 const CopyButton = ({ value, tooltipText = 'Copy to clipboard', successMessage = 'Copied to clipboard!' }) => {
   const [copied, setCopied] = React.useState(false)
+  const context = React.useContext(ConfigContext)
 
   const handleCopy = async (e) => {
     e.stopPropagation()
@@ -153,7 +154,11 @@ const CopyButton = ({ value, tooltipText = 'Copy to clipboard', successMessage =
       <IconButton
         size='small'
         onClick={handleCopy}
-        sx={{ padding: '2px', marginLeft: '4px' }}
+        sx={{
+          padding: '2px',
+          marginLeft: '4px',
+          color: context.prefersDarkMode ? 'rgba(255, 255, 255, 0.5)' : undefined,
+        }}
       >
         <ContentCopyIcon sx={{ fontSize: '0.9rem' }} />
       </IconButton>
