@@ -1444,7 +1444,7 @@ const Subject = ({
       <Stack>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <Typography variant='inherit'>{finding.package_name}</Typography>
-          <CopyButton value={finding.package_name} tooltipText='Copy subject' successMessage='Subject copied!'/>
+          <CopyButton value={finding.package_name} tooltipText='Copy Package' successMessage='Package copied!'/>
           <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -1460,7 +1460,7 @@ const Subject = ({
     return <Stack>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <Typography variant='inherit'>{finding.finding.filename.split('/').pop()}</Typography>
-        <CopyButton value={finding.finding.filename.split('/').pop()} tooltipText='Copy subject' successMessage='Subject copied!'/>
+        <CopyButton value={finding.finding.filename.split('/').pop()} tooltipText='Copy filename' successMessage='Filename copied!'/>
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
@@ -1469,7 +1469,7 @@ const Subject = ({
     return <Stack>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <Typography variant='inherit'>{finding.sub_type}</Typography>
-        <CopyButton value={finding.sub_type} tooltipText='Copy subject' successMessage='Subject copied!'/>
+        <CopyButton value={finding.sub_type} tooltipText='Copy Type' successMessage='Type copied!'/>
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
@@ -1478,7 +1478,7 @@ const Subject = ({
     return <Stack>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <Typography variant='inherit'>{finding.language}</Typography>
-        <CopyButton value={finding.language} tooltipText='Copy subject' successMessage='Subject copied!'/>
+        <CopyButton value={finding.language} tooltipText='Copy language' successMessage='Language copied!'/>
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
@@ -1498,7 +1498,7 @@ const Subject = ({
             },
           }}
         />
-        <CopyButton value={cryptoText} tooltipText='Copy subject' successMessage='Subject copied!'/>
+        <CopyButton value={cryptoText} tooltipText='Copy asset' successMessage='Asset copied!'/>
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
@@ -1506,7 +1506,7 @@ const Subject = ({
     return <Stack>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <Typography variant='inherit'>{finding.osid.NAME}</Typography>
-        <CopyButton value={finding.osid.NAME} tooltipText='Copy subject' successMessage='Subject copied!'/>
+        <CopyButton value={finding.osid.NAME} tooltipText='Copy OS-ID' successMessage='OS-ID copied!'/>
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
@@ -2195,7 +2195,7 @@ const Finding = ({
               }
             </Link>
           </Tooltip>
-          <CopyButton value={finding.cve} tooltipText='Copy finding' successMessage='Finding copied!'/>
+          <CopyButton value={finding.cve} tooltipText='Copy CVE' successMessage='CVE copied!'/>
           {finding.cvss && <VulnerabilityExtraInfo vector={finding.cvss} filesystemPaths={finding.filesystem_paths}/>}
           {finding.recommendation && <RecommendationInfo recommendation={finding.recommendation}/>}
         </div>
