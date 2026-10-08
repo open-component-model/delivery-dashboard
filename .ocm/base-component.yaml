@@ -8,7 +8,7 @@ resources:
       imageReference: docker.io/library/busybox:1.38.0
     relation: external
 labels:
-  - name: cloud.gardener.cnudie/responsibles
+  - name: odg.ocm.software/responsibles
     value:
       - type: githubTeam
         teamname: open-component-model/odg-maintainers
