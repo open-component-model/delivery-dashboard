@@ -140,7 +140,7 @@ const CopyButton = ({ value, tooltipText = 'Copy to clipboard', successMessage =
         successMessage,
         { ...copyNotificationCfg }
       )
-    } catch (err) {
+    } catch {
       enqueueSnackbar('Failed to copy to clipboard', {
         variant: 'error',
         anchorOrigin: { vertical: 'bottom', horizontal: 'right' },
