@@ -50,6 +50,7 @@ import { useTheme } from '@emotion/react'
 import { enqueueSnackbar } from 'notistack'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import EditNoteIcon from '@mui/icons-material/EditNote'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutlined'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
@@ -76,6 +77,7 @@ import {
 } from './api'
 import { registerCallbackHandler } from './feature'
 import {
+  copyNotificationCfg,
   errorSnackbarProps,
   features,
   META_ALLOWED_PROCESSING_TIME,
@@ -122,6 +124,53 @@ import {
   rescorableFindingTypes,
   sprintNameForRescoring,
 } from './findings'
+
+
+const CopyButton = ({ value, tooltipText = 'Copy to clipboard', successMessage = 'Copied to clipboard!' }) => {
+  const [copied, setCopied] = React.useState(false)
+  const context = React.useContext(ConfigContext)
+
+  const handleCopy = async (e) => {
+    e.stopPropagation()
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+      enqueueSnackbar(
+        successMessage,
+        { ...copyNotificationCfg }
+      )
+    } catch {
+      enqueueSnackbar('Failed to copy to clipboard', {
+        variant: 'error',
+        anchorOrigin: { vertical: 'bottom', horizontal: 'right' },
+        autoHideDuration: 3000,
+      })
+    }
+  }
+
+  return (
+    <Tooltip title={copied ? 'Copied!' : tooltipText}>
+      <IconButton
+        size='small'
+        onClick={handleCopy}
+        sx={{
+          padding: '2px',
+          marginLeft: '4px',
+          color: context.prefersDarkMode ? 'rgba(255, 255, 255, 0.5)' : undefined,
+        }}
+      >
+        <ContentCopyIcon sx={{ fontSize: '0.9rem' }} />
+      </IconButton>
+    </Tooltip>
+  )
+}
+CopyButton.displayName = 'CopyButton'
+CopyButton.propTypes = {
+  value: PropTypes.string.isRequired,
+  tooltipText: PropTypes.string,
+  successMessage: PropTypes.string,
+}
 
 
 const scopeOptions = {
@@ -1395,11 +1444,15 @@ const Subject = ({
       <Stack>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <Typography variant='inherit'>{finding.package_name}</Typography>
+          <CopyButton value={finding.package_name} tooltipText='Copy package' successMessage='Package copied!'/>
           <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
         </div>
-        <Typography variant='inherit' sx={{
-          whiteSpace: 'pre-line'
-        }}>{finding.package_versions.sort().join('\n')}</Typography>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant='inherit' sx={{
+            whiteSpace: 'pre-line'
+          }}>{finding.package_versions.sort().join('\n')}</Typography>
+          <CopyButton value={finding.package_versions.sort().join('\n')} tooltipText='Copy version' successMessage='Version copied!'/>
+        </div>
       </Stack>
     )
 
@@ -1407,6 +1460,7 @@ const Subject = ({
     return <Stack>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <Typography variant='inherit'>{finding.finding.filename.split('/').pop()}</Typography>
+        <CopyButton value={finding.finding.filename.split('/').pop()} tooltipText='Copy filename' successMessage='Filename copied!'/>
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
@@ -1415,6 +1469,7 @@ const Subject = ({
     return <Stack>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <Typography variant='inherit'>{finding.sub_type}</Typography>
+        <CopyButton value={finding.sub_type} tooltipText='Copy type' successMessage='Type copied!'/>
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
@@ -1423,15 +1478,17 @@ const Subject = ({
     return <Stack>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <Typography variant='inherit'>{finding.language}</Typography>
+        <CopyButton value={finding.language} tooltipText='Copy language' successMessage='Language copied!'/>
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
 
   } else if (rescoring.finding_type === FINDING_TYPES.CRYPTO) {
+    const cryptoText = `${finding.asset.names.sort().join('\n')}${finding.asset.properties.version ? '\n' : ''}${finding.asset.properties.version ? finding.asset.properties.version : ''}`
     return <Stack>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <TruncatedTextWithTooltip
-          text={`${finding.asset.names.sort().join('\n')}${finding.asset.properties.version ? '\n' : ''}${finding.asset.properties.version ? finding.asset.properties.version : ''}`}
+          text={cryptoText}
           maxLength={30}
           typographyProps={{
             variant: 'inherit',
@@ -1441,6 +1498,7 @@ const Subject = ({
             },
           }}
         />
+        <CopyButton value={cryptoText} tooltipText='Copy asset' successMessage='Asset copied!'/>
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
@@ -1448,6 +1506,7 @@ const Subject = ({
     return <Stack>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <Typography variant='inherit'>{finding.osid.NAME}</Typography>
+        <CopyButton value={finding.osid.NAME} tooltipText='Copy OS-ID' successMessage='OS-ID copied!'/>
         <OcmNodeDetails ocmNode={ocmNode} ocmRepo={ocmRepo} iconProps={{ sx: { height: '1rem' } }}/>
       </div>
     </Stack>
@@ -1466,9 +1525,12 @@ const Subject = ({
             }
           </Typography>
         </div>
+        <CopyButton value={`${finding.ruleset_name} Version: ${finding.ruleset_version}`} tooltipText='Copy subject' successMessage='Subject copied!'/>
       </div>
     </Stack>
   } else if (rescoring.finding_type === FINDING_TYPES.FALCO) {
+    const clusterNames = finding.finding.clusters ? finding.finding.clusters.map(c => c.name).join(', ') : ''
+    const falcoText = `${finding.finding.landscape}\nProject: ${finding.finding.project}${clusterNames ? `\nClusters: ${clusterNames}` : ''}`
     return (
       <Stack>
         <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -1498,6 +1560,7 @@ const Subject = ({
               </>
             }
           </div>
+          <CopyButton value={falcoText} tooltipText='Copy subject' successMessage='Subject copied!'/>
         </div>
       </Stack>
     )
@@ -2132,6 +2195,7 @@ const Finding = ({
               }
             </Link>
           </Tooltip>
+          <CopyButton value={finding.cve} tooltipText='Copy CVE' successMessage='CVE copied!'/>
           {finding.cvss && <VulnerabilityExtraInfo vector={finding.cvss} filesystemPaths={finding.filesystem_paths}/>}
           {finding.recommendation && <RecommendationInfo recommendation={finding.recommendation}/>}
         </div>
