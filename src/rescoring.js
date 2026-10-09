@@ -99,6 +99,7 @@ import {
   dashCaseToDisplayText,
   formatAndSortSprints,
   normaliseExtraIdentity,
+  normaliseDateToUTC,
   pluralise,
   toYamlString,
   trimLongString,
@@ -1086,7 +1087,7 @@ const ApplicableRescoringsRow = ({
       )
     )
 
-  const localeDate = new Date(applicableRescoring.meta.creation_date).toLocaleString(navigator.language)
+  const localeDate = normaliseDateToUTC(applicableRescoring.meta.creation_date).toLocaleString(navigator.language)
   const categorisation = findCategorisationById({
     id: applicableRescoring.data.severity,
     findingCfg: findingCfg,
