@@ -10,6 +10,7 @@ export default [
   reactRecommended,
   {
     rules: {
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       'security/detect-object-injection': ['off'],
       'security/detect-non-literal-regexp': ['off'],
     },

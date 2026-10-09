@@ -51,7 +51,6 @@ export const trimComponentName = (name) => {
 export const addPresentKeyValuePairs = (obj, keyValuePairs) => {
   return {
     ...obj,
-    // eslint-disable-next-line no-unused-vars
     ...Object.fromEntries(Object.entries(keyValuePairs).filter(([_, v]) => v != null)), // null == undefined, no additional check required
   }
 }

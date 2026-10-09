@@ -339,6 +339,22 @@ const ArtefactRow = ({
 }) => {
   const theme = useTheme()
 
+  const formatResponsibles = () => {
+    if (!aggregatedOcmNode?.responsibles) return null
+
+    return aggregatedOcmNode.responsibles.map((responsible) => {
+      if (responsible.personalName) {
+        return responsible.personalName
+      }
+      if (responsible.githubUsers?.length > 0) {
+        // prefer usernames from public GitHub instead of GitHub enterprise instances
+        return responsible.githubUsers.sort((a, _) => a.host === 'github.com' ? -1 : 1)[0].username
+      }
+      return null
+    }).filter((responsible) => responsible).sort((a, b) => a.localeCompare(b))
+  }
+  const responsibles = formatResponsibles()
+
   return <TableRow
     onClick={() => {
       if (!aggregatedOcmNode) return // still loading
@@ -421,13 +437,9 @@ const ArtefactRow = ({
     </TableCell>
     <TableCell>
       {
-        aggregatedOcmNode?.responsibles ? <Typography>
+        responsibles ? <Typography>
           {
-            aggregatedOcmNode.responsibles.filter((responsible) => {
-              return responsible.personalName
-            }).map((responsible) => {
-              return responsible.personalName
-            }).join(', ')
+            responsibles.join(', ')
           }
         </Typography> : <Skeleton/>
       }
